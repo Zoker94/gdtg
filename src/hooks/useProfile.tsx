@@ -60,13 +60,22 @@ export const useUpdateProfile = () => {
   });
 };
 
+export type AppRole = "admin" | "moderator" | "user";
+
+export interface UserRoleInfo {
+  roles: AppRole[];
+  isAdmin: boolean;
+  isModerator: boolean;
+  isUser: boolean;
+}
+
 export const useUserRole = () => {
   const { user } = useAuth();
 
   return useQuery({
     queryKey: ["user-role", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
+    queryFn: async (): Promise<UserRoleInfo> => {
+      if (!user?.id) return { roles: [], isAdmin: false, isModerator: false, isUser: false };
 
       const { data, error } = await supabase
         .from("user_roles")
@@ -74,8 +83,23 @@ export const useUserRole = () => {
         .eq("user_id", user.id);
 
       if (error) throw error;
-      return data?.map((r) => r.role) || [];
+      
+      const roles = (data?.map((r) => r.role) || []) as AppRole[];
+      
+      return {
+        roles,
+        isAdmin: roles.includes("admin"),
+        isModerator: roles.includes("moderator"),
+        isUser: roles.includes("user"),
+      };
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
+};
+
+// Hook to check if user can manage roles (only admin)
+export const useCanManageRoles = () => {
+  const { data } = useUserRole();
+  return { canManage: data?.isAdmin || false };
 };

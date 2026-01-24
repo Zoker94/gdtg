@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { TermsConfirmation } from "@/components/TermsConfirmation";
 
 const JoinRoom = () => {
   const navigate = useNavigate();
@@ -15,8 +16,11 @@ const JoinRoom = () => {
   const [roomId, setRoomId] = useState(urlRoomId || "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [verifiedTransaction, setVerifiedTransaction] = useState<any>(null);
 
-  const handleJoin = async () => {
+  // Step 1: Verify room credentials
+  const handleVerifyRoom = async () => {
     if (!roomId.trim()) {
       toast({ title: "Lỗi", description: "Vui lòng nhập ID phòng", variant: "destructive" });
       return;
@@ -30,7 +34,7 @@ const JoinRoom = () => {
 
     const { data: transaction, error } = await supabase
       .from("transactions")
-      .select("id, room_id, room_password, buyer_id, seller_id, amount")
+      .select("id, room_id, room_password, buyer_id, seller_id, amount, platform_fee_amount, fee_bearer")
       .eq("room_id", roomId.toUpperCase())
       .maybeSingle();
 
@@ -46,11 +50,10 @@ const JoinRoom = () => {
       return;
     }
 
-    // Determine which role the joining user will take
+    // Check if user is already a participant
     const isAlreadyParticipant = user && (transaction.buyer_id === user.id || transaction.seller_id === user.id);
     
     if (isAlreadyParticipant) {
-      // User is already in this transaction, just navigate
       toast({ title: "Thành công", description: "Đã vào phòng giao dịch" });
       navigate(`/transaction/${transaction.id}`);
       setLoading(false);
@@ -64,21 +67,18 @@ const JoinRoom = () => {
       return;
     }
 
-    // Determine role for the new participant
+    // Determine role and check buyer balance
     let roleToAssign: "buyer" | "seller" | null = null;
     
     if (transaction.seller_id && !transaction.buyer_id) {
-      // Seller exists, new person is buyer
       roleToAssign = "buyer";
     } else if (transaction.buyer_id && !transaction.seller_id) {
-      // Buyer exists, new person is seller
       roleToAssign = "seller";
     } else if (!transaction.seller_id && !transaction.buyer_id) {
-      // No one assigned yet - shouldn't happen normally, but default to seller
       roleToAssign = "seller";
     }
 
-    // If joining as buyer, check balance
+    // If joining as buyer, check balance (including fee if applicable)
     if (roleToAssign === "buyer" && user) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -88,10 +88,18 @@ const JoinRoom = () => {
 
       const userBalance = profile?.balance || 0;
       
-      if (userBalance < transaction.amount) {
+      // Calculate total buyer needs to pay
+      let buyerTotal = transaction.amount;
+      if (transaction.fee_bearer === "buyer") {
+        buyerTotal = transaction.amount + transaction.platform_fee_amount;
+      } else if (transaction.fee_bearer === "split") {
+        buyerTotal = transaction.amount + (transaction.platform_fee_amount / 2);
+      }
+      
+      if (userBalance < buyerTotal) {
         toast({ 
           title: "Số dư không đủ", 
-          description: `Bạn cần có ít nhất ${transaction.amount.toLocaleString()}đ để vào phòng này. Số dư hiện tại: ${userBalance.toLocaleString()}đ`, 
+          description: `Bạn cần có ít nhất ${buyerTotal.toLocaleString()}đ để vào phòng này. Số dư hiện tại: ${userBalance.toLocaleString()}đ`, 
           variant: "destructive" 
         });
         setLoading(false);
@@ -99,36 +107,52 @@ const JoinRoom = () => {
       }
     }
 
-    // Update the transaction with the new participant
-    if (roleToAssign && user) {
-      const updateData = roleToAssign === "buyer" 
-        ? { buyer_id: user.id } 
-        : { seller_id: user.id };
-      
-      const { error: updateError } = await supabase
-        .from("transactions")
-        .update(updateData)
-        .eq("id", transaction.id);
-
-      if (updateError) {
-        console.error("Update error:", updateError);
-        toast({ 
-          title: "Lỗi", 
-          description: "Không thể tham gia phòng. Vui lòng thử lại.", 
-          variant: "destructive" 
-        });
-        setLoading(false);
-        return;
-      }
-
-      toast({ 
-        title: "Thành công", 
-        description: `Bạn đã vào phòng với vai trò ${roleToAssign === "buyer" ? "Người mua" : "Người bán"}` 
-      });
-    }
-
-    navigate(`/transaction/${transaction.id}`);
+    // Store verified transaction and show terms
+    setVerifiedTransaction({ ...transaction, roleToAssign });
+    setShowTerms(true);
     setLoading(false);
+  };
+
+  // Step 2: After confirming terms, actually join
+  const handleConfirmJoin = async () => {
+    if (!verifiedTransaction || !user) return;
+    
+    setLoading(true);
+    
+    const { roleToAssign, id: transactionId } = verifiedTransaction;
+    
+    const updateData = roleToAssign === "buyer" 
+      ? { buyer_id: user.id } 
+      : { seller_id: user.id };
+    
+    const { error: updateError } = await supabase
+      .from("transactions")
+      .update(updateData)
+      .eq("id", transactionId);
+
+    if (updateError) {
+      console.error("Update error:", updateError);
+      toast({ 
+        title: "Lỗi", 
+        description: "Không thể tham gia phòng. Vui lòng thử lại.", 
+        variant: "destructive" 
+      });
+      setLoading(false);
+      return;
+    }
+
+    toast({ 
+      title: "Thành công", 
+      description: `Bạn đã vào phòng với vai trò ${roleToAssign === "buyer" ? "Người mua" : "Người bán"}` 
+    });
+
+    navigate(`/transaction/${transactionId}`);
+    setLoading(false);
+  };
+
+  const handleCancelTerms = () => {
+    setShowTerms(false);
+    setVerifiedTransaction(null);
   };
 
   return (
@@ -152,51 +176,60 @@ const JoinRoom = () => {
           Quay lại
         </Button>
 
-        <Card className="max-w-md mx-auto border-border">
-          <CardHeader>
-            <CardTitle className="text-center flex items-center justify-center gap-2">
-              <LogIn className="w-5 h-5" />
-              Vào phòng giao dịch
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">ID Phòng</label>
-              <Input
-                value={roomId}
-                onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-                placeholder="VD: ABC123"
-                className="text-center text-lg tracking-widest font-mono"
-                maxLength={6}
-              />
-            </div>
+        {showTerms ? (
+          <TermsConfirmation
+            type="join"
+            onConfirm={handleConfirmJoin}
+            onCancel={handleCancelTerms}
+            loading={loading}
+          />
+        ) : (
+          <Card className="max-w-md mx-auto border-border">
+            <CardHeader>
+              <CardTitle className="text-center flex items-center justify-center gap-2">
+                <LogIn className="w-5 h-5" />
+                Vào phòng giao dịch
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">ID Phòng</label>
+                <Input
+                  value={roomId}
+                  onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+                  placeholder="VD: ABC123"
+                  className="text-center text-lg tracking-widest font-mono"
+                  maxLength={6}
+                />
+              </div>
 
-            <div>
-              <label className="text-sm font-medium mb-1 block">Mật khẩu</label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="4 số"
-                className="text-center text-lg tracking-widest font-mono"
-                maxLength={4}
-              />
-            </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Mật khẩu</label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="4 số"
+                  className="text-center text-lg tracking-widest font-mono"
+                  maxLength={4}
+                />
+              </div>
 
-            <Button
-              onClick={handleJoin}
-              className="w-full glow-primary"
-              size="lg"
-              disabled={loading}
-            >
-              {loading ? "Đang kiểm tra..." : "Vào phòng"}
-            </Button>
+              <Button
+                onClick={handleVerifyRoom}
+                className="w-full glow-primary"
+                size="lg"
+                disabled={loading}
+              >
+                {loading ? "Đang kiểm tra..." : "Vào phòng"}
+              </Button>
 
-            <p className="text-center text-sm text-muted-foreground">
-              Bạn cần ID và mật khẩu từ người tạo phòng
-            </p>
-          </CardContent>
-        </Card>
+              <p className="text-center text-sm text-muted-foreground">
+                Bạn cần ID và mật khẩu từ người tạo phòng
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );

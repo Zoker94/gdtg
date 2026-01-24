@@ -75,6 +75,7 @@ import PendingWithdrawalsWidget from "@/components/admin/PendingWithdrawalsWidge
 import PendingDepositsWidget from "@/components/admin/PendingDepositsWidget";
 import DisputesWidget from "@/components/admin/DisputesWidget";
 import PlatformSettingsWidget from "@/components/admin/PlatformSettingsWidget";
+import RoleManagementWidget from "@/components/admin/RoleManagementWidget";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -165,7 +166,7 @@ const AdminDashboard = () => {
   const rejectWithdrawal = useRejectWithdrawal();
   const deleteWithdrawal = useDeleteWithdrawal();
 
-  const isAdmin = roles?.includes("admin");
+  const isAdmin = roles?.isAdmin;
 
   const handleSignOut = async () => {
     try {
@@ -651,8 +652,9 @@ const AdminDashboard = () => {
 
             {/* Settings Tab */}
             <TabsContent value="settings" className="space-y-4">
-              <div className="max-w-md">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
                 <PlatformSettingsWidget />
+                <RoleManagementWidget />
               </div>
             </TabsContent>
           </Tabs>

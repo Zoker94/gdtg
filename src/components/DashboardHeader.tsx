@@ -38,7 +38,7 @@ const DashboardHeader = () => {
   // Enable realtime updates for profile balance
   useProfileRealtime();
 
-  const isAdmin = roles?.includes("admin");
+  const isAdmin = roles?.isAdmin;
 
   const handleSignOut = async () => {
     await signOut();
