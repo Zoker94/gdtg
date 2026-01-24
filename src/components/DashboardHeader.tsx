@@ -27,12 +27,16 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUserRole } from "@/hooks/useProfile";
+import { useProfileRealtime } from "@/hooks/useProfileRealtime";
 
 const DashboardHeader = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: roles } = useUserRole();
+
+  // Enable realtime updates for profile balance
+  useProfileRealtime();
 
   const isAdmin = roles?.includes("admin");
 
