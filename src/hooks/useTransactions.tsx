@@ -48,6 +48,7 @@ export interface CreateTransactionInput {
   dispute_time_hours: number;
   buyer_id?: string;
   seller_id?: string;
+  moderator_id?: string;
 }
 
 export const useTransactions = () => {
@@ -253,6 +254,7 @@ export const useCreateTransaction = () => {
         dispute_time_hours: input.dispute_time_hours,
         buyer_id: input.buyer_id || null,
         seller_id: input.seller_id || null,
+        moderator_id: input.moderator_id || null,
       };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
