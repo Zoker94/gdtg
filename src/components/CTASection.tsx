@@ -1,15 +1,18 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const benefits = [
-  "Đăng ký miễn phí trong 30 giây",
-  "Không yêu cầu phí duy trì tài khoản",
-  "Bonus $50 cho người dùng mới",
-  "Rút tiền nhanh chóng trong 24h",
+  "Đăng ký miễn phí, không phí duy trì",
+  "Phí giao dịch chỉ từ 3%",
+  "Giải quyết khiếu nại trong 24h",
+  "Hỗ trợ trực tuyến 24/7",
 ];
 
 const CTASection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="py-24 lg:py-32 relative overflow-hidden">
       {/* Background effects */}
@@ -26,12 +29,12 @@ const CTASection = () => {
           className="max-w-4xl mx-auto text-center"
         >
           <h2 className="font-display text-3xl lg:text-5xl font-bold mb-6">
-            Sẵn sàng bắt đầu{" "}
-            <span className="gradient-text">hành trình đầu tư</span>?
+            Sẵn sàng{" "}
+            <span className="gradient-text">giao dịch an toàn</span>?
           </h2>
           <p className="text-muted-foreground text-lg mb-10 max-w-2xl mx-auto">
-            Tham gia cùng hàng triệu nhà đầu tư thành công trên nền tảng giao dịch 
-            uy tín và an toàn nhất Việt Nam.
+            Tạo tài khoản ngay hôm nay và trải nghiệm giao dịch online 
+            không lo lừa đảo với EscrowVN.
           </p>
 
           {/* Benefits */}
@@ -59,12 +62,12 @@ const CTASection = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Button variant="hero" size="xl">
+            <Button variant="hero" size="xl" onClick={() => navigate("/auth")}>
               Tạo tài khoản miễn phí
               <ArrowRight className="w-5 h-5" />
             </Button>
             <Button variant="heroOutline" size="xl">
-              Tư vấn 1-1
+              Liên hệ hỗ trợ
             </Button>
           </motion.div>
         </motion.div>

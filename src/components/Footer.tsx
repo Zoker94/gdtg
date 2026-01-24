@@ -1,39 +1,40 @@
-import { TrendingUp, Facebook, Twitter, Linkedin, Youtube } from "lucide-react";
+import { Shield, Facebook, MessageCircle, Mail, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const links = {
     product: [
+      { label: "Cách hoạt động", href: "#how-it-works" },
       { label: "Tính năng", href: "#features" },
-      { label: "Bảng giá", href: "#pricing" },
-      { label: "API", href: "#" },
-      { label: "Ứng dụng di động", href: "#" },
+      { label: "Bảng phí", href: "#pricing" },
+      { label: "Hỏi đáp", href: "#faq" },
     ],
     company: [
-      { label: "Về chúng tôi", href: "#about" },
-      { label: "Tuyển dụng", href: "#" },
+      { label: "Về chúng tôi", href: "#" },
       { label: "Blog", href: "#" },
-      { label: "Liên hệ", href: "#contact" },
+      { label: "Tuyển dụng", href: "#" },
+      { label: "Liên hệ", href: "#" },
     ],
     support: [
       { label: "Trung tâm hỗ trợ", href: "#" },
-      { label: "Hướng dẫn", href: "#" },
-      { label: "Cộng đồng", href: "#" },
+      { label: "Hướng dẫn sử dụng", href: "#" },
+      { label: "Báo cáo lừa đảo", href: "#" },
       { label: "Trạng thái hệ thống", href: "#" },
     ],
     legal: [
       { label: "Điều khoản sử dụng", href: "#" },
       { label: "Chính sách bảo mật", href: "#" },
-      { label: "Cookie", href: "#" },
+      { label: "Chính sách hoàn tiền", href: "#" },
     ],
   };
 
-  const socials = [
-    { icon: Facebook, href: "#" },
-    { icon: Twitter, href: "#" },
-    { icon: Linkedin, href: "#" },
-    { icon: Youtube, href: "#" },
+  const contacts = [
+    { icon: Phone, text: "1900 xxxx xx", href: "tel:1900123456" },
+    { icon: Mail, text: "support@escrowvn.com", href: "mailto:support@escrowvn.com" },
+    { icon: MessageCircle, text: "Zalo: EscrowVN", href: "#" },
+    { icon: Facebook, text: "Facebook", href: "#" },
   ];
 
   return (
@@ -42,23 +43,24 @@ const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-12">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-2">
-            <a href="/" className="flex items-center gap-2 mb-4">
+            <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-primary-foreground" />
+                <Shield className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="font-display font-bold text-xl">TradeX</span>
-            </a>
+              <span className="font-display font-bold text-xl">EscrowVN</span>
+            </Link>
             <p className="text-muted-foreground text-sm leading-relaxed mb-6 max-w-xs">
-              Nền tảng giao dịch tài sản số hàng đầu Việt Nam với hơn 2.5 triệu người dùng tin tưởng.
+              Nền tảng giao dịch trung gian hàng đầu Việt Nam, bảo vệ người mua và người bán khỏi lừa đảo online.
             </p>
-            <div className="flex items-center gap-4">
-              {socials.map((social, index) => (
+            <div className="space-y-2">
+              {contacts.map((contact, index) => (
                 <a
                   key={index}
-                  href={social.href}
-                  className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
+                  href={contact.href}
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <social.icon className="w-5 h-5" />
+                  <contact.icon className="w-4 h-4" />
+                  <span>{contact.text}</span>
                 </a>
               ))}
             </div>
@@ -121,7 +123,7 @@ const Footer = () => {
         {/* Bottom bar */}
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-muted-foreground text-sm">
-            © {currentYear} TradeX. Bảo lưu mọi quyền.
+            © {currentYear} EscrowVN. Bảo lưu mọi quyền.
           </p>
           <p className="text-muted-foreground text-sm">
             🇻🇳 Thiết kế và phát triển tại Việt Nam
