@@ -48,6 +48,7 @@ import {
   Ban,
   AlertCircle,
   XCircle,
+  ArrowDownToLine,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -59,6 +60,12 @@ import {
   useDeleteTransaction,
   useDeleteDeposit,
 } from "@/hooks/useAdminActions";
+import {
+  useAllWithdrawals,
+  useConfirmWithdrawal,
+  useRejectWithdrawal,
+  useDeleteWithdrawal,
+} from "@/hooks/useWithdrawals";
 import {
   useAnnouncements,
   useCreateAnnouncement,
@@ -96,6 +103,7 @@ const AdminDashboard = () => {
   // Delete dialogs
   const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null);
   const [deleteDepositId, setDeleteDepositId] = useState<string | null>(null);
+  const [deleteWithdrawalId, setDeleteWithdrawalId] = useState<string | null>(null);
 
   // User management
   const [banUserId, setBanUserId] = useState<string | null>(null);
@@ -105,6 +113,11 @@ const AdminDashboard = () => {
 
   // Announcement
   const [newAnnouncement, setNewAnnouncement] = useState("");
+
+  // Withdrawal management
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<string | null>(null);
+  const [rejectWithdrawalId, setRejectWithdrawalId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   // Hooks
   const { data: deposits, isLoading: depositsLoading, refetch: refetchDeposits } = useQuery({
@@ -121,6 +134,7 @@ const AdminDashboard = () => {
 
   const { data: users, isLoading: usersLoading, refetch: refetchUsers } = useAllUsers();
   const { data: announcements, isLoading: announcementsLoading, refetch: refetchAnnouncements } = useAnnouncements();
+  const { data: withdrawals, isLoading: withdrawalsLoading, refetch: refetchWithdrawals } = useAllWithdrawals();
 
   const confirmDeposit = useMutation({
     mutationFn: async (depositId: string) => {
@@ -145,6 +159,9 @@ const AdminDashboard = () => {
   const createAnnouncement = useCreateAnnouncement();
   const toggleAnnouncement = useToggleAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
+  const confirmWithdrawal = useConfirmWithdrawal();
+  const rejectWithdrawal = useRejectWithdrawal();
+  const deleteWithdrawal = useDeleteWithdrawal();
 
   const isAdmin = roles?.includes("admin");
 
@@ -260,7 +277,7 @@ const AdminDashboard = () => {
           <h1 className="text-2xl font-display font-bold mb-6">Quản trị hệ thống</h1>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
             <Card>
               <CardContent className="pt-4 pb-3">
                 <div className="flex items-center justify-between">
@@ -298,6 +315,17 @@ const AdminDashboard = () => {
               <CardContent className="pt-4 pb-3">
                 <div className="flex items-center justify-between">
                   <div>
+                    <p className="text-xs text-muted-foreground">Rút chờ</p>
+                    <p className="text-xl font-bold text-blue-500">{withdrawals?.filter((w) => w.status === "pending").length || 0}</p>
+                  </div>
+                  <ArrowDownToLine className="w-6 h-6 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
                     <p className="text-xs text-muted-foreground">Khối lượng</p>
                     <p className="text-lg font-bold">{formatCurrency(totalVolume)}</p>
                   </div>
@@ -320,21 +348,27 @@ const AdminDashboard = () => {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full max-w-2xl grid-cols-4">
+            <TabsList className="grid w-full max-w-3xl grid-cols-5">
               <TabsTrigger value="transactions" className="text-xs">
                 <Package className="w-3.5 h-3.5 mr-1" /> Giao dịch
               </TabsTrigger>
               <TabsTrigger value="deposits" className="text-xs">
-                <Wallet className="w-3.5 h-3.5 mr-1" /> Nạp tiền
+                <Wallet className="w-3.5 h-3.5 mr-1" /> Nạp
                 {deposits?.filter((d) => d.status === "pending").length ? (
                   <Badge variant="destructive" className="ml-1 text-xs px-1">{deposits.filter((d) => d.status === "pending").length}</Badge>
                 ) : null}
               </TabsTrigger>
+              <TabsTrigger value="withdrawals" className="text-xs">
+                <ArrowDownToLine className="w-3.5 h-3.5 mr-1" /> Rút
+                {withdrawals?.filter((w) => w.status === "pending").length ? (
+                  <Badge variant="destructive" className="ml-1 text-xs px-1">{withdrawals.filter((w) => w.status === "pending").length}</Badge>
+                ) : null}
+              </TabsTrigger>
               <TabsTrigger value="users" className="text-xs">
-                <Users className="w-3.5 h-3.5 mr-1" /> Người dùng
+                <Users className="w-3.5 h-3.5 mr-1" /> Users
               </TabsTrigger>
               <TabsTrigger value="announcements" className="text-xs">
-                <Megaphone className="w-3.5 h-3.5 mr-1" /> Thông báo
+                <Megaphone className="w-3.5 h-3.5 mr-1" /> TB
               </TabsTrigger>
             </TabsList>
 
@@ -503,6 +537,112 @@ const AdminDashboard = () => {
                             <TableCell className="text-xs text-muted-foreground">{format(new Date(d.created_at), "dd/MM/yy", { locale: vi })}</TableCell>
                             <TableCell>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteDepositId(d.id)}>
+                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Withdrawals Tab */}
+            <TabsContent value="withdrawals" className="space-y-4">
+              {/* Pending Withdrawals */}
+              {withdrawals?.filter((w) => w.status === "pending").length ? (
+                <Card className="border-blue-500/50">
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-base flex items-center gap-2 text-blue-500">
+                      <Clock className="w-4 h-4" />
+                      Chờ xác nhận ({withdrawals.filter((w) => w.status === "pending").length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      {withdrawals.filter((w) => w.status === "pending").map((w) => (
+                        <div key={w.id} className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-semibold">{formatCurrency(w.amount)}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {w.bank_name} - {w.bank_account_number}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Chủ TK: {w.bank_account_name}
+                              </p>
+                              <p className="text-xs text-muted-foreground font-mono">
+                                User: {w.user_id.slice(0, 8)}...
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button size="sm" className="h-7 text-xs" onClick={() => setSelectedWithdrawal(w.id)}>
+                                <CheckCircle className="w-3 h-3 mr-1" /> Xác nhận
+                              </Button>
+                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setRejectWithdrawalId(w.id)}>
+                                <XCircle className="w-3 h-3 mr-1" /> Từ chối
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {/* All Withdrawals */}
+              <Card>
+                <CardHeader className="py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <CardTitle className="text-base">Tất cả yêu cầu rút tiền</CardTitle>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => refetchWithdrawals()}>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {withdrawalsLoading ? <Skeleton className="h-32 w-full" /> : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Số tiền</TableHead>
+                          <TableHead className="text-xs">Ngân hàng</TableHead>
+                          <TableHead className="text-xs">Chủ TK</TableHead>
+                          <TableHead className="text-xs">Trạng thái</TableHead>
+                          <TableHead className="text-xs">Ngày</TableHead>
+                          <TableHead className="text-xs w-16"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {withdrawals?.map((w) => (
+                          <TableRow key={w.id}>
+                            <TableCell className="font-semibold text-xs">{formatCurrency(w.amount)}</TableCell>
+                            <TableCell className="text-xs">{w.bank_name}</TableCell>
+                            <TableCell className="text-xs">
+                              <div>
+                                <p>{w.bank_account_name}</p>
+                                <p className="text-muted-foreground">{w.bank_account_number}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={w.status === "completed" ? "default" : w.status === "rejected" ? "destructive" : "secondary"} 
+                                className="text-xs"
+                              >
+                                {w.status === "completed" ? "Đã chuyển" : w.status === "rejected" ? "Từ chối" : "Chờ"}
+                              </Badge>
+                              {w.admin_note && w.status === "rejected" && (
+                                <p className="text-xs text-destructive mt-1">{w.admin_note}</p>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {format(new Date(w.created_at), "dd/MM/yy", { locale: vi })}
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteWithdrawalId(w.id)}>
                                 <Trash2 className="w-3.5 h-3.5 text-destructive" />
                               </Button>
                             </TableCell>
@@ -754,6 +894,59 @@ const AdminDashboard = () => {
               <Button variant="outline" onClick={() => setWarningUserId(null)}>Hủy</Button>
               <Button onClick={handleSetWarning}>
                 {warningMessage ? "Cập nhật" : "Xoá cảnh báo"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog: Confirm Withdrawal */}
+        <Dialog open={!!selectedWithdrawal} onOpenChange={() => setSelectedWithdrawal(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Xác nhận rút tiền</DialogTitle>
+              <DialogDescription>
+                Bạn xác nhận đã chuyển tiền cho người dùng? Số dư sẽ bị trừ.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedWithdrawal(null)}>Hủy</Button>
+              <Button onClick={() => { confirmWithdrawal.mutate(selectedWithdrawal!); setSelectedWithdrawal(null); }} disabled={confirmWithdrawal.isPending}>
+                {confirmWithdrawal.isPending ? "Đang xử lý..." : "Xác nhận đã chuyển"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog: Reject Withdrawal */}
+        <Dialog open={!!rejectWithdrawalId} onOpenChange={() => setRejectWithdrawalId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Từ chối rút tiền</DialogTitle>
+              <DialogDescription>Nhập lý do từ chối để thông báo cho người dùng.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Textarea placeholder="Lý do từ chối..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRejectWithdrawalId(null)}>Hủy</Button>
+              <Button variant="destructive" onClick={() => { rejectWithdrawal.mutate({ withdrawalId: rejectWithdrawalId!, reason: rejectReason }); setRejectWithdrawalId(null); setRejectReason(""); }} disabled={!rejectReason.trim()}>
+                Từ chối
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog: Delete Withdrawal */}
+        <Dialog open={!!deleteWithdrawalId} onOpenChange={() => setDeleteWithdrawalId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Xoá yêu cầu rút tiền</DialogTitle>
+              <DialogDescription>Hành động này không thể hoàn tác.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteWithdrawalId(null)}>Hủy</Button>
+              <Button variant="destructive" onClick={() => { deleteWithdrawal.mutate(deleteWithdrawalId!); setDeleteWithdrawalId(null); }}>
+                Xoá
               </Button>
             </DialogFooter>
           </DialogContent>
