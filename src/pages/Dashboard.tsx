@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Wallet, Package, CreditCard } from "lucide-react";
+import { Plus, Wallet, Package, CreditCard, ArrowDownToLine } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -53,14 +53,18 @@ const Dashboard = () => {
 
       <main className="container mx-auto px-4 py-6">
         {/* Actions */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           <Button onClick={() => navigate("/create-transaction")} className="glow-primary">
             <Plus className="w-4 h-4 mr-2" />
-            Tạo giao dịch mới
+            Tạo giao dịch
           </Button>
           <Button variant="outline" onClick={() => navigate("/deposit")}>
             <Wallet className="w-4 h-4 mr-2" />
             Nạp tiền
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/withdraw")}>
+            <ArrowDownToLine className="w-4 h-4 mr-2" />
+            Rút tiền
           </Button>
         </div>
 

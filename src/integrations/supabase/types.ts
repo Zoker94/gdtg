@@ -298,18 +298,65 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawals: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          bank_account_name: string
+          bank_account_number: string
+          bank_name: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          bank_account_name: string
+          bank_account_number: string
+          bank_name: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          bank_account_name?: string
+          bank_account_number?: string
+          bank_name?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       confirm_deposit: { Args: { deposit_id: string }; Returns: undefined }
+      confirm_withdrawal: {
+        Args: { withdrawal_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      reject_withdrawal: {
+        Args: { reason: string; withdrawal_id: string }
+        Returns: undefined
       }
     }
     Enums: {
