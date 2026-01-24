@@ -1,9 +1,10 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield, ArrowRight, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import TransactionRoomMap from "./TransactionRoomMap";
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -79,6 +80,9 @@ const HeroSection = () => {
           </Card>
         </motion.div>
       </div>
+
+      {/* Transaction Room Map */}
+      <TransactionRoomMap />
     </section>
   );
 };
