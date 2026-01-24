@@ -46,11 +46,40 @@ const JoinRoom = () => {
       return;
     }
 
-    // Check if user is joining as buyer (not the seller)
-    const isJoiningAsBuyer = user && transaction.seller_id && transaction.seller_id !== user.id && !transaction.buyer_id;
+    // Determine which role the joining user will take
+    const isAlreadyParticipant = user && (transaction.buyer_id === user.id || transaction.seller_id === user.id);
     
-    if (isJoiningAsBuyer) {
-      // Fetch user's balance
+    if (isAlreadyParticipant) {
+      // User is already in this transaction, just navigate
+      toast({ title: "Thành công", description: "Đã vào phòng giao dịch" });
+      navigate(`/transaction/${transaction.id}`);
+      setLoading(false);
+      return;
+    }
+
+    // Check if room is full
+    if (transaction.buyer_id && transaction.seller_id) {
+      toast({ title: "Lỗi", description: "Phòng đã có đủ người giao dịch", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    // Determine role for the new participant
+    let roleToAssign: "buyer" | "seller" | null = null;
+    
+    if (transaction.seller_id && !transaction.buyer_id) {
+      // Seller exists, new person is buyer
+      roleToAssign = "buyer";
+    } else if (transaction.buyer_id && !transaction.seller_id) {
+      // Buyer exists, new person is seller
+      roleToAssign = "seller";
+    } else if (!transaction.seller_id && !transaction.buyer_id) {
+      // No one assigned yet - shouldn't happen normally, but default to seller
+      roleToAssign = "seller";
+    }
+
+    // If joining as buyer, check balance
+    if (roleToAssign === "buyer" && user) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("balance")
@@ -70,22 +99,34 @@ const JoinRoom = () => {
       }
     }
 
-    // If user is not buyer or seller, set them as buyer
-    if (user && transaction.buyer_id !== user.id && transaction.seller_id !== user.id) {
-      if (!transaction.buyer_id) {
-        await supabase
-          .from("transactions")
-          .update({ buyer_id: user.id })
-          .eq("id", transaction.id);
-      } else if (!transaction.seller_id) {
-        await supabase
-          .from("transactions")
-          .update({ seller_id: user.id })
-          .eq("id", transaction.id);
+    // Update the transaction with the new participant
+    if (roleToAssign && user) {
+      const updateData = roleToAssign === "buyer" 
+        ? { buyer_id: user.id } 
+        : { seller_id: user.id };
+      
+      const { error: updateError } = await supabase
+        .from("transactions")
+        .update(updateData)
+        .eq("id", transaction.id);
+
+      if (updateError) {
+        console.error("Update error:", updateError);
+        toast({ 
+          title: "Lỗi", 
+          description: "Không thể tham gia phòng. Vui lòng thử lại.", 
+          variant: "destructive" 
+        });
+        setLoading(false);
+        return;
       }
+
+      toast({ 
+        title: "Thành công", 
+        description: `Bạn đã vào phòng với vai trò ${roleToAssign === "buyer" ? "Người mua" : "Người bán"}` 
+      });
     }
 
-    toast({ title: "Thành công", description: "Đã vào phòng giao dịch" });
     navigate(`/transaction/${transaction.id}`);
     setLoading(false);
   };
