@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { Shield } from "lucide-react";
+import { Shield, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Header = () => {
   const { user } = useAuth();
@@ -15,6 +16,21 @@ const Header = () => {
         </Link>
 
         <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild variant="ghost" size="icon">
+                  <Link to="/search-room">
+                    <Search className="w-4 h-4" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Tìm phòng giao dịch</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           {user ? (
             <Button asChild size="sm">
               <Link to="/dashboard">Dashboard</Link>

@@ -1,11 +1,21 @@
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Shield, ArrowRight, LogIn, Search } from "lucide-react";
+import { Shield, ArrowRight, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleCreateRoom = () => {
+    if (user) {
+      navigate("/create-transaction");
+    } else {
+      navigate("/auth");
+    }
+  };
 
   return (
     <section className="py-16 px-4">
@@ -29,7 +39,10 @@ const HeroSection = () => {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"
         >
-          <Card className="border-primary/20 hover:border-primary/50 transition-colors cursor-pointer" onClick={() => navigate("/auth")}>
+          <Card 
+            className="border-primary/20 hover:border-primary/50 transition-colors cursor-pointer" 
+            onClick={handleCreateRoom}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Shield className="w-5 h-5 text-primary" />
@@ -60,24 +73,6 @@ const HeroSection = () => {
               </p>
               <Button variant="outline" className="w-full">
                 Nhập mã phòng
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border hover:border-primary/30 transition-colors cursor-pointer md:col-span-2" onClick={() => navigate("/search-room")}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Search className="w-5 h-5 text-muted-foreground" />
-                Tìm phòng giao dịch
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Tìm kiếm phòng giao dịch đang mở để mua sản phẩm bạn cần.
-              </p>
-              <Button variant="secondary" className="w-full">
-                Tìm phòng
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>
