@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Shield, Search } from "lucide-react";
+import { Shield, Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,6 +30,23 @@ const Header = () => {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          {user && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="ghost" size="icon">
+                    <Link to="/search-profile">
+                      <User className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Tìm người dùng</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
 
           {user ? (
             <Button asChild size="sm">

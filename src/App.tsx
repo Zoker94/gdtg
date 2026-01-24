@@ -13,6 +13,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import JoinRoom from "./pages/JoinRoom";
 import SearchRoom from "./pages/SearchRoom";
 import Deposit from "./pages/Deposit";
+import UserProfile from "./pages/UserProfile";
+import SearchProfile from "./pages/SearchProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +43,8 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/create-transaction" element={<ProtectedRoute><CreateTransaction /></ProtectedRoute>} />
             <Route path="/transaction/:id" element={<ProtectedRoute><TransactionDetail /></ProtectedRoute>} />
+            <Route path="/user/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+            <Route path="/search-profile" element={<ProtectedRoute><SearchProfile /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
