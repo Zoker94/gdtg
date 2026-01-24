@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 export type TransactionStatus = "pending" | "deposited" | "shipping" | "completed" | "disputed" | "cancelled" | "refunded";
 export type FeeBearer = "buyer" | "seller" | "split";
@@ -51,6 +52,42 @@ export interface CreateTransactionInput {
 
 export const useTransactions = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Realtime subscription for transactions
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`user-transactions-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "transactions",
+        },
+        (payload) => {
+          // Check if this transaction involves the current user
+          const newData = payload.new as Transaction;
+          const oldData = payload.old as Transaction;
+          
+          if (
+            newData?.buyer_id === user.id ||
+            newData?.seller_id === user.id ||
+            oldData?.buyer_id === user.id ||
+            oldData?.seller_id === user.id
+          ) {
+            queryClient.invalidateQueries({ queryKey: ["transactions", user.id] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
 
   return useQuery({
     queryKey: ["transactions", user?.id],
@@ -72,6 +109,46 @@ export const useTransactions = () => {
 
 export const useTransaction = (transactionId: string | undefined) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Realtime subscription for single transaction
+  useEffect(() => {
+    if (!transactionId || !user?.id) return;
+
+    const channel = supabase
+      .channel(`transaction-${transactionId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "transactions",
+          filter: `id=eq.${transactionId}`,
+        },
+        (payload) => {
+          queryClient.invalidateQueries({ queryKey: ["transaction", transactionId] });
+          
+          // Show toast for important updates
+          const newData = payload.new as Transaction;
+          if (payload.eventType === "UPDATE") {
+            if (newData.buyer_id && !payload.old?.buyer_id) {
+              toast({ title: "Người mua đã vào phòng!" });
+            } else if (newData.seller_id && !payload.old?.seller_id) {
+              toast({ title: "Người bán đã vào phòng!" });
+            } else if (newData.buyer_confirmed && !payload.old?.buyer_confirmed) {
+              toast({ title: "Người mua đã xác nhận!" });
+            } else if (newData.seller_confirmed && !payload.old?.seller_confirmed) {
+              toast({ title: "Người bán đã xác nhận!" });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [transactionId, user?.id, queryClient]);
 
   return useQuery({
     queryKey: ["transaction", transactionId],
@@ -180,7 +257,6 @@ export const useUpdateTransactionStatus = () => {
       queryClient.invalidateQueries({ queryKey: ["transaction", data.id] });
       toast({
         title: "Cập nhật thành công",
-        description: "Trạng thái giao dịch đã được cập nhật",
       });
     },
     onError: (error) => {
