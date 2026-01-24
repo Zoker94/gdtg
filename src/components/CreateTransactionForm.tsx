@@ -41,12 +41,21 @@ const CATEGORIES = [
 ];
 
 const formSchema = z.object({
-  product_name: z.string().min(1, "Vui lòng nhập tên sản phẩm").max(200),
+  product_name: z.string().max(200).optional(),
   product_description: z.string().max(1000).optional(),
-  category: z.string().min(1, "Vui lòng chọn danh mục"),
+  category: z.string().optional(),
   amount: z.number().min(10000, "Số tiền tối thiểu là 10,000 VNĐ").optional(),
   fee_bearer: z.enum(["buyer", "seller", "split"]),
   role: z.enum(["buyer", "seller", "moderator"]),
+}).refine((data) => {
+  // If not moderator, require product_name, category, and amount
+  if (data.role !== "moderator") {
+    return data.product_name && data.product_name.length >= 1 && data.category && data.category.length >= 1 && data.amount && data.amount >= 10000;
+  }
+  return true;
+}, {
+  message: "Vui lòng điền đầy đủ thông tin sản phẩm",
+  path: ["product_name"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
