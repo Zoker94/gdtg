@@ -21,6 +21,7 @@ import { RoomInfo } from "@/components/RoomInfo";
 import { useTransaction, useUpdateTransactionStatus, useConfirmTransaction, TransactionStatus } from "@/hooks/useTransactions";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useProfileRealtime } from "@/hooks/useProfileRealtime";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -39,7 +40,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const CATEGORY_LABELS: Record<string, string> = {
   game_account: "Tài khoản game",
@@ -61,9 +62,60 @@ const TransactionDetail = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDepositing, setIsDepositing] = useState(false);
+  const previousStatusRef = useRef<string | null>(null);
+
+  // Enable realtime for profile balance
+  useProfileRealtime();
 
   const isBuyer = user?.id === transaction?.buyer_id;
   const isSeller = user?.id === transaction?.seller_id;
+
+  // Redirect to dashboard when transaction is completed, cancelled, or refunded
+  useEffect(() => {
+    if (!transaction) return;
+    
+    const finalStatuses = ["completed", "cancelled", "refunded"];
+    const previousStatus = previousStatusRef.current;
+    
+    // Only redirect if status just changed to a final status
+    if (
+      finalStatuses.includes(transaction.status) && 
+      previousStatus && 
+      !finalStatuses.includes(previousStatus)
+    ) {
+      const statusMessages: Record<string, { title: string; description: string }> = {
+        completed: {
+          title: "🎊 Giao dịch hoàn tất!",
+          description: "Phòng giao dịch đã đóng. Chuyển về Dashboard...",
+        },
+        cancelled: {
+          title: "❌ Giao dịch đã hủy",
+          description: "Phòng giao dịch đã đóng. Chuyển về Dashboard...",
+        },
+        refunded: {
+          title: "💸 Đã hoàn tiền",
+          description: "Phòng giao dịch đã đóng. Chuyển về Dashboard...",
+        },
+      };
+
+      const message = statusMessages[transaction.status];
+      if (message) {
+        toast({
+          title: message.title,
+          description: message.description,
+        });
+      }
+
+      // Redirect after a short delay for user to see the notification
+      const timer = setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+
+    previousStatusRef.current = transaction.status;
+  }, [transaction?.status, navigate]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
