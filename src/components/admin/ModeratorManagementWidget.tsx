@@ -13,6 +13,143 @@ import { useAllUsers } from "@/hooks/useAdminActions";
 import { Users, Plus, Edit, Trash2, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
+interface FormData {
+  user_id: string;
+  display_name: string;
+  facebook_url: string;
+  zalo_contact: string;
+  phone: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_name: string;
+  specialization: string;
+  bio: string;
+  avatar_url: string;
+  is_active: boolean;
+}
+
+interface ModeratorFormFieldsProps {
+  form: FormData;
+  setForm: React.Dispatch<React.SetStateAction<FormData>>;
+  allUsers?: Array<{ user_id: string; full_name: string | null }>;
+  moderatorUsers?: Array<{ user_id: string; full_name: string | null }>;
+  isEditMode: boolean;
+}
+
+const ModeratorFormFields = ({ form, setForm, allUsers, moderatorUsers, isEditMode }: ModeratorFormFieldsProps) => (
+  <div className="space-y-4">
+    {!isEditMode && (
+      <div className="space-y-2">
+        <Label>Chọn người dùng (Moderator)</Label>
+        <select
+          className="w-full p-2 border rounded-md bg-background"
+          value={form.user_id}
+          onChange={(e) => {
+            const selectedUser = allUsers?.find(u => u.user_id === e.target.value);
+            setForm(prev => ({ 
+              ...prev, 
+              user_id: e.target.value,
+              display_name: selectedUser?.full_name || prev.display_name
+            }));
+          }}
+        >
+          <option value="">-- Chọn người dùng --</option>
+          {moderatorUsers?.map((u) => (
+            <option key={u.user_id} value={u.user_id}>
+              {u.full_name || u.user_id.slice(0, 8)}
+            </option>
+          ))}
+        </select>
+      </div>
+    )}
+
+    <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <Label>Tên hiển thị *</Label>
+        <Input
+          value={form.display_name}
+          onChange={(e) => setForm(prev => ({ ...prev, display_name: e.target.value }))}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Chuyên môn</Label>
+        <Input
+          value={form.specialization}
+          onChange={(e) => setForm(prev => ({ ...prev, specialization: e.target.value }))}
+          placeholder="VD: Game, Điện tử..."
+        />
+      </div>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <Label>Số điện thoại</Label>
+        <Input
+          value={form.phone}
+          onChange={(e) => setForm(prev => ({ ...prev, phone: e.target.value }))}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Zalo</Label>
+        <Input
+          value={form.zalo_contact}
+          onChange={(e) => setForm(prev => ({ ...prev, zalo_contact: e.target.value }))}
+        />
+      </div>
+    </div>
+
+    <div className="space-y-2">
+      <Label>Facebook URL</Label>
+      <Input
+        value={form.facebook_url}
+        onChange={(e) => setForm(prev => ({ ...prev, facebook_url: e.target.value }))}
+        placeholder="https://facebook.com/..."
+      />
+    </div>
+
+    <div className="grid grid-cols-3 gap-2">
+      <div className="space-y-2">
+        <Label>Ngân hàng</Label>
+        <Input
+          value={form.bank_name}
+          onChange={(e) => setForm(prev => ({ ...prev, bank_name: e.target.value }))}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Số TK</Label>
+        <Input
+          value={form.bank_account_number}
+          onChange={(e) => setForm(prev => ({ ...prev, bank_account_number: e.target.value }))}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Chủ TK</Label>
+        <Input
+          value={form.bank_account_name}
+          onChange={(e) => setForm(prev => ({ ...prev, bank_account_name: e.target.value }))}
+        />
+      </div>
+    </div>
+
+    <div className="space-y-2">
+      <Label>Giới thiệu</Label>
+      <Textarea
+        value={form.bio}
+        onChange={(e) => setForm(prev => ({ ...prev, bio: e.target.value }))}
+        rows={2}
+      />
+    </div>
+
+    <div className="space-y-2">
+      <Label>Avatar URL</Label>
+      <Input
+        value={form.avatar_url}
+        onChange={(e) => setForm(prev => ({ ...prev, avatar_url: e.target.value }))}
+      />
+    </div>
+  </div>
+);
+
 const ModeratorManagementWidget = () => {
   const { data: moderators, isLoading } = useAllModerators();
   const { data: allUsers } = useAllUsers();
@@ -22,7 +159,7 @@ const ModeratorManagementWidget = () => {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingMod, setEditingMod] = useState<ModeratorProfile | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormData>({
     user_id: "",
     display_name: "",
     facebook_url: "",
@@ -127,120 +264,6 @@ const ModeratorManagementWidget = () => {
     return !moderators?.some(m => m.user_id === u.user_id);
   });
 
-  const FormFields = () => (
-    <div className="space-y-4">
-      {!editingMod && (
-        <div className="space-y-2">
-          <Label>Chọn người dùng (Moderator)</Label>
-          <select
-            className="w-full p-2 border rounded-md bg-background"
-            value={form.user_id}
-            onChange={(e) => {
-              const selectedUser = allUsers?.find(u => u.user_id === e.target.value);
-              setForm(prev => ({ 
-                ...prev, 
-                user_id: e.target.value,
-                display_name: selectedUser?.full_name || prev.display_name
-              }));
-            }}
-          >
-            <option value="">-- Chọn người dùng --</option>
-            {moderatorUsers?.map((u) => (
-              <option key={u.user_id} value={u.user_id}>
-                {u.full_name || u.user_id.slice(0, 8)}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Tên hiển thị *</Label>
-          <Input
-            value={form.display_name}
-            onChange={(e) => setForm(prev => ({ ...prev, display_name: e.target.value }))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Chuyên môn</Label>
-          <Input
-            value={form.specialization}
-            onChange={(e) => setForm(prev => ({ ...prev, specialization: e.target.value }))}
-            placeholder="VD: Game, Điện tử..."
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Số điện thoại</Label>
-          <Input
-            value={form.phone}
-            onChange={(e) => setForm(prev => ({ ...prev, phone: e.target.value }))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Zalo</Label>
-          <Input
-            value={form.zalo_contact}
-            onChange={(e) => setForm(prev => ({ ...prev, zalo_contact: e.target.value }))}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Facebook URL</Label>
-        <Input
-          value={form.facebook_url}
-          onChange={(e) => setForm(prev => ({ ...prev, facebook_url: e.target.value }))}
-          placeholder="https://facebook.com/..."
-        />
-      </div>
-
-      <div className="grid grid-cols-3 gap-2">
-        <div className="space-y-2">
-          <Label>Ngân hàng</Label>
-          <Input
-            value={form.bank_name}
-            onChange={(e) => setForm(prev => ({ ...prev, bank_name: e.target.value }))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Số TK</Label>
-          <Input
-            value={form.bank_account_number}
-            onChange={(e) => setForm(prev => ({ ...prev, bank_account_number: e.target.value }))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Chủ TK</Label>
-          <Input
-            value={form.bank_account_name}
-            onChange={(e) => setForm(prev => ({ ...prev, bank_account_name: e.target.value }))}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Giới thiệu</Label>
-        <Textarea
-          value={form.bio}
-          onChange={(e) => setForm(prev => ({ ...prev, bio: e.target.value }))}
-          rows={2}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Avatar URL</Label>
-        <Input
-          value={form.avatar_url}
-          onChange={(e) => setForm(prev => ({ ...prev, avatar_url: e.target.value }))}
-        />
-      </div>
-    </div>
-  );
-
   return (
     <Card>
       <CardHeader className="py-3">
@@ -251,7 +274,10 @@ const ModeratorManagementWidget = () => {
             {moderators?.length || 0}
           </Badge>
 
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <Dialog open={isCreateOpen} onOpenChange={(open) => {
+            setIsCreateOpen(open);
+            if (!open) resetForm();
+          }}>
             <DialogTrigger asChild>
               <Button size="sm" className="ml-2">
                 <Plus className="w-3 h-3 mr-1" />
@@ -262,7 +288,13 @@ const ModeratorManagementWidget = () => {
               <DialogHeader>
                 <DialogTitle>Thêm Giao Dịch Viên</DialogTitle>
               </DialogHeader>
-              <FormFields />
+              <ModeratorFormFields 
+                form={form} 
+                setForm={setForm} 
+                allUsers={allUsers} 
+                moderatorUsers={moderatorUsers}
+                isEditMode={false}
+              />
               <Button onClick={handleCreate} disabled={createProfile.isPending} className="w-full">
                 <Save className="w-4 h-4 mr-2" />
                 {createProfile.isPending ? "Đang tạo..." : "Tạo hồ sơ"}
@@ -304,7 +336,12 @@ const ModeratorManagementWidget = () => {
                     )}
                   </div>
                   <div className="flex gap-1">
-                    <Dialog open={editingMod?.id === mod.id} onOpenChange={(open) => !open && setEditingMod(null)}>
+                    <Dialog open={editingMod?.id === mod.id} onOpenChange={(open) => {
+                      if (!open) {
+                        setEditingMod(null);
+                        resetForm();
+                      }
+                    }}>
                       <DialogTrigger asChild>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(mod)}>
                           <Edit className="w-3.5 h-3.5" />
@@ -314,7 +351,13 @@ const ModeratorManagementWidget = () => {
                         <DialogHeader>
                           <DialogTitle>Sửa thông tin GDV</DialogTitle>
                         </DialogHeader>
-                        <FormFields />
+                        <ModeratorFormFields 
+                          form={form} 
+                          setForm={setForm} 
+                          allUsers={allUsers} 
+                          moderatorUsers={moderatorUsers}
+                          isEditMode={true}
+                        />
                         <Button onClick={handleUpdate} disabled={updateProfile.isPending} className="w-full">
                           <Save className="w-4 h-4 mr-2" />
                           {updateProfile.isPending ? "Đang lưu..." : "Lưu thay đổi"}
