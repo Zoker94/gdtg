@@ -45,6 +45,7 @@ import {
   AlertCircle,
   ArrowDownToLine,
   ArrowLeft,
+  Settings,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -73,6 +74,7 @@ import AdminStatsGrid from "@/components/admin/AdminStatsGrid";
 import PendingWithdrawalsWidget from "@/components/admin/PendingWithdrawalsWidget";
 import PendingDepositsWidget from "@/components/admin/PendingDepositsWidget";
 import DisputesWidget from "@/components/admin/DisputesWidget";
+import PlatformSettingsWidget from "@/components/admin/PlatformSettingsWidget";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -320,7 +322,7 @@ const AdminDashboard = () => {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="w-full max-w-md grid grid-cols-4">
+            <TabsList className="w-full max-w-lg grid grid-cols-5">
               <TabsTrigger value="overview" className="text-xs">
                 <Package className="w-3.5 h-3.5 mr-1" /> Tổng quan
               </TabsTrigger>
@@ -332,6 +334,9 @@ const AdminDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="announcements" className="text-xs">
                 <Megaphone className="w-3.5 h-3.5 mr-1" /> TB
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="text-xs">
+                <Settings className="w-3.5 h-3.5 mr-1" /> Cài đặt
               </TabsTrigger>
             </TabsList>
 
@@ -642,6 +647,13 @@ const AdminDashboard = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Settings Tab */}
+            <TabsContent value="settings" className="space-y-4">
+              <div className="max-w-md">
+                <PlatformSettingsWidget />
+              </div>
             </TabsContent>
           </Tabs>
         </motion.div>
