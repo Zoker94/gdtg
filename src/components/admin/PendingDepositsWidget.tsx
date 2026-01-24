@@ -12,6 +12,7 @@ interface Deposit {
   amount: number;
   payment_method: string;
   status: string;
+  is_submitted: boolean;
   created_at: string;
 }
 
@@ -26,7 +27,8 @@ const PendingDepositsWidget = ({
   onConfirm,
   formatCurrency,
 }: PendingDepositsWidgetProps) => {
-  const pendingDeposits = deposits.filter((d) => d.status === "pending");
+  // Only show deposits that are pending AND user has confirmed they paid
+  const pendingDeposits = deposits.filter((d) => d.status === "pending" && d.is_submitted === true);
 
   if (pendingDeposits.length === 0) return null;
 

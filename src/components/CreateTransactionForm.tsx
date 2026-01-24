@@ -24,6 +24,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCreateTransaction, FeeBearer } from "@/hooks/useTransactions";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { useUserRole } from "@/hooks/useProfile";
 import { Calculator, ImageIcon, X, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -55,6 +56,7 @@ export const CreateTransactionForm = () => {
   const createTransaction = useCreateTransaction();
   const { user } = useAuth();
   const { data: platformSettings, isLoading: settingsLoading } = usePlatformSettings();
+  const { data: roles } = useUserRole();
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -158,6 +160,10 @@ export const CreateTransactionForm = () => {
     if (!pendingSubmit) return;
     
     const values = pendingSubmit;
+    
+    // Check if user is admin/moderator - they become the room arbitrator
+    const isStaff = roles?.isAdmin || roles?.isModerator;
+    
     const transactionData: {
       product_name: string;
       product_description?: string;
@@ -169,6 +175,7 @@ export const CreateTransactionForm = () => {
       seller_id?: string;
       category?: string;
       images?: string[];
+      moderator_id?: string;
     } = {
       product_name: values.product_name,
       product_description: values.product_description,
@@ -180,7 +187,11 @@ export const CreateTransactionForm = () => {
       images: images,
     };
 
-    if (values.role === "seller") {
+    // If staff creates room, they are the moderator (arbitrator) - not buyer/seller
+    if (isStaff) {
+      transactionData.moderator_id = user?.id;
+      // Don't assign them as buyer or seller
+    } else if (values.role === "seller") {
       transactionData.seller_id = user?.id;
     } else {
       transactionData.buyer_id = user?.id;
