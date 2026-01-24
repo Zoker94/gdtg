@@ -11,6 +11,7 @@ import CreateTransaction from "./pages/CreateTransaction";
 import TransactionDetail from "./pages/TransactionDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import JoinRoom from "./pages/JoinRoom";
+import SearchRoom from "./pages/SearchRoom";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/join" element={<ProtectedRoute><JoinRoom /></ProtectedRoute>} />
             <Route path="/join/:roomId" element={<ProtectedRoute><JoinRoom /></ProtectedRoute>} />
+            <Route path="/search-room" element={<SearchRoom />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/create-transaction" element={<ProtectedRoute><CreateTransaction /></ProtectedRoute>} />
             <Route path="/transaction/:id" element={<ProtectedRoute><TransactionDetail /></ProtectedRoute>} />
