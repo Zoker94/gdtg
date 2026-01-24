@@ -1,6 +1,7 @@
-import { motion } from "framer-motion";
+import { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ interface TableData {
 const DashboardRoomMap = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Fetch active transactions to map to tables
   const { data: transactions = [] } = useQuery({
@@ -36,8 +38,43 @@ const DashboardRoomMap = () => {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 5000, // Auto refresh every 5 seconds
   });
+
+  // Realtime subscription for transactions
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-room-map")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "transactions",
+        },
+        (payload) => {
+          // Invalidate query to refresh data
+          queryClient.invalidateQueries({ queryKey: ["public-transactions-dashboard"] });
+          
+          // Show toast notification for relevant events
+          if (payload.eventType === "INSERT") {
+            toast.info("Có phòng giao dịch mới được tạo!");
+          } else if (payload.eventType === "UPDATE") {
+            const newData = payload.new as { buyer_id?: string; seller_id?: string };
+            const oldData = payload.old as { buyer_id?: string; seller_id?: string };
+            
+            // Check if someone joined (buyer or seller changed from null to having value)
+            if ((!oldData.buyer_id && newData.buyer_id) || (!oldData.seller_id && newData.seller_id)) {
+              toast.info("Có người vừa tham gia phòng giao dịch!");
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Generate 4 tables, mapping real transactions to them
   const tables: TableData[] = Array.from({ length: 4 }, (_, i) => {
@@ -139,89 +176,122 @@ const DashboardRoomMap = () => {
 
         {/* 2x2 Grid of tables */}
         <div className="grid grid-cols-2 gap-3">
-          {tables.map((table, index) => (
-            <motion.div
-              key={table.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05 }}
-              className={`
-                relative p-3 rounded-lg border-2 transition-all duration-200
-                ${getStatusBgClass(table.status)}
-                ${table.status !== "occupied" ? "cursor-pointer hover:scale-[1.02]" : ""}
-              `}
-              onClick={() => handleTableClick(table)}
-            >
-              {/* Table visualization */}
-              <div className="flex flex-col items-center">
-                {/* Top chairs */}
-                <div className="flex gap-1 mb-1">
-                  <Chair 
-                    filled={table.status === "occupied" || table.status === "pending"} 
-                    color={getStatusColor(table.status)} 
-                    size="sm"
+          <AnimatePresence mode="popLayout">
+            {tables.map((table, index) => (
+              <motion.div
+                key={table.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 25,
+                  delay: index * 0.05 
+                }}
+                className={`
+                  relative p-3 rounded-lg border-2 transition-colors duration-300
+                  ${getStatusBgClass(table.status)}
+                  ${table.status !== "occupied" ? "cursor-pointer hover:scale-[1.02]" : ""}
+                `}
+                onClick={() => handleTableClick(table)}
+                whileHover={table.status !== "occupied" ? { scale: 1.02 } : {}}
+                whileTap={table.status !== "occupied" ? { scale: 0.98 } : {}}
+              >
+                {/* Status indicator pulse */}
+                {table.status === "pending" && (
+                  <motion.div
+                    className="absolute top-2 right-2 w-2 h-2 rounded-full bg-chart-4"
+                    animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
                   />
-                  <Chair 
-                    filled={table.status === "occupied"} 
-                    color={getStatusColor(table.status)} 
-                    size="sm"
-                  />
-                </div>
-                
-                {/* Table */}
-                <div 
-                  className="w-full h-8 rounded flex items-center justify-center text-xs font-medium"
-                  style={{ 
-                    backgroundColor: `color-mix(in srgb, ${getStatusColor(table.status)} 20%, transparent)`,
-                    border: `1.5px solid ${getStatusColor(table.status)}`
-                  }}
-                >
-                  <span className="text-foreground">Bàn {table.tableNumber}</span>
+                )}
+
+                {/* Table visualization */}
+                <div className="flex flex-col items-center">
+                  {/* Top chairs */}
+                  <div className="flex gap-1 mb-1">
+                    <Chair 
+                      filled={table.status === "occupied" || table.status === "pending"} 
+                      color={getStatusColor(table.status)} 
+                      size="sm"
+                    />
+                    <Chair 
+                      filled={table.status === "occupied"} 
+                      color={getStatusColor(table.status)} 
+                      size="sm"
+                    />
+                  </div>
+                  
+                  {/* Table */}
+                  <motion.div 
+                    className="w-full h-8 rounded flex items-center justify-center text-xs font-medium"
+                    style={{ 
+                      backgroundColor: `color-mix(in srgb, ${getStatusColor(table.status)} 20%, transparent)`,
+                      border: `1.5px solid ${getStatusColor(table.status)}`
+                    }}
+                    animate={table.status === "pending" ? { 
+                      borderColor: [getStatusColor(table.status), "hsl(var(--primary))", getStatusColor(table.status)]
+                    } : {}}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <span className="text-foreground">Bàn {table.tableNumber}</span>
+                  </motion.div>
+
+                  {/* Bottom chairs */}
+                  <div className="flex gap-1 mt-1">
+                    <Chair 
+                      filled={table.status === "occupied"} 
+                      color={getStatusColor(table.status)} 
+                      rotate 
+                      size="sm"
+                    />
+                    <Chair 
+                      filled={table.status === "occupied" || table.status === "pending"} 
+                      color={getStatusColor(table.status)} 
+                      rotate 
+                      size="sm"
+                    />
+                  </div>
                 </div>
 
-                {/* Bottom chairs */}
-                <div className="flex gap-1 mt-1">
-                  <Chair 
-                    filled={table.status === "occupied"} 
-                    color={getStatusColor(table.status)} 
-                    rotate 
-                    size="sm"
-                  />
-                  <Chair 
-                    filled={table.status === "occupied" || table.status === "pending"} 
-                    color={getStatusColor(table.status)} 
-                    rotate 
-                    size="sm"
-                  />
-                </div>
-              </div>
-
-              {/* Room info */}
-              {table.productName && (
-                <div className="mt-2 text-center">
-                  <p className="text-[10px] text-foreground font-medium truncate">
-                    {table.productName}
-                  </p>
-                  {table.amount && (
-                    <p className="text-[10px] text-primary font-semibold">
-                      {formatCurrency(table.amount)}
+                {/* Room info */}
+                {table.productName && (
+                  <motion.div 
+                    className="mt-2 text-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <p className="text-[10px] text-foreground font-medium truncate">
+                      {table.productName}
                     </p>
-                  )}
-                </div>
-              )}
+                    {table.amount && (
+                      <p className="text-[10px] text-primary font-semibold">
+                        {formatCurrency(table.amount)}
+                      </p>
+                    )}
+                  </motion.div>
+                )}
 
-              {table.status === "available" && (
-                <p className="text-[10px] text-center mt-1 text-muted-foreground">
-                  Nhấn để tạo
-                </p>
-              )}
-              {table.status === "pending" && (
-                <p className="text-[10px] text-center mt-1 text-chart-4">
-                  Nhấn để tham gia
-                </p>
-              )}
-            </motion.div>
-          ))}
+                {table.status === "available" && (
+                  <p className="text-[10px] text-center mt-1 text-muted-foreground">
+                    Nhấn để tạo
+                  </p>
+                )}
+                {table.status === "pending" && (
+                  <motion.p 
+                    className="text-[10px] text-center mt-1 text-chart-4"
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    Nhấn để tham gia
+                  </motion.p>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </CardContent>
     </Card>
