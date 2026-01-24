@@ -1,38 +1,24 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { TransactionCard } from "@/components/TransactionCard";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Plus,
-  Wallet,
-  TrendingUp,
-  Package,
-  LogOut,
-  Shield,
-  Settings,
-  Clock,
-  CreditCard,
-} from "lucide-react";
-import { useUserRole } from "@/hooks/useProfile";
+import { Plus, Wallet, Package, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import DashboardHeader from "@/components/DashboardHeader";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { user } = useAuth();
   const { data: transactions, isLoading: transactionsLoading } = useTransactions();
-  const { data: roles } = useUserRole();
-
-  const isAdmin = roles?.includes("admin");
 
   // Fetch user's deposits
   const { data: deposits, isLoading: depositsLoading } = useQuery({
@@ -49,11 +35,6 @@ const Dashboard = () => {
     enabled: !!user,
   });
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN").format(amount) + "đ";
   };
@@ -67,48 +48,8 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <Shield className="w-6 h-6 text-primary" />
-            <span className="font-display font-bold text-lg">EscrowVN</span>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            {/* Compact Stats in Header */}
-            {profileLoading ? (
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-8 w-20 rounded-full" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 text-xs">
-                <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full">
-                  <Wallet className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-medium">{formatCurrency(profile?.balance || 0)}</span>
-                </div>
-                <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full">
-                  <Package className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-medium">{profile?.total_transactions || 0}</span>
-                </div>
-                <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full">
-                  <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-medium">{profile?.reputation_score || 100}</span>
-                </div>
-              </div>
-            )}
-
-            {isAdmin && (
-              <Button variant="outline" size="icon" onClick={() => navigate("/admin")}>
-                <Settings className="w-4 h-4" />
-              </Button>
-            )}
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader />
+      <AnnouncementBanner />
 
       <main className="container mx-auto px-4 py-6">
         {/* Actions */}

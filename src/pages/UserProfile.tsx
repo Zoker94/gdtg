@@ -120,6 +120,28 @@ const UserProfile = () => {
             Quay lại
           </Button>
 
+          {/* Warning Banner from Admin */}
+          {profile.warning_message && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4">
+              <div className="flex items-center gap-2 text-amber-600 mb-1">
+                <AlertTriangle className="w-5 h-5" />
+                <span className="font-semibold">Cảnh báo từ hệ thống</span>
+              </div>
+              <p className="text-sm">{profile.warning_message}</p>
+            </div>
+          )}
+
+          {/* Banned Banner */}
+          {profile.is_banned && (
+            <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg mb-4">
+              <div className="flex items-center gap-2 text-destructive mb-1">
+                <AlertTriangle className="w-5 h-5" />
+                <span className="font-semibold">Tài khoản đã bị khoá</span>
+              </div>
+              <p className="text-sm">{profile.ban_reason || "Tài khoản này đã bị ban bởi quản trị viên."}</p>
+            </div>
+          )}
+
           {/* Profile Card */}
           <Card className="border-border mb-4">
             <CardHeader className="pb-4">
@@ -135,6 +157,12 @@ const UserProfile = () => {
                     {profile.full_name || "Người dùng"}
                     {isOwnProfile && (
                       <Badge variant="outline" className="text-xs">Bạn</Badge>
+                    )}
+                    {profile.is_banned && (
+                      <Badge variant="destructive" className="text-xs">Bị ban</Badge>
+                    )}
+                    {profile.warning_message && !profile.is_banned && (
+                      <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">Cảnh báo</Badge>
                     )}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
