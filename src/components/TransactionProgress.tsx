@@ -10,7 +10,6 @@ interface TransactionProgressProps {
 const steps = [
   { status: "pending", label: "Chờ thanh toán", icon: Clock },
   { status: "deposited", label: "Đã đặt cọc", icon: DollarSign },
-  { status: "shipping", label: "Đang giao hàng", icon: Truck },
   { status: "completed", label: "Hoàn tất", icon: Check },
 ];
 
