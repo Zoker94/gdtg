@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,6 +34,7 @@ import {
   Copy,
   ImageIcon,
   UserCheck,
+  XCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -362,6 +364,17 @@ const TransactionDetail = () => {
                     )}
 
                     {/* Seller actions */}
+                    {isSeller && transaction.status === "pending" && (
+                      <Button
+                        onClick={() => handleStatusUpdate("cancelled")}
+                        variant="destructive"
+                        className="w-full"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Hủy giao dịch
+                      </Button>
+                    )}
+
                     {isSeller && transaction.status === "deposited" && (
                       <Button
                         onClick={() => handleStatusUpdate("shipping")}
@@ -399,6 +412,64 @@ const TransactionDetail = () => {
                   inviteLink={transaction.invite_link}
                 />
               )}
+
+              {/* Participants */}
+              <Card className="border-border">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Người tham gia</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Seller */}
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarFallback className="bg-secondary text-secondary-foreground">
+                        S
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Người bán</p>
+                      {transaction.seller_id ? (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-muted-foreground"
+                          onClick={() => navigate(`/user/${transaction.seller_id}`)}
+                        >
+                          Xem hồ sơ →
+                        </Button>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Chưa có</p>
+                      )}
+                    </div>
+                    {isSeller && <Badge variant="outline" className="text-xs">Bạn</Badge>}
+                  </div>
+
+                  {/* Buyer */}
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        B
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Người mua</p>
+                      {transaction.buyer_id ? (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-muted-foreground"
+                          onClick={() => navigate(`/user/${transaction.buyer_id}`)}
+                        >
+                          Xem hồ sơ →
+                        </Button>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Chưa có</p>
+                      )}
+                    </div>
+                    {isBuyer && <Badge variant="outline" className="text-xs">Bạn</Badge>}
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Waiting for other party */}
               {((isSeller && !transaction.buyer_id) || (isBuyer && !transaction.seller_id)) && (
