@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import DashboardHeader from "@/components/DashboardHeader";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import DashboardRoomMap from "@/components/DashboardRoomMap";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -67,6 +68,15 @@ const Dashboard = () => {
             Rút tiền
           </Button>
         </div>
+
+        {/* Room Map */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <DashboardRoomMap />
+        </motion.section>
 
         {/* Active Transactions */}
         <motion.section

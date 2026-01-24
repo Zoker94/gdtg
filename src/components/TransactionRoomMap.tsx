@@ -64,11 +64,11 @@ const TransactionRoomMap = () => {
   const getStatusColor = (status: RoomStatus) => {
     switch (status) {
       case "available":
-        return "hsl(var(--chart-2))"; // Green
+        return "hsl(var(--muted-foreground))"; // White/neutral
       case "occupied":
         return "hsl(var(--destructive))"; // Red
       case "pending":
-        return "hsl(var(--chart-4))"; // Yellow/Orange
+        return "hsl(var(--chart-4))"; // Yellow
       default:
         return "hsl(var(--muted))";
     }
@@ -77,7 +77,7 @@ const TransactionRoomMap = () => {
   const getStatusBgClass = (status: RoomStatus) => {
     switch (status) {
       case "available":
-        return "bg-chart-2/20 hover:bg-chart-2/30 border-chart-2/50";
+        return "bg-background hover:bg-muted/50 border-border";
       case "occupied":
         return "bg-destructive/20 border-destructive/50 cursor-not-allowed";
       case "pending":
@@ -134,7 +134,7 @@ const TransactionRoomMap = () => {
         {/* Legend */}
         <div className="flex justify-center gap-6 mb-8">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-chart-2/60 border border-chart-2"></div>
+            <div className="w-4 h-4 rounded bg-background border border-border"></div>
             <span className="text-sm text-muted-foreground">Trống</span>
           </div>
           <div className="flex items-center gap-2">
