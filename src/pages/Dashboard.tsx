@@ -90,10 +90,14 @@ const Dashboard = () => {
 
       <main className="container mx-auto px-4 py-6">
         {/* Actions */}
-        <div className="mb-6">
+        <div className="flex gap-3 mb-6">
           <Button onClick={() => navigate("/create-transaction")} className="glow-primary">
             <Plus className="w-4 h-4 mr-2" />
             Tạo giao dịch mới
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/deposit")}>
+            <Wallet className="w-4 h-4 mr-2" />
+            Nạp tiền
           </Button>
         </div>
 
