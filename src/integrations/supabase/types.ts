@@ -115,7 +115,9 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          buyer_confirmed: boolean | null
           buyer_id: string | null
+          category: string | null
           completed_at: string | null
           created_at: string
           deposited_at: string | null
@@ -124,10 +126,15 @@ export type Database = {
           dispute_time_hours: number
           fee_bearer: Database["public"]["Enums"]["fee_bearer"]
           id: string
+          images: string[] | null
+          invite_link: string | null
           platform_fee_amount: number
           platform_fee_percent: number
           product_description: string | null
           product_name: string
+          room_id: string | null
+          room_password: string | null
+          seller_confirmed: boolean | null
           seller_id: string | null
           seller_receives: number
           shipped_at: string | null
@@ -137,7 +144,9 @@ export type Database = {
         }
         Insert: {
           amount: number
+          buyer_confirmed?: boolean | null
           buyer_id?: string | null
+          category?: string | null
           completed_at?: string | null
           created_at?: string
           deposited_at?: string | null
@@ -146,10 +155,15 @@ export type Database = {
           dispute_time_hours?: number
           fee_bearer?: Database["public"]["Enums"]["fee_bearer"]
           id?: string
+          images?: string[] | null
+          invite_link?: string | null
           platform_fee_amount?: number
           platform_fee_percent?: number
           product_description?: string | null
           product_name: string
+          room_id?: string | null
+          room_password?: string | null
+          seller_confirmed?: boolean | null
           seller_id?: string | null
           seller_receives?: number
           shipped_at?: string | null
@@ -159,7 +173,9 @@ export type Database = {
         }
         Update: {
           amount?: number
+          buyer_confirmed?: boolean | null
           buyer_id?: string | null
+          category?: string | null
           completed_at?: string | null
           created_at?: string
           deposited_at?: string | null
@@ -168,10 +184,15 @@ export type Database = {
           dispute_time_hours?: number
           fee_bearer?: Database["public"]["Enums"]["fee_bearer"]
           id?: string
+          images?: string[] | null
+          invite_link?: string | null
           platform_fee_amount?: number
           platform_fee_percent?: number
           product_description?: string | null
           product_name?: string
+          room_id?: string | null
+          room_password?: string | null
+          seller_confirmed?: boolean | null
           seller_id?: string | null
           seller_receives?: number
           shipped_at?: string | null
