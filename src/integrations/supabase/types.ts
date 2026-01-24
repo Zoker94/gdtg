@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
       deposits: {
         Row: {
           admin_note: string | null
@@ -113,38 +140,50 @@ export type Database = {
         Row: {
           avatar_url: string | null
           balance: number
+          ban_reason: string | null
+          banned_at: string | null
           created_at: string
           full_name: string | null
           id: string
+          is_banned: boolean
           phone: string | null
           reputation_score: number
           total_transactions: number
           updated_at: string
           user_id: string
+          warning_message: string | null
         }
         Insert: {
           avatar_url?: string | null
           balance?: number
+          ban_reason?: string | null
+          banned_at?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          is_banned?: boolean
           phone?: string | null
           reputation_score?: number
           total_transactions?: number
           updated_at?: string
           user_id: string
+          warning_message?: string | null
         }
         Update: {
           avatar_url?: string | null
           balance?: number
+          ban_reason?: string | null
+          banned_at?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          is_banned?: boolean
           phone?: string | null
           reputation_score?: number
           total_transactions?: number
           updated_at?: string
           user_id?: string
+          warning_message?: string | null
         }
         Relationships: []
       }
