@@ -14,16 +14,218 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean
+          sender_id: string
+          transaction_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_id: string
+          transaction_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          sender_id?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          balance: number
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          reputation_score: number
+          total_transactions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          balance?: number
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          reputation_score?: number
+          total_transactions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          balance?: number
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          reputation_score?: number
+          total_transactions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          buyer_id: string | null
+          completed_at: string | null
+          created_at: string
+          deposited_at: string | null
+          dispute_at: string | null
+          dispute_reason: string | null
+          dispute_time_hours: number
+          fee_bearer: Database["public"]["Enums"]["fee_bearer"]
+          id: string
+          platform_fee_amount: number
+          platform_fee_percent: number
+          product_description: string | null
+          product_name: string
+          seller_id: string | null
+          seller_receives: number
+          shipped_at: string | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          transaction_code: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          buyer_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deposited_at?: string | null
+          dispute_at?: string | null
+          dispute_reason?: string | null
+          dispute_time_hours?: number
+          fee_bearer?: Database["public"]["Enums"]["fee_bearer"]
+          id?: string
+          platform_fee_amount?: number
+          platform_fee_percent?: number
+          product_description?: string | null
+          product_name: string
+          seller_id?: string | null
+          seller_receives?: number
+          shipped_at?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          transaction_code: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deposited_at?: string | null
+          dispute_at?: string | null
+          dispute_reason?: string | null
+          dispute_time_hours?: number
+          fee_bearer?: Database["public"]["Enums"]["fee_bearer"]
+          id?: string
+          platform_fee_amount?: number
+          platform_fee_percent?: number
+          product_description?: string | null
+          product_name?: string
+          seller_id?: string | null
+          seller_receives?: number
+          shipped_at?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          transaction_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      fee_bearer: "buyer" | "seller" | "split"
+      transaction_status:
+        | "pending"
+        | "deposited"
+        | "shipping"
+        | "completed"
+        | "disputed"
+        | "cancelled"
+        | "refunded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +352,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      fee_bearer: ["buyer", "seller", "split"],
+      transaction_status: [
+        "pending",
+        "deposited",
+        "shipping",
+        "completed",
+        "disputed",
+        "cancelled",
+        "refunded",
+      ],
+    },
   },
 } as const
