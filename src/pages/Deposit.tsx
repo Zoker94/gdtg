@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, ArrowLeft, CreditCard, Building, Smartphone, Copy, Check, QrCode } from "lucide-react";
+import { Shield, ArrowLeft, CreditCard, Building, Smartphone, Copy, Check, QrCode, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { toast } from "@/hooks/use-toast";
 
 const paymentMethods = [
@@ -32,12 +33,6 @@ const paymentMethods = [
   },
 ];
 
-const bankInfo = {
-  bank: "Vietcombank",
-  account: "1234567890123",
-  name: "ESCROW VN COMPANY",
-};
-
 const momoInfo = {
   phone: "0912345678",
   name: "ESCROW VN",
@@ -49,12 +44,21 @@ const Deposit = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: profile } = useProfile();
+  const { data: settings } = usePlatformSettings();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("bank");
   const [step, setStep] = useState<"input" | "payment">("input");
   const [loading, setLoading] = useState(false);
   const [depositId, setDepositId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [hasConfirmedPayment, setHasConfirmedPayment] = useState(false);
+
+  // Use admin bank settings from platform_settings
+  const bankInfo = {
+    bank: settings?.admin_bank_name || "Vietcombank",
+    account: settings?.admin_bank_account || "1234567890",
+    name: settings?.admin_bank_holder || "ESCROW VN",
+  };
 
   const copyToClipboard = async (text: string, field: string) => {
     await navigator.clipboard.writeText(text);
@@ -84,6 +88,7 @@ const Deposit = () => {
         amount: numAmount,
         payment_method: method,
         transaction_ref: `DEP-${Date.now()}`,
+        is_submitted: false,
       })
       .select()
       .single();
@@ -96,6 +101,27 @@ const Deposit = () => {
 
     setDepositId(data.id);
     setStep("payment");
+    setLoading(false);
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!depositId) return;
+
+    setLoading(true);
+
+    const { error } = await supabase
+      .from("deposits")
+      .update({ is_submitted: true })
+      .eq("id", depositId);
+
+    if (error) {
+      toast({ title: "Lỗi", description: "Không thể xác nhận", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    setHasConfirmedPayment(true);
+    toast({ title: "Đã gửi xác nhận!", description: "Admin sẽ kiểm tra và duyệt trong ít phút" });
     setLoading(false);
   };
 
@@ -273,10 +299,32 @@ const Deposit = () => {
                 </>
               )}
 
-              <div className="pt-4 border-t border-border">
-                <p className="text-sm text-center text-muted-foreground mb-4">
-                  Sau khi chuyển khoản thành công, số dư sẽ được cộng trong vòng 5-15 phút
+              <div className="pt-4 border-t border-border space-y-3">
+                <p className="text-sm text-center text-muted-foreground">
+                  Sau khi chuyển khoản thành công, bấm nút bên dưới để Admin xác nhận
                 </p>
+                
+                {!hasConfirmedPayment ? (
+                  <Button 
+                    className="w-full glow-primary" 
+                    onClick={handleConfirmPayment}
+                    disabled={loading}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {loading ? "Đang xử lý..." : "Đã nạp tiền"}
+                  </Button>
+                ) : (
+                  <div className="text-center space-y-2">
+                    <div className="inline-flex items-center gap-2 text-green-600 font-medium">
+                      <CheckCircle className="w-5 h-5" />
+                      Đã gửi xác nhận
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Admin sẽ kiểm tra và cộng tiền trong 5-15 phút
+                    </p>
+                  </div>
+                )}
+                
                 <Button variant="outline" className="w-full" onClick={() => navigate("/dashboard")}>
                   Về Dashboard
                 </Button>

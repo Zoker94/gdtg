@@ -76,6 +76,8 @@ import PendingDepositsWidget from "@/components/admin/PendingDepositsWidget";
 import DisputesWidget from "@/components/admin/DisputesWidget";
 import PlatformSettingsWidget from "@/components/admin/PlatformSettingsWidget";
 import RoleManagementWidget from "@/components/admin/RoleManagementWidget";
+import ModeratorManagementWidget from "@/components/admin/ModeratorManagementWidget";
+import AdminBankSettingsWidget from "@/components/admin/AdminBankSettingsWidget";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -652,10 +654,12 @@ const AdminDashboard = () => {
 
             {/* Settings Tab */}
             <TabsContent value="settings" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+              <AdminBankSettingsWidget />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <PlatformSettingsWidget />
                 <RoleManagementWidget />
               </div>
+              <ModeratorManagementWidget />
             </TabsContent>
           </Tabs>
         </motion.div>

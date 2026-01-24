@@ -48,6 +48,7 @@ export type Database = {
           confirmed_at: string | null
           created_at: string
           id: string
+          is_submitted: boolean
           payment_method: string
           status: string
           transaction_ref: string | null
@@ -59,6 +60,7 @@ export type Database = {
           confirmed_at?: string | null
           created_at?: string
           id?: string
+          is_submitted?: boolean
           payment_method: string
           status?: string
           transaction_ref?: string | null
@@ -70,6 +72,7 @@ export type Database = {
           confirmed_at?: string | null
           created_at?: string
           id?: string
+          is_submitted?: boolean
           payment_method?: string
           status?: string
           transaction_ref?: string | null
@@ -111,6 +114,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      moderator_profiles: {
+        Row: {
+          avatar_url: string | null
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_name: string | null
+          bio: string | null
+          created_at: string
+          display_name: string
+          facebook_url: string | null
+          id: string
+          is_active: boolean
+          phone: string | null
+          specialization: string | null
+          updated_at: string
+          user_id: string
+          zalo_contact: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          facebook_url?: string | null
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          specialization?: string | null
+          updated_at?: string
+          user_id: string
+          zalo_contact?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          facebook_url?: string | null
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          specialization?: string | null
+          updated_at?: string
+          user_id?: string
+          zalo_contact?: string | null
+        }
+        Relationships: []
       }
       platform_settings: {
         Row: {
@@ -203,6 +260,7 @@ export type Database = {
           id: string
           images: string[] | null
           invite_link: string | null
+          moderator_id: string | null
           platform_fee_amount: number
           platform_fee_percent: number
           product_description: string | null
@@ -232,6 +290,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           invite_link?: string | null
+          moderator_id?: string | null
           platform_fee_amount?: number
           platform_fee_percent?: number
           product_description?: string | null
@@ -261,6 +320,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           invite_link?: string | null
+          moderator_id?: string | null
           platform_fee_amount?: number
           platform_fee_percent?: number
           product_description?: string | null

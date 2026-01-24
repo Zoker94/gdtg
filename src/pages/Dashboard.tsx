@@ -15,6 +15,7 @@ import { vi } from "date-fns/locale";
 import DashboardHeader from "@/components/DashboardHeader";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import DashboardRoomMap from "@/components/DashboardRoomMap";
+import ModeratorsList from "@/components/ModeratorsList";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -185,6 +186,15 @@ const Dashboard = () => {
           )}
         </motion.section>
 
+        {/* Moderators List */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-6"
+        >
+          <ModeratorsList variant="compact" maxItems={3} />
+        </motion.section>
         {/* Completed Transactions */}
         {completedTransactions && completedTransactions.length > 0 && (
           <motion.section

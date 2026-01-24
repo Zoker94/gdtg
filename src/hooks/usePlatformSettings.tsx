@@ -1,10 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-interface PlatformSettings {
+export interface PlatformSettings {
   default_fee_percent: number;
   default_dispute_hours: number;
   min_transaction_amount: number;
+  admin_bank_name: string;
+  admin_bank_account: string;
+  admin_bank_holder: string;
 }
 
 export const usePlatformSettings = () => {
@@ -21,6 +24,9 @@ export const usePlatformSettings = () => {
         default_fee_percent: 5,
         default_dispute_hours: 24,
         min_transaction_amount: 10000,
+        admin_bank_name: "Vietcombank",
+        admin_bank_account: "1234567890",
+        admin_bank_holder: "ESCROW VN",
       };
 
       data?.forEach((row) => {
@@ -30,6 +36,12 @@ export const usePlatformSettings = () => {
           settings.default_dispute_hours = Number(row.setting_value);
         } else if (row.setting_key === "min_transaction_amount") {
           settings.min_transaction_amount = Number(row.setting_value);
+        } else if (row.setting_key === "admin_bank_name") {
+          settings.admin_bank_name = row.setting_value;
+        } else if (row.setting_key === "admin_bank_account") {
+          settings.admin_bank_account = row.setting_value;
+        } else if (row.setting_key === "admin_bank_holder") {
+          settings.admin_bank_holder = row.setting_value;
         }
       });
 
