@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TermsConfirmation } from "@/components/TermsConfirmation";
 
 const CATEGORIES = [
   { value: "game_account", label: "Tài khoản game" },
@@ -56,6 +57,8 @@ export const CreateTransactionForm = () => {
   const { data: platformSettings, isLoading: settingsLoading } = usePlatformSettings();
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState<FormValues | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
@@ -145,7 +148,16 @@ export const CreateTransactionForm = () => {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const onSubmit = async (values: FormValues) => {
+  const handleFormSubmit = (values: FormValues) => {
+    // Show terms confirmation before actually creating
+    setPendingSubmit(values);
+    setShowTerms(true);
+  };
+
+  const onConfirmTerms = async () => {
+    if (!pendingSubmit) return;
+    
+    const values = pendingSubmit;
     const transactionData: {
       product_name: string;
       product_description?: string;
@@ -155,6 +167,8 @@ export const CreateTransactionForm = () => {
       dispute_time_hours: number;
       buyer_id?: string;
       seller_id?: string;
+      category?: string;
+      images?: string[];
     } = {
       product_name: values.product_name,
       product_description: values.product_description,
@@ -162,6 +176,8 @@ export const CreateTransactionForm = () => {
       platform_fee_percent: feePercent,
       fee_bearer: values.fee_bearer as FeeBearer,
       dispute_time_hours: disputeHours,
+      category: values.category,
+      images: images,
     };
 
     if (values.role === "seller") {
@@ -170,8 +186,17 @@ export const CreateTransactionForm = () => {
       transactionData.buyer_id = user?.id;
     }
 
-    const result = await createTransaction.mutateAsync(transactionData);
-    navigate(`/transaction/${result.id}`);
+    try {
+      const result = await createTransaction.mutateAsync(transactionData);
+      navigate(`/transaction/${result.id}`);
+    } catch (error) {
+      // Error handled by mutation
+    }
+  };
+
+  const onCancelTerms = () => {
+    setShowTerms(false);
+    setPendingSubmit(null);
   };
 
   if (settingsLoading) {
@@ -189,6 +214,18 @@ export const CreateTransactionForm = () => {
     );
   }
 
+  // Show terms confirmation screen
+  if (showTerms) {
+    return (
+      <TermsConfirmation
+        type="create"
+        onConfirm={onConfirmTerms}
+        onCancel={onCancelTerms}
+        loading={createTransaction.isPending}
+      />
+    );
+  }
+
   return (
     <Card className="max-w-2xl mx-auto border-border shadow-sm">
       <CardHeader className="pb-4">
@@ -196,7 +233,7 @@ export const CreateTransactionForm = () => {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-5">
             {/* Role Selection */}
             <FormField
               control={form.control}

@@ -150,14 +150,33 @@ const TransactionDetail = () => {
     setDialogOpen(false);
   };
 
+  // Calculate actual amount buyer needs to pay (including fees if applicable)
+  const calculateBuyerPayment = () => {
+    if (!transaction) return { total: 0, fee: 0 };
+    
+    const fee = transaction.platform_fee_amount;
+    let buyerPays = transaction.amount;
+    
+    if (transaction.fee_bearer === "buyer") {
+      buyerPays = transaction.amount + fee;
+    } else if (transaction.fee_bearer === "split") {
+      buyerPays = transaction.amount + (fee / 2);
+    }
+    // If fee_bearer is "seller", buyer only pays amount
+    
+    return { total: buyerPays, fee };
+  };
+  
+  const buyerPayment = calculateBuyerPayment();
+
   const handleMockDeposit = async () => {
     if (!transaction || !user?.id || !profile) return;
     
-    // Check balance
-    if (profile.balance < transaction.amount) {
+    // Check balance - buyer needs to pay amount + their share of fees
+    if (profile.balance < buyerPayment.total) {
       toast({
         title: "Số dư không đủ",
-        description: `Bạn cần nạp thêm ${formatCurrency(transaction.amount - profile.balance)} để đặt cọc`,
+        description: `Bạn cần nạp thêm ${formatCurrency(buyerPayment.total - profile.balance)} để đặt cọc. Tổng cần trả: ${formatCurrency(buyerPayment.total)}`,
         variant: "destructive",
       });
       return;
@@ -165,10 +184,10 @@ const TransactionDetail = () => {
     
     setIsDepositing(true);
     try {
-      // Deduct money from buyer's balance (hold escrow)
+      // Deduct the full amount buyer needs to pay (including their fee share)
       const { error: balanceError } = await supabase
         .from("profiles")
-        .update({ balance: profile.balance - transaction.amount })
+        .update({ balance: profile.balance - buyerPayment.total })
         .eq("user_id", user.id);
       
       if (balanceError) throw balanceError;
@@ -177,7 +196,7 @@ const TransactionDetail = () => {
       handleStatusUpdate("deposited");
       toast({
         title: "Đặt cọc thành công",
-        description: `${formatCurrency(transaction.amount)} đã được treo giữ trong hệ thống`,
+        description: `${formatCurrency(buyerPayment.total)} đã được treo giữ trong hệ thống`,
       });
     } catch (error) {
       toast({
@@ -295,7 +314,12 @@ const TransactionDetail = () => {
                       <>
                         <div className="p-4 bg-muted rounded-lg mb-4">
                           <p className="text-sm text-muted-foreground mb-1">Số tiền cần đặt cọc</p>
-                          <p className="text-2xl font-bold text-primary">{formatCurrency(transaction.amount)}</p>
+                          <p className="text-2xl font-bold text-primary">{formatCurrency(buyerPayment.total)}</p>
+                          {transaction.fee_bearer !== "seller" && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              (Bao gồm {transaction.fee_bearer === "buyer" ? "phí sàn" : "1/2 phí sàn"}: {formatCurrency(transaction.fee_bearer === "buyer" ? transaction.platform_fee_amount : transaction.platform_fee_amount / 2)})
+                            </p>
+                          )}
                         </div>
                         <Button onClick={handleMockDeposit} className="glow-primary" disabled={isDepositing}>
                           <DollarSign className="w-4 h-4 mr-2" />
