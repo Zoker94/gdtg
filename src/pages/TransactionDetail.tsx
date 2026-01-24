@@ -192,225 +192,244 @@ const TransactionDetail = () => {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left Column - Details */}
             <div className="lg:col-span-2 space-y-4">
-              {/* Images */}
-              {images.length > 0 && (
+              {/* Show details only after deposit */}
+              {transaction.status === "pending" && !isSeller ? (
                 <Card className="border-border">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4" />
-                      Ảnh sản phẩm
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-5 gap-2">
-                      {images.map((img, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setImagePreview(img)}
-                          className="aspect-square rounded border overflow-hidden hover:ring-2 ring-primary transition-all"
-                        >
-                          <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Transaction Details */}
-              <Card className="border-border">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Chi tiết</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {transaction.product_description && (
-                    <div className="p-3 bg-muted rounded text-sm">
-                      {transaction.product_description}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="p-3 bg-muted rounded">
-                      <p className="text-muted-foreground text-xs mb-1">Số tiền</p>
-                      <p className="text-lg font-bold text-primary">
-                        {formatCurrency(transaction.amount)}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-muted rounded">
-                      <p className="text-muted-foreground text-xs mb-1">Phí sàn</p>
-                      <p className="text-lg font-semibold text-destructive">
-                        {formatCurrency(transaction.platform_fee_amount)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="p-3 bg-muted rounded">
-                      <p className="text-muted-foreground text-xs mb-1">Người bán nhận</p>
-                      <p className="text-lg font-semibold text-primary">
-                        {formatCurrency(transaction.seller_receives)}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-muted rounded">
-                      <p className="text-muted-foreground text-xs mb-1">Người chịu phí</p>
-                      <p className="font-medium">{feeBearer}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>Khiếu nại: {transaction.dispute_time_hours}h</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{format(new Date(transaction.created_at), "dd/MM/yyyy HH:mm", { locale: vi })}</span>
-                    </div>
-                  </div>
-
-                  {/* Confirmation Status */}
-                  <div className="pt-3 border-t border-border">
-                    <p className="text-xs text-muted-foreground mb-2">Trạng thái xác nhận</p>
-                    <div className="flex gap-3">
-                      <Badge variant={transaction.buyer_confirmed ? "default" : "outline"} className="gap-1">
-                        <UserCheck className="w-3 h-3" />
-                        Người mua {transaction.buyer_confirmed ? "✓" : ""}
-                      </Badge>
-                      <Badge variant={transaction.seller_confirmed ? "default" : "outline"} className="gap-1">
-                        <UserCheck className="w-3 h-3" />
-                        Người bán {transaction.seller_confirmed ? "✓" : ""}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="pt-3 border-t border-border space-y-2">
-                    {/* Confirm Buttons */}
-                    {isBuyer && !transaction.buyer_confirmed && transaction.status !== "pending" && (
-                      <Button
-                        onClick={() => handleConfirm("buyer")}
-                        variant="outline"
-                        className="w-full"
-                        disabled={confirmTransaction.isPending}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Xác nhận mua
-                      </Button>
-                    )}
-
-                    {isSeller && !transaction.seller_confirmed && (
-                      <Button
-                        onClick={() => handleConfirm("seller")}
-                        variant="outline"
-                        className="w-full"
-                        disabled={confirmTransaction.isPending}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Xác nhận bán
-                      </Button>
-                    )}
-
-                    {/* Buyer actions */}
-                    {isBuyer && transaction.status === "pending" && (
+                  <CardContent className="py-12 text-center">
+                    <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Chờ đặt cọc</h3>
+                    <p className="text-muted-foreground text-sm mb-4">
+                      Thông tin chi tiết sẽ hiển thị sau khi người mua đặt cọc thành công.
+                    </p>
+                    {isBuyer && (
                       <>
-                        <Button onClick={handleMockDeposit} className="w-full glow-primary">
+                        <div className="p-4 bg-muted rounded-lg mb-4">
+                          <p className="text-sm text-muted-foreground mb-1">Số tiền cần đặt cọc</p>
+                          <p className="text-2xl font-bold text-primary">{formatCurrency(transaction.amount)}</p>
+                        </div>
+                        <Button onClick={handleMockDeposit} className="glow-primary">
                           <DollarSign className="w-4 h-4 mr-2" />
                           Thanh toán (Giả lập)
                         </Button>
                         <Button
                           onClick={() => handleStatusUpdate("cancelled")}
-                          variant="destructive"
-                          className="w-full"
+                          variant="ghost"
+                          className="w-full mt-2 text-destructive"
                         >
                           <XCircle className="w-4 h-4 mr-2" />
                           Hủy giao dịch
                         </Button>
                       </>
                     )}
-
-                    {isBuyer && transaction.status === "shipping" && (
-                      <>
-                        <Button
-                          onClick={() => handleStatusUpdate("completed")}
-                          className="w-full glow-primary"
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Đã nhận hàng - Giải ngân
-                        </Button>
-                        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button variant="destructive" className="w-full">
-                              <AlertTriangle className="w-4 h-4 mr-2" />
-                              Khiếu nại
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Khiếu nại giao dịch</DialogTitle>
-                              <DialogDescription>
-                                Mô tả chi tiết vấn đề. Admin sẽ xem xét và giải quyết.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <Textarea
-                              value={disputeReason}
-                              onChange={(e) => setDisputeReason(e.target.value)}
-                              placeholder="Nhập lý do khiếu nại..."
-                              rows={4}
-                            />
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                                Hủy
-                              </Button>
-                              <Button variant="destructive" onClick={handleDispute}>
-                                Gửi khiếu nại
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </>
-                    )}
-
-                    {/* Seller actions */}
-                    {isSeller && transaction.status === "pending" && (
-                      <Button
-                        onClick={() => handleStatusUpdate("cancelled")}
-                        variant="destructive"
-                        className="w-full"
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Hủy giao dịch
-                      </Button>
-                    )}
-
-                    {isSeller && transaction.status === "deposited" && (
-                      <Button
-                        onClick={() => handleStatusUpdate("shipping")}
-                        className="w-full glow-primary"
-                      >
-                        <Truck className="w-4 h-4 mr-2" />
-                        Đã gửi hàng
-                      </Button>
-                    )}
-
-                    {/* Dispute info */}
-                    {transaction.status === "disputed" && transaction.dispute_reason && (
-                      <div className="p-3 bg-destructive/10 rounded">
-                        <div className="flex items-center gap-2 text-destructive mb-1">
-                          <AlertTriangle className="w-4 h-4" />
-                          <span className="font-semibold text-sm">Lý do khiếu nại</span>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Images */}
+                  {images.length > 0 && (
+                    <Card className="border-border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <ImageIcon className="w-4 h-4" />
+                          Ảnh sản phẩm
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-5 gap-2">
+                          {images.map((img, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setImagePreview(img)}
+                              className="aspect-square rounded border overflow-hidden hover:ring-2 ring-primary transition-all"
+                            >
+                              <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                            </button>
+                          ))}
                         </div>
-                        <p className="text-sm">{transaction.dispute_reason}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      </CardContent>
+                    </Card>
+                  )}
 
-              {/* Chat */}
-              <TransactionChat transactionId={transaction.id} />
+                  {/* Transaction Details */}
+                  <Card className="border-border">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Chi tiết</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {transaction.product_description && (
+                        <div className="p-3 bg-muted rounded text-sm">
+                          {transaction.product_description}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="p-3 bg-muted rounded">
+                          <p className="text-muted-foreground text-xs mb-1">Số tiền</p>
+                          <p className="text-lg font-bold text-primary">
+                            {formatCurrency(transaction.amount)}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-muted rounded">
+                          <p className="text-muted-foreground text-xs mb-1">Phí sàn</p>
+                          <p className="text-lg font-semibold text-destructive">
+                            {formatCurrency(transaction.platform_fee_amount)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="p-3 bg-muted rounded">
+                          <p className="text-muted-foreground text-xs mb-1">Người bán nhận</p>
+                          <p className="text-lg font-semibold text-primary">
+                            {formatCurrency(transaction.seller_receives)}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-muted rounded">
+                          <p className="text-muted-foreground text-xs mb-1">Người chịu phí</p>
+                          <p className="font-medium">{feeBearer}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Khiếu nại: {transaction.dispute_time_hours}h</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>{format(new Date(transaction.created_at), "dd/MM/yyyy HH:mm", { locale: vi })}</span>
+                        </div>
+                      </div>
+
+                      {/* Confirmation Status */}
+                      <div className="pt-3 border-t border-border">
+                        <p className="text-xs text-muted-foreground mb-2">Trạng thái xác nhận</p>
+                        <div className="flex gap-3">
+                          <Badge variant={transaction.buyer_confirmed ? "default" : "outline"} className="gap-1">
+                            <UserCheck className="w-3 h-3" />
+                            Người mua {transaction.buyer_confirmed ? "✓" : ""}
+                          </Badge>
+                          <Badge variant={transaction.seller_confirmed ? "default" : "outline"} className="gap-1">
+                            <UserCheck className="w-3 h-3" />
+                            Người bán {transaction.seller_confirmed ? "✓" : ""}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="pt-3 border-t border-border space-y-2">
+                        {/* Confirm Buttons */}
+                        {isBuyer && !transaction.buyer_confirmed && transaction.status !== "pending" && (
+                          <Button
+                            onClick={() => handleConfirm("buyer")}
+                            variant="outline"
+                            className="w-full"
+                            disabled={confirmTransaction.isPending}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Xác nhận mua
+                          </Button>
+                        )}
+
+                        {isSeller && !transaction.seller_confirmed && (
+                          <Button
+                            onClick={() => handleConfirm("seller")}
+                            variant="outline"
+                            className="w-full"
+                            disabled={confirmTransaction.isPending}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Xác nhận bán
+                          </Button>
+                        )}
+
+                        {/* Seller actions */}
+                        {isSeller && transaction.status === "pending" && (
+                          <Button
+                            onClick={() => handleStatusUpdate("cancelled")}
+                            variant="destructive"
+                            className="w-full"
+                          >
+                            <XCircle className="w-4 h-4 mr-2" />
+                            Hủy giao dịch
+                          </Button>
+                        )}
+
+                        {isSeller && transaction.status === "deposited" && (
+                          <Button
+                            onClick={() => handleStatusUpdate("shipping")}
+                            className="w-full glow-primary"
+                          >
+                            <Truck className="w-4 h-4 mr-2" />
+                            Đã gửi hàng
+                          </Button>
+                        )}
+
+                        {isBuyer && transaction.status === "shipping" && (
+                          <>
+                            <Button
+                              onClick={() => handleStatusUpdate("completed")}
+                              className="w-full glow-primary"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Đã nhận hàng - Giải ngân
+                            </Button>
+                            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                              <DialogTrigger asChild>
+                                <Button variant="destructive" className="w-full">
+                                  <AlertTriangle className="w-4 h-4 mr-2" />
+                                  Khiếu nại
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Khiếu nại giao dịch</DialogTitle>
+                                  <DialogDescription>
+                                    Mô tả chi tiết vấn đề. Admin sẽ xem xét và giải quyết.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <Textarea
+                                  value={disputeReason}
+                                  onChange={(e) => setDisputeReason(e.target.value)}
+                                  placeholder="Nhập lý do khiếu nại..."
+                                  rows={4}
+                                />
+                                <DialogFooter>
+                                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                                    Hủy
+                                  </Button>
+                                  <Button variant="destructive" onClick={handleDispute}>
+                                    Gửi khiếu nại
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          </>
+                        )}
+
+                        {/* Dispute info */}
+                        {transaction.status === "disputed" && transaction.dispute_reason && (
+                          <div className="p-3 bg-destructive/10 rounded">
+                            <div className="flex items-center gap-2 text-destructive mb-1">
+                              <AlertTriangle className="w-4 h-4" />
+                              <span className="font-semibold text-sm">Lý do khiếu nại</span>
+                            </div>
+                            <p className="text-sm">{transaction.dispute_reason}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              {/* Chat - always visible for participants */}
+              {(isBuyer || isSeller) && transaction.status !== "pending" && (
+                <TransactionChat transactionId={transaction.id} />
+              )}
             </div>
 
             {/* Right Column - Room Info */}
