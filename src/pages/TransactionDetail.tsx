@@ -20,7 +20,9 @@ import { TransactionChat } from "@/components/TransactionChat";
 import { RoomInfo } from "@/components/RoomInfo";
 import { useTransaction, useUpdateTransactionStatus, useConfirmTransaction, TransactionStatus } from "@/hooks/useTransactions";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft,
   Shield,
@@ -29,7 +31,6 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
-  Truck,
   DollarSign,
   Copy,
   ImageIcon,
@@ -53,11 +54,13 @@ const TransactionDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: transaction, isLoading } = useTransaction(id);
+  const { data: profile } = useProfile();
   const updateStatus = useUpdateTransactionStatus();
   const confirmTransaction = useConfirmTransaction();
   const [disputeReason, setDisputeReason] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDepositing, setIsDepositing] = useState(false);
 
   const isBuyer = user?.id === transaction?.buyer_id;
   const isSeller = user?.id === transaction?.seller_id;
@@ -95,12 +98,44 @@ const TransactionDetail = () => {
     setDialogOpen(false);
   };
 
-  const handleMockDeposit = () => {
-    handleStatusUpdate("deposited");
-    toast({
-      title: "Giả lập thanh toán thành công",
-      description: "Tiền đã được đặt cọc vào hệ thống",
-    });
+  const handleMockDeposit = async () => {
+    if (!transaction || !user?.id || !profile) return;
+    
+    // Check balance
+    if (profile.balance < transaction.amount) {
+      toast({
+        title: "Số dư không đủ",
+        description: `Bạn cần nạp thêm ${formatCurrency(transaction.amount - profile.balance)} để đặt cọc`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsDepositing(true);
+    try {
+      // Deduct money from buyer's balance (hold escrow)
+      const { error: balanceError } = await supabase
+        .from("profiles")
+        .update({ balance: profile.balance - transaction.amount })
+        .eq("user_id", user.id);
+      
+      if (balanceError) throw balanceError;
+      
+      // Update transaction status
+      handleStatusUpdate("deposited");
+      toast({
+        title: "Đặt cọc thành công",
+        description: `${formatCurrency(transaction.amount)} đã được treo giữ trong hệ thống`,
+      });
+    } catch (error) {
+      toast({
+        title: "Lỗi đặt cọc",
+        description: "Vui lòng thử lại sau",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDepositing(false);
+    }
   };
 
   if (isLoading) {
@@ -210,9 +245,9 @@ const TransactionDetail = () => {
                           <p className="text-sm text-muted-foreground mb-1">Số tiền cần đặt cọc</p>
                           <p className="text-2xl font-bold text-primary">{formatCurrency(transaction.amount)}</p>
                         </div>
-                        <Button onClick={handleMockDeposit} className="glow-primary">
+                        <Button onClick={handleMockDeposit} className="glow-primary" disabled={isDepositing}>
                           <DollarSign className="w-4 h-4 mr-2" />
-                          Thanh toán (Giả lập)
+                          {isDepositing ? "Đang xử lý..." : "Đặt cọc ngay"}
                         </Button>
                         <Button
                           onClick={() => handleStatusUpdate("cancelled")}
@@ -358,17 +393,7 @@ const TransactionDetail = () => {
                           </Button>
                         )}
 
-                        {isSeller && transaction.status === "deposited" && (
-                          <Button
-                            onClick={() => handleStatusUpdate("shipping")}
-                            className="w-full glow-primary"
-                          >
-                            <Truck className="w-4 h-4 mr-2" />
-                            Đã gửi hàng
-                          </Button>
-                        )}
-
-                        {isBuyer && transaction.status === "shipping" && (
+                        {isBuyer && transaction.status === "deposited" && (
                           <>
                             <Button
                               onClick={() => handleStatusUpdate("completed")}
