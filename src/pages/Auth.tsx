@@ -6,14 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -24,8 +17,10 @@ const loginSchema = z.object({
   password: z.string().min(6, "Mật khẩu ít nhất 6 ký tự"),
 });
 
-const registerSchema = loginSchema.extend({
+const registerSchema = z.object({
   fullName: z.string().min(2, "Tên ít nhất 2 ký tự").max(100),
+  email: z.string().email("Email không hợp lệ"),
+  password: z.string().min(6, "Mật khẩu ít nhất 6 ký tự"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Mật khẩu xác nhận không khớp",
@@ -41,19 +36,35 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
-  const loginForm = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
-  });
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginErrors, setLoginErrors] = useState<{ email?: string; password?: string }>({});
 
-  const registerForm = useForm<RegisterValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { email: "", password: "", confirmPassword: "", fullName: "" },
-  });
+  // Register form state
+  const [regFullName, setRegFullName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
+  const [regErrors, setRegErrors] = useState<{ fullName?: string; email?: string; password?: string; confirmPassword?: string }>({});
 
-  const handleLogin = async (values: LoginValues) => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = loginSchema.safeParse({ email: loginEmail, password: loginPassword });
+    
+    if (!result.success) {
+      const errors: { email?: string; password?: string } = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0] === "email") errors.email = err.message;
+        if (err.path[0] === "password") errors.password = err.message;
+      });
+      setLoginErrors(errors);
+      return;
+    }
+    
+    setLoginErrors({});
     setIsLoading(true);
-    const { error } = await signIn(values.email, values.password);
+    const { error } = await signIn(loginEmail, loginPassword);
     setIsLoading(false);
 
     if (error) {
@@ -68,9 +79,28 @@ const Auth = () => {
     }
   };
 
-  const handleRegister = async (values: RegisterValues) => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = registerSchema.safeParse({
+      fullName: regFullName,
+      email: regEmail,
+      password: regPassword,
+      confirmPassword: regConfirmPassword,
+    });
+    
+    if (!result.success) {
+      const errors: typeof regErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof typeof regErrors;
+        errors[field] = err.message;
+      });
+      setRegErrors(errors);
+      return;
+    }
+    
+    setRegErrors({});
     setIsLoading(true);
-    const { error } = await signUp(values.email, values.password, values.fullName);
+    const { error } = await signUp(regEmail, regPassword, regFullName);
     setIsLoading(false);
 
     if (error) {
@@ -91,7 +121,6 @@ const Auth = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 -left-1/4 w-1/2 h-1/2 bg-primary/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-accent/10 rounded-full blur-[120px]" />
       </div>
 
       <motion.div
@@ -117,107 +146,103 @@ const Auth = () => {
             </CardTitle>
             <CardDescription>
               {isLogin
-                ? "Đăng nhập để quản lý giao dịch của bạn"
-                : "Tạo tài khoản để bắt đầu giao dịch an toàn"}
+                ? "Đăng nhập để quản lý giao dịch"
+                : "Tạo tài khoản để bắt đầu giao dịch"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLogin ? (
-              <Form {...loginForm}>
-                <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-                  <FormField
-                    control={loginForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="email@example.com" type="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="email@example.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
                   />
-                  <FormField
-                    control={loginForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mật khẩu</FormLabel>
-                        <FormControl>
-                          <Input placeholder="••••••••" type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  {loginErrors.email && (
+                    <p className="text-sm text-destructive">{loginErrors.email}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Mật khẩu</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
                   />
-                  <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                    {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Đăng nhập
-                  </Button>
-                </form>
-              </Form>
+                  {loginErrors.password && (
+                    <p className="text-sm text-destructive">{loginErrors.password}</p>
+                  )}
+                </div>
+                <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                  {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Đăng nhập
+                </Button>
+              </form>
             ) : (
-              <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-                  <FormField
-                    control={registerForm.control}
-                    name="fullName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Họ và tên</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nguyễn Văn A" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reg-name">Họ và tên</Label>
+                  <Input
+                    id="reg-name"
+                    type="text"
+                    placeholder="Nguyễn Văn A"
+                    value={regFullName}
+                    onChange={(e) => setRegFullName(e.target.value)}
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="email@example.com" type="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  {regErrors.fullName && (
+                    <p className="text-sm text-destructive">{regErrors.fullName}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reg-email">Email</Label>
+                  <Input
+                    id="reg-email"
+                    type="email"
+                    placeholder="email@example.com"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mật khẩu</FormLabel>
-                        <FormControl>
-                          <Input placeholder="••••••••" type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  {regErrors.email && (
+                    <p className="text-sm text-destructive">{regErrors.email}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reg-password">Mật khẩu</Label>
+                  <Input
+                    id="reg-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Xác nhận mật khẩu</FormLabel>
-                        <FormControl>
-                          <Input placeholder="••••••••" type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  {regErrors.password && (
+                    <p className="text-sm text-destructive">{regErrors.password}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reg-confirm">Xác nhận mật khẩu</Label>
+                  <Input
+                    id="reg-confirm"
+                    type="password"
+                    placeholder="••••••••"
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
                   />
-                  <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                    {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Đăng ký
-                  </Button>
-                </form>
-              </Form>
+                  {regErrors.confirmPassword && (
+                    <p className="text-sm text-destructive">{regErrors.confirmPassword}</p>
+                  )}
+                </div>
+                <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                  {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Đăng ký
+                </Button>
+              </form>
             )}
 
             <div className="mt-6 text-center text-sm">
@@ -225,6 +250,7 @@ const Auth = () => {
                 {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
               </span>{" "}
               <button
+                type="button"
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-primary hover:underline font-medium"
               >
