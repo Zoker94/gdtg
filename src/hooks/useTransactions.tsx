@@ -116,7 +116,7 @@ export const useTransaction = (transactionId: string | undefined) => {
     if (!transactionId || !user?.id) return;
 
     const channel = supabase
-      .channel(`transaction-${transactionId}`)
+      .channel(`transaction-${transactionId}-${Date.now()}`)
       .on(
         "postgres_changes",
         {
@@ -126,11 +126,17 @@ export const useTransaction = (transactionId: string | undefined) => {
           filter: `id=eq.${transactionId}`,
         },
         (payload) => {
-          queryClient.invalidateQueries({ queryKey: ["transaction", transactionId] });
-          
-          // Show toast for important updates
           const newData = payload.new as Transaction;
           const oldData = payload.old as Transaction;
+          
+          // Immediately update cache with new data for instant UI update
+          if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
+            queryClient.setQueryData(["transaction", transactionId], newData);
+          }
+          
+          // Also invalidate to ensure fresh data
+          queryClient.invalidateQueries({ queryKey: ["transaction", transactionId] });
+          queryClient.invalidateQueries({ queryKey: ["transactions"] });
           
           if (payload.eventType === "UPDATE") {
             // Someone joined the room
@@ -169,12 +175,6 @@ export const useTransaction = (transactionId: string | undefined) => {
                     description: "Người mua đã thanh toán vào hệ thống" 
                   });
                   break;
-                case "shipping":
-                  toast({ 
-                    title: "🚚 Đang giao hàng!", 
-                    description: "Người bán đã gửi hàng" 
-                  });
-                  break;
                 case "completed":
                   toast({ 
                     title: "🎊 Giao dịch hoàn tất!", 
@@ -205,7 +205,9 @@ export const useTransaction = (transactionId: string | undefined) => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Realtime subscription status for transaction ${transactionId}:`, status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -227,6 +229,8 @@ export const useTransaction = (transactionId: string | undefined) => {
       return data as Transaction | null;
     },
     enabled: !!transactionId && !!user?.id,
+    refetchInterval: 5000, // Fallback: refetch every 5 seconds
+    staleTime: 0, // Always consider data stale for immediate updates
   });
 };
 
