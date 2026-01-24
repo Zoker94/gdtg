@@ -28,41 +28,65 @@ const JoinRoom = () => {
 
     setLoading(true);
 
-    const { data, error } = await supabase
+    const { data: transaction, error } = await supabase
       .from("transactions")
-      .select("id, room_id, room_password, buyer_id, seller_id")
+      .select("id, room_id, room_password, buyer_id, seller_id, amount")
       .eq("room_id", roomId.toUpperCase())
       .maybeSingle();
 
-    if (error || !data) {
+    if (error || !transaction) {
       toast({ title: "Lỗi", description: "Không tìm thấy phòng", variant: "destructive" });
       setLoading(false);
       return;
     }
 
-    if (data.room_password !== password) {
+    if (transaction.room_password !== password) {
       toast({ title: "Lỗi", description: "Sai mật khẩu phòng", variant: "destructive" });
       setLoading(false);
       return;
     }
 
+    // Check if user is joining as buyer (not the seller)
+    const isJoiningAsBuyer = user && transaction.seller_id && transaction.seller_id !== user.id && !transaction.buyer_id;
+    
+    if (isJoiningAsBuyer) {
+      // Fetch user's balance
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("balance")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const userBalance = profile?.balance || 0;
+      
+      if (userBalance < transaction.amount) {
+        toast({ 
+          title: "Số dư không đủ", 
+          description: `Bạn cần có ít nhất ${transaction.amount.toLocaleString()}đ để vào phòng này. Số dư hiện tại: ${userBalance.toLocaleString()}đ`, 
+          variant: "destructive" 
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
     // If user is not buyer or seller, set them as buyer
-    if (user && data.buyer_id !== user.id && data.seller_id !== user.id) {
-      if (!data.buyer_id) {
+    if (user && transaction.buyer_id !== user.id && transaction.seller_id !== user.id) {
+      if (!transaction.buyer_id) {
         await supabase
           .from("transactions")
           .update({ buyer_id: user.id })
-          .eq("id", data.id);
-      } else if (!data.seller_id) {
+          .eq("id", transaction.id);
+      } else if (!transaction.seller_id) {
         await supabase
           .from("transactions")
           .update({ seller_id: user.id })
-          .eq("id", data.id);
+          .eq("id", transaction.id);
       }
     }
 
     toast({ title: "Thành công", description: "Đã vào phòng giao dịch" });
-    navigate(`/transaction/${data.id}`);
+    navigate(`/transaction/${transaction.id}`);
     setLoading(false);
   };
 

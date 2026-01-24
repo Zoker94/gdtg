@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Shield, ArrowRight, LogIn } from "lucide-react";
+import { Shield, ArrowRight, LogIn, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -64,33 +64,24 @@ const HeroSection = () => {
               </Button>
             </CardContent>
           </Card>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-center"
-        >
-          <h2 className="text-lg font-semibold mb-4">Quy trình đơn giản</h2>
-          <div className="flex flex-wrap justify-center gap-4 text-sm">
-            <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-full">
-              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
-              Tạo phòng
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-full">
-              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
-              Mời người mua/bán
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-full">
-              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
-              Đặt cọc
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-full">
-              <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</span>
-              Xác nhận & Giải ngân
-            </div>
-          </div>
+          <Card className="border-border hover:border-primary/30 transition-colors cursor-pointer md:col-span-2" onClick={() => navigate("/search-room")}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Search className="w-5 h-5 text-muted-foreground" />
+                Tìm phòng giao dịch
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Tìm kiếm phòng giao dịch đang mở để mua sản phẩm bạn cần.
+              </p>
+              <Button variant="secondary" className="w-full">
+                Tìm phòng
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
         </motion.div>
       </div>
     </section>
