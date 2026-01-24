@@ -110,10 +110,8 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
-      toast({
-        title: "Đăng ký thành công",
-        description: "Vui lòng kiểm tra email để xác thực tài khoản",
-      });
+      toast({ title: "Đăng ký thành công" });
+      navigate("/dashboard");
     }
   };
 
