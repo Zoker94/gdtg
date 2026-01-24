@@ -9,6 +9,11 @@ export type FeeBearer = "buyer" | "seller" | "split";
 export interface Transaction {
   id: string;
   transaction_code: string;
+  room_id: string | null;
+  room_password: string | null;
+  invite_link: string | null;
+  category: string | null;
+  images: string[] | null;
   buyer_id: string | null;
   seller_id: string | null;
   product_name: string;
@@ -25,6 +30,8 @@ export interface Transaction {
   deposited_at: string | null;
   shipped_at: string | null;
   completed_at: string | null;
+  buyer_confirmed: boolean;
+  seller_confirmed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +39,8 @@ export interface Transaction {
 export interface CreateTransactionInput {
   product_name: string;
   product_description?: string;
+  category?: string;
+  images?: string[];
   amount: number;
   platform_fee_percent: number;
   fee_bearer: FeeBearer;
@@ -93,11 +102,13 @@ export const useCreateTransaction = () => {
       const insertData = {
         product_name: input.product_name,
         product_description: input.product_description || null,
+        category: input.category || "other",
+        images: input.images || [],
         amount: input.amount,
         platform_fee_percent: input.platform_fee_percent,
         fee_bearer: input.fee_bearer,
         dispute_time_hours: input.dispute_time_hours,
-        buyer_id: input.buyer_id || user.id,
+        buyer_id: input.buyer_id || null,
         seller_id: input.seller_id || null,
       };
 
@@ -115,7 +126,7 @@ export const useCreateTransaction = () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       toast({
         title: "Thành công",
-        description: "Đã tạo giao dịch mới",
+        description: "Đã tạo phòng giao dịch",
       });
     },
     onError: (error) => {
@@ -170,6 +181,52 @@ export const useUpdateTransactionStatus = () => {
       toast({
         title: "Cập nhật thành công",
         description: "Trạng thái giao dịch đã được cập nhật",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Lỗi",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useConfirmTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      transactionId,
+      role,
+    }: {
+      transactionId: string;
+      role: "buyer" | "seller";
+    }) => {
+      const updateData: Record<string, unknown> = {};
+      
+      if (role === "buyer") {
+        updateData.buyer_confirmed = true;
+      } else {
+        updateData.seller_confirmed = true;
+      }
+
+      const { data, error } = await supabase
+        .from("transactions")
+        .update(updateData)
+        .eq("id", transactionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Transaction;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["transaction", data.id] });
+      toast({
+        title: "Đã xác nhận!",
       });
     },
     onError: (error) => {

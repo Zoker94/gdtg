@@ -1,18 +1,22 @@
-import { Shield } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Shield } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="border-t border-border py-8">
-      <div className="container mx-auto px-4 lg:px-8">
+    <footer className="py-8 px-4 border-t border-border">
+      <div className="container mx-auto max-w-4xl">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            <span className="font-display font-bold">EscrowVN</span>
-          </Link>
+            <span className="font-bold">EscrowVN</span>
+          </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} EscrowVN. Giao dịch an toàn.
+            Giao dịch trung gian an toàn cho game thủ Việt
           </p>
+          <div className="flex gap-4 text-sm text-muted-foreground">
+            <Link to="/auth" className="hover:text-primary">Đăng nhập</Link>
+            <Link to="/join" className="hover:text-primary">Vào phòng</Link>
+          </div>
         </div>
       </div>
     </footer>
