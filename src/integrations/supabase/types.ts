@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      deposits: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          confirmed_at: string | null
+          created_at: string
+          id: string
+          payment_method: string
+          status: string
+          transaction_ref: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          payment_method: string
+          status?: string
+          transaction_ref?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          payment_method?: string
+          status?: string
+          transaction_ref?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -228,6 +264,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_deposit: { Args: { deposit_id: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
