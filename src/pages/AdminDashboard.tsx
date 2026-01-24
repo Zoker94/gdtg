@@ -37,18 +37,14 @@ import {
   CheckCircle,
   RefreshCw,
   Package,
-  DollarSign,
   LogOut,
-  Wallet,
-  Clock,
-  CreditCard,
   Users,
   Megaphone,
   Trash2,
   Ban,
   AlertCircle,
-  XCircle,
   ArrowDownToLine,
+  ArrowLeft,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -73,6 +69,10 @@ import {
   useDeleteAnnouncement,
 } from "@/hooks/useAnnouncements";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import AdminStatsGrid from "@/components/admin/AdminStatsGrid";
+import PendingWithdrawalsWidget from "@/components/admin/PendingWithdrawalsWidget";
+import PendingDepositsWidget from "@/components/admin/PendingDepositsWidget";
+import DisputesWidget from "@/components/admin/DisputesWidget";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -98,7 +98,7 @@ const AdminDashboard = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [actionType, setActionType] = useState<"resolve" | "refund" | null>(null);
   const [selectedDeposit, setSelectedDeposit] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("transactions");
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Delete dialogs
   const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null);
@@ -166,8 +166,13 @@ const AdminDashboard = () => {
   const isAdmin = roles?.includes("admin");
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
+    try {
+      await signOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Sign out error:", error);
+      navigate("/");
+    }
   };
 
   if (rolesLoading) {
@@ -194,7 +199,7 @@ const AdminDashboard = () => {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
+    return new Intl.NumberFormat("vi-VN").format(amount) + "đ";
   };
 
   const filteredTransactions = transactions?.filter(
@@ -249,172 +254,94 @@ const AdminDashboard = () => {
     setNewAnnouncement("");
   };
 
+  const pendingDepositsCount = deposits?.filter((d) => d.status === "pending").length || 0;
+  const pendingWithdrawalsCount = withdrawals?.filter((w) => w.status === "pending").length || 0;
+  const hasPendingItems = pendingDepositsCount > 0 || pendingWithdrawalsCount > 0 || disputedTransactions.length > 0;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-lg sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
-            <span className="font-display font-bold text-base">EscrowVN</span>
-            <Badge variant="destructive" className="text-xs">Admin</Badge>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
-              Dashboard
+        <div className="container mx-auto px-4 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/dashboard")}>
+              <ArrowLeft className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <Link to="/" className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              <span className="font-display font-bold text-base">EscrowVN</span>
+              <Badge variant="destructive" className="text-xs">Admin</Badge>
+            </Link>
           </div>
+          <Button variant="ghost" size="sm" className="h-8 gap-2" onClick={handleSignOut}>
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Đăng xuất</span>
+          </Button>
         </div>
       </header>
 
       <AnnouncementBanner />
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-display font-bold mb-6">Quản trị hệ thống</h1>
-
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
-            <Card>
-              <CardContent className="pt-4 pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Giao dịch</p>
-                    <p className="text-xl font-bold">{transactions?.length || 0}</p>
-                  </div>
-                  <Package className="w-6 h-6 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Khiếu nại</p>
-                    <p className="text-xl font-bold text-destructive">{disputedTransactions.length}</p>
-                  </div>
-                  <AlertTriangle className="w-6 h-6 text-destructive" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Nạp chờ</p>
-                    <p className="text-xl font-bold text-amber-500">{deposits?.filter((d) => d.status === "pending").length || 0}</p>
-                  </div>
-                  <Wallet className="w-6 h-6 text-amber-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Rút chờ</p>
-                    <p className="text-xl font-bold text-blue-500">{withdrawals?.filter((w) => w.status === "pending").length || 0}</p>
-                  </div>
-                  <ArrowDownToLine className="w-6 h-6 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Khối lượng</p>
-                    <p className="text-lg font-bold">{formatCurrency(totalVolume)}</p>
-                  </div>
-                  <DollarSign className="w-6 h-6 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Phí thu</p>
-                    <p className="text-lg font-bold text-primary">{formatCurrency(totalFees)}</p>
-                  </div>
-                  <DollarSign className="w-6 h-6 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <AdminStatsGrid
+            totalTransactions={transactions?.length || 0}
+            disputedCount={disputedTransactions.length}
+            pendingDeposits={pendingDepositsCount}
+            pendingWithdrawals={pendingWithdrawalsCount}
+            totalVolume={totalVolume}
+            totalFees={totalFees}
+            formatCurrency={formatCurrency}
+          />
+
+          {/* Quick Action Widgets */}
+          {hasPendingItems && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              <DisputesWidget
+                transactions={transactions || []}
+                onResolve={(id) => { setSelectedTransaction(id); setActionType("resolve"); }}
+                onRefund={(id) => { setSelectedTransaction(id); setActionType("refund"); }}
+                formatCurrency={formatCurrency}
+              />
+              <PendingWithdrawalsWidget
+                withdrawals={withdrawals || []}
+                onConfirm={(id) => setSelectedWithdrawal(id)}
+                onReject={(id) => setRejectWithdrawalId(id)}
+                formatCurrency={formatCurrency}
+              />
+              <PendingDepositsWidget
+                deposits={deposits || []}
+                onConfirm={(id) => setSelectedDeposit(id)}
+                formatCurrency={formatCurrency}
+              />
+            </div>
+          )}
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full max-w-3xl grid-cols-5">
-              <TabsTrigger value="transactions" className="text-xs">
-                <Package className="w-3.5 h-3.5 mr-1" /> Giao dịch
-              </TabsTrigger>
-              <TabsTrigger value="deposits" className="text-xs">
-                <Wallet className="w-3.5 h-3.5 mr-1" /> Nạp
-                {deposits?.filter((d) => d.status === "pending").length ? (
-                  <Badge variant="destructive" className="ml-1 text-xs px-1">{deposits.filter((d) => d.status === "pending").length}</Badge>
-                ) : null}
-              </TabsTrigger>
-              <TabsTrigger value="withdrawals" className="text-xs">
-                <ArrowDownToLine className="w-3.5 h-3.5 mr-1" /> Rút
-                {withdrawals?.filter((w) => w.status === "pending").length ? (
-                  <Badge variant="destructive" className="ml-1 text-xs px-1">{withdrawals.filter((w) => w.status === "pending").length}</Badge>
-                ) : null}
+            <TabsList className="w-full max-w-md grid grid-cols-4">
+              <TabsTrigger value="overview" className="text-xs">
+                <Package className="w-3.5 h-3.5 mr-1" /> Tổng quan
               </TabsTrigger>
               <TabsTrigger value="users" className="text-xs">
                 <Users className="w-3.5 h-3.5 mr-1" /> Users
+              </TabsTrigger>
+              <TabsTrigger value="withdrawals" className="text-xs">
+                <ArrowDownToLine className="w-3.5 h-3.5 mr-1" /> Rút
               </TabsTrigger>
               <TabsTrigger value="announcements" className="text-xs">
                 <Megaphone className="w-3.5 h-3.5 mr-1" /> TB
               </TabsTrigger>
             </TabsList>
 
-            {/* Transactions Tab */}
-            <TabsContent value="transactions" className="space-y-4">
-              {/* Disputes */}
-              {disputedTransactions.length > 0 && (
-                <Card className="border-destructive/50">
-                  <CardHeader className="py-3">
-                    <CardTitle className="text-base flex items-center gap-2 text-destructive">
-                      <AlertTriangle className="w-4 h-4" />
-                      Khiếu nại ({disputedTransactions.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      {disputedTransactions.map((t) => (
-                        <div key={t.id} className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="font-medium text-sm">{t.product_name}</p>
-                              <p className="text-xs text-muted-foreground">{t.transaction_code}</p>
-                              <p className="text-xs mt-1">Lý do: {t.dispute_reason || "Không có"}</p>
-                              <p className="text-xs text-muted-foreground">Số tiền: {formatCurrency(t.amount)}</p>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button size="sm" className="h-7 text-xs" onClick={() => { setSelectedTransaction(t.id); setActionType("resolve"); }}>
-                                <CheckCircle className="w-3 h-3 mr-1" /> Hoàn tất
-                              </Button>
-                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => { setSelectedTransaction(t.id); setActionType("refund"); }}>
-                                <RefreshCw className="w-3 h-3 mr-1" /> Hoàn tiền
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-4">
               {/* All Transactions */}
               <Card>
                 <CardHeader className="py-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <CardTitle className="text-base">Tất cả giao dịch</CardTitle>
+                    <CardTitle className="text-base">Giao dịch gần đây</CardTitle>
                     <div className="flex items-center gap-2">
                       <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -441,7 +368,7 @@ const AdminDashboard = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredTransactions?.map((t) => (
+                          {filteredTransactions?.slice(0, 10).map((t) => (
                             <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(`/transaction/${t.id}`)}>
                               <TableCell className="font-mono text-xs">{t.transaction_code}</TableCell>
                               <TableCell className="max-w-[150px] truncate text-xs">{t.product_name}</TableCell>
@@ -461,46 +388,12 @@ const AdminDashboard = () => {
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            {/* Deposits Tab */}
-            <TabsContent value="deposits" className="space-y-4">
-              {deposits?.filter((d) => d.status === "pending").length ? (
-                <Card className="border-amber-500/50">
-                  <CardHeader className="py-3">
-                    <CardTitle className="text-base flex items-center gap-2 text-amber-500">
-                      <Clock className="w-4 h-4" />
-                      Chờ xác nhận ({deposits.filter((d) => d.status === "pending").length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      {deposits.filter((d) => d.status === "pending").map((d) => (
-                        <div key={d.id} className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="font-semibold">{formatCurrency(d.amount)}</p>
-                              <div className="flex items-center gap-1 mt-1">
-                                <CreditCard className="w-3 h-3 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">{d.payment_method === "bank" ? "Chuyển khoản" : d.payment_method}</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">Nội dung: <span className="font-mono">NAP {d.id.slice(0, 8).toUpperCase()}</span></p>
-                            </div>
-                            <Button size="sm" className="h-7 text-xs" onClick={() => setSelectedDeposit(d.id)}>
-                              <CheckCircle className="w-3 h-3 mr-1" /> Xác nhận
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : null}
-
+              {/* All Deposits */}
               <Card>
                 <CardHeader className="py-3">
                   <div className="flex items-center justify-between gap-3">
-                    <CardTitle className="text-base">Tất cả nạp tiền</CardTitle>
+                    <CardTitle className="text-base">Lịch sử nạp tiền</CardTitle>
                     <div className="flex items-center gap-2">
                       <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -525,7 +418,7 @@ const AdminDashboard = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {deposits?.filter((d) => d.id.includes(depositSearchQuery) || d.payment_method.includes(depositSearchQuery)).map((d) => (
+                        {deposits?.filter((d) => d.id.includes(depositSearchQuery) || d.payment_method.includes(depositSearchQuery)).slice(0, 10).map((d) => (
                           <TableRow key={d.id}>
                             <TableCell className="font-mono text-xs">NAP {d.id.slice(0, 8).toUpperCase()}</TableCell>
                             <TableCell className="font-semibold text-xs">{formatCurrency(d.amount)}</TableCell>
@@ -537,112 +430,6 @@ const AdminDashboard = () => {
                             <TableCell className="text-xs text-muted-foreground">{format(new Date(d.created_at), "dd/MM/yy", { locale: vi })}</TableCell>
                             <TableCell>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteDepositId(d.id)}>
-                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Withdrawals Tab */}
-            <TabsContent value="withdrawals" className="space-y-4">
-              {/* Pending Withdrawals */}
-              {withdrawals?.filter((w) => w.status === "pending").length ? (
-                <Card className="border-blue-500/50">
-                  <CardHeader className="py-3">
-                    <CardTitle className="text-base flex items-center gap-2 text-blue-500">
-                      <Clock className="w-4 h-4" />
-                      Chờ xác nhận ({withdrawals.filter((w) => w.status === "pending").length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      {withdrawals.filter((w) => w.status === "pending").map((w) => (
-                        <div key={w.id} className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="font-semibold">{formatCurrency(w.amount)}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {w.bank_name} - {w.bank_account_number}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Chủ TK: {w.bank_account_name}
-                              </p>
-                              <p className="text-xs text-muted-foreground font-mono">
-                                User: {w.user_id.slice(0, 8)}...
-                              </p>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button size="sm" className="h-7 text-xs" onClick={() => setSelectedWithdrawal(w.id)}>
-                                <CheckCircle className="w-3 h-3 mr-1" /> Xác nhận
-                              </Button>
-                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setRejectWithdrawalId(w.id)}>
-                                <XCircle className="w-3 h-3 mr-1" /> Từ chối
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : null}
-
-              {/* All Withdrawals */}
-              <Card>
-                <CardHeader className="py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <CardTitle className="text-base">Tất cả yêu cầu rút tiền</CardTitle>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => refetchWithdrawals()}>
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  {withdrawalsLoading ? <Skeleton className="h-32 w-full" /> : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-xs">Số tiền</TableHead>
-                          <TableHead className="text-xs">Ngân hàng</TableHead>
-                          <TableHead className="text-xs">Chủ TK</TableHead>
-                          <TableHead className="text-xs">Trạng thái</TableHead>
-                          <TableHead className="text-xs">Ngày</TableHead>
-                          <TableHead className="text-xs w-16"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {withdrawals?.map((w) => (
-                          <TableRow key={w.id}>
-                            <TableCell className="font-semibold text-xs">{formatCurrency(w.amount)}</TableCell>
-                            <TableCell className="text-xs">{w.bank_name}</TableCell>
-                            <TableCell className="text-xs">
-                              <div>
-                                <p>{w.bank_account_name}</p>
-                                <p className="text-muted-foreground">{w.bank_account_number}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge 
-                                variant={w.status === "completed" ? "default" : w.status === "rejected" ? "destructive" : "secondary"} 
-                                className="text-xs"
-                              >
-                                {w.status === "completed" ? "Đã chuyển" : w.status === "rejected" ? "Từ chối" : "Chờ"}
-                              </Badge>
-                              {w.admin_note && w.status === "rejected" && (
-                                <p className="text-xs text-destructive mt-1">{w.admin_note}</p>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {format(new Date(w.created_at), "dd/MM/yy", { locale: vi })}
-                            </TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteWithdrawalId(w.id)}>
                                 <Trash2 className="w-3.5 h-3.5 text-destructive" />
                               </Button>
                             </TableCell>
@@ -719,6 +506,70 @@ const AdminDashboard = () => {
                                   <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                                 </Button>
                               </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Withdrawals Tab */}
+            <TabsContent value="withdrawals" className="space-y-4">
+              {/* All Withdrawals */}
+              <Card>
+                <CardHeader className="py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <CardTitle className="text-base">Tất cả yêu cầu rút tiền</CardTitle>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => refetchWithdrawals()}>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {withdrawalsLoading ? <Skeleton className="h-32 w-full" /> : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Số tiền</TableHead>
+                          <TableHead className="text-xs">Ngân hàng</TableHead>
+                          <TableHead className="text-xs">Chủ TK</TableHead>
+                          <TableHead className="text-xs">Trạng thái</TableHead>
+                          <TableHead className="text-xs">Ngày</TableHead>
+                          <TableHead className="text-xs w-16"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {withdrawals?.map((w) => (
+                          <TableRow key={w.id}>
+                            <TableCell className="font-semibold text-xs">{formatCurrency(w.amount)}</TableCell>
+                            <TableCell className="text-xs">{w.bank_name}</TableCell>
+                            <TableCell className="text-xs">
+                              <div>
+                                <p>{w.bank_account_name}</p>
+                                <p className="text-muted-foreground">{w.bank_account_number}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={w.status === "completed" ? "default" : w.status === "rejected" ? "destructive" : "secondary"} 
+                                className="text-xs"
+                              >
+                                {w.status === "completed" ? "Đã chuyển" : w.status === "rejected" ? "Từ chối" : "Chờ"}
+                              </Badge>
+                              {w.admin_note && w.status === "rejected" && (
+                                <p className="text-xs text-destructive mt-1">{w.admin_note}</p>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {format(new Date(w.created_at), "dd/MM/yy", { locale: vi })}
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteWithdrawalId(w.id)}>
+                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}

@@ -24,7 +24,6 @@ import {
   Shield,
   Wallet,
   ArrowDownToLine,
-  Building2,
   Clock,
   CheckCircle,
   XCircle,
@@ -32,6 +31,7 @@ import {
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import { useWithdrawalRealtime } from "@/hooks/useWithdrawalRealtime";
 
 const BANKS = [
   "Vietcombank",
@@ -62,6 +62,9 @@ const Withdraw = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
+
+  // Enable realtime notifications for withdrawals
+  useWithdrawalRealtime();
 
   const [amount, setAmount] = useState("");
   const [bankName, setBankName] = useState("");
