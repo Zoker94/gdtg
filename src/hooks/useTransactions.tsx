@@ -130,15 +130,77 @@ export const useTransaction = (transactionId: string | undefined) => {
           
           // Show toast for important updates
           const newData = payload.new as Transaction;
+          const oldData = payload.old as Transaction;
+          
           if (payload.eventType === "UPDATE") {
-            if (newData.buyer_id && !payload.old?.buyer_id) {
-              toast({ title: "Người mua đã vào phòng!" });
-            } else if (newData.seller_id && !payload.old?.seller_id) {
-              toast({ title: "Người bán đã vào phòng!" });
-            } else if (newData.buyer_confirmed && !payload.old?.buyer_confirmed) {
-              toast({ title: "Người mua đã xác nhận!" });
-            } else if (newData.seller_confirmed && !payload.old?.seller_confirmed) {
-              toast({ title: "Người bán đã xác nhận!" });
+            // Someone joined the room
+            if (newData.buyer_id && !oldData?.buyer_id) {
+              toast({ 
+                title: "🎉 Người mua đã vào phòng!", 
+                description: "Phòng giao dịch đã có đủ 2 bên" 
+              });
+            } else if (newData.seller_id && !oldData?.seller_id) {
+              toast({ 
+                title: "🎉 Người bán đã vào phòng!", 
+                description: "Phòng giao dịch đã có đủ 2 bên" 
+              });
+            }
+            
+            // Confirmations
+            if (newData.buyer_confirmed && !oldData?.buyer_confirmed) {
+              toast({ 
+                title: "✅ Người mua đã xác nhận!", 
+                description: "Người mua xác nhận tham gia giao dịch" 
+              });
+            }
+            if (newData.seller_confirmed && !oldData?.seller_confirmed) {
+              toast({ 
+                title: "✅ Người bán đã xác nhận!", 
+                description: "Người bán xác nhận sẵn sàng giao hàng" 
+              });
+            }
+            
+            // Status changes
+            if (newData.status !== oldData?.status) {
+              switch (newData.status) {
+                case "deposited":
+                  toast({ 
+                    title: "💰 Đã đặt cọc!", 
+                    description: "Người mua đã thanh toán vào hệ thống" 
+                  });
+                  break;
+                case "shipping":
+                  toast({ 
+                    title: "🚚 Đang giao hàng!", 
+                    description: "Người bán đã gửi hàng" 
+                  });
+                  break;
+                case "completed":
+                  toast({ 
+                    title: "🎊 Giao dịch hoàn tất!", 
+                    description: "Tiền đã được giải ngân cho người bán" 
+                  });
+                  break;
+                case "disputed":
+                  toast({ 
+                    title: "⚠️ Có khiếu nại!", 
+                    description: "Giao dịch đang chờ Admin xử lý",
+                    variant: "destructive"
+                  });
+                  break;
+                case "refunded":
+                  toast({ 
+                    title: "↩️ Đã hoàn tiền!", 
+                    description: "Tiền đã được hoàn lại cho người mua" 
+                  });
+                  break;
+                case "cancelled":
+                  toast({ 
+                    title: "❌ Giao dịch đã hủy", 
+                    variant: "destructive"
+                  });
+                  break;
+              }
             }
           }
         }
