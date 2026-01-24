@@ -1,43 +1,43 @@
 import { motion } from "framer-motion";
 import { 
   Shield, 
-  Zap, 
-  BarChart3, 
-  Wallet, 
   Clock, 
-  Users 
+  MessageSquare, 
+  FileWarning, 
+  Calculator, 
+  Smartphone 
 } from "lucide-react";
 
 const features = [
   {
     icon: Shield,
-    title: "Bảo mật tối đa",
-    description: "Hệ thống bảo mật đa lớp với mã hóa 256-bit, xác thực 2 yếu tố và cold wallet lưu trữ.",
-  },
-  {
-    icon: Zap,
-    title: "Giao dịch siêu nhanh",
-    description: "Xử lý hàng triệu giao dịch mỗi giây với độ trễ dưới 10ms, đảm bảo bạn không bỏ lỡ cơ hội.",
-  },
-  {
-    icon: BarChart3,
-    title: "Công cụ phân tích",
-    description: "Biểu đồ chuyên nghiệp, chỉ báo kỹ thuật và tín hiệu giao dịch real-time từ chuyên gia.",
-  },
-  {
-    icon: Wallet,
-    title: "Phí thấp nhất",
-    description: "Chỉ 0.1% phí giao dịch, miễn phí nạp rút và nhiều ưu đãi cho thành viên VIP.",
+    title: "Bảo vệ người mua & người bán",
+    description: "Tiền được giữ an toàn trong hệ thống cho đến khi cả hai bên xác nhận hài lòng. Không ai có thể lừa đảo.",
   },
   {
     icon: Clock,
-    title: "Hỗ trợ 24/7",
-    description: "Đội ngũ hỗ trợ chuyên nghiệp sẵn sàng giải đáp mọi thắc mắc bất kể ngày đêm.",
+    title: "Thời gian khiếu nại linh hoạt",
+    description: "Tự do thiết lập thời gian khiếu nại từ 1 giờ đến 7 ngày tùy thuộc vào loại giao dịch của bạn.",
   },
   {
-    icon: Users,
-    title: "Cộng đồng lớn mạnh",
-    description: "Tham gia cộng đồng hơn 2.5 triệu nhà đầu tư, chia sẻ kinh nghiệm và cơ hội giao dịch.",
+    icon: MessageSquare,
+    title: "Chat trực tiếp trong giao dịch",
+    description: "Trao đổi thông tin, gửi hình ảnh và cập nhật trạng thái ngay trong từng đơn hàng.",
+  },
+  {
+    icon: FileWarning,
+    title: "Hệ thống khiếu nại công bằng",
+    description: "Khi có tranh chấp, Admin sẽ xem xét bằng chứng từ cả hai bên và đưa ra quyết định công bằng nhất.",
+  },
+  {
+    icon: Calculator,
+    title: "Phí minh bạch, tùy chỉnh",
+    description: "Phí sàn từ 1-20%, có thể chọn người mua hoặc người bán chịu phí, hoặc chia đôi.",
+  },
+  {
+    icon: Smartphone,
+    title: "Giao diện thân thiện",
+    description: "Thiết kế responsive hoàn hảo trên mọi thiết bị. Giao dịch mọi lúc mọi nơi từ điện thoại của bạn.",
   },
 ];
 
@@ -58,11 +58,11 @@ const FeaturesSection = () => {
           </span>
           <h2 className="font-display text-3xl lg:text-5xl font-bold mt-4 mb-6">
             Tại sao chọn{" "}
-            <span className="gradient-text">TradeX</span>?
+            <span className="gradient-text">EscrowVN</span>?
           </h2>
           <p className="text-muted-foreground text-lg">
-            Nền tảng giao dịch được thiết kế với công nghệ hiện đại nhất, 
-            đặt sự an toàn và tiện lợi của bạn lên hàng đầu.
+            Chúng tôi xây dựng hệ thống với tiêu chí an toàn, minh bạch và 
+            công bằng cho mọi giao dịch online.
           </p>
         </motion.div>
 
