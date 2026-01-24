@@ -315,10 +315,20 @@ const TransactionDetail = () => {
 
                     {/* Buyer actions */}
                     {isBuyer && transaction.status === "pending" && (
-                      <Button onClick={handleMockDeposit} className="w-full glow-primary">
-                        <DollarSign className="w-4 h-4 mr-2" />
-                        Thanh toán (Giả lập)
-                      </Button>
+                      <>
+                        <Button onClick={handleMockDeposit} className="w-full glow-primary">
+                          <DollarSign className="w-4 h-4 mr-2" />
+                          Thanh toán (Giả lập)
+                        </Button>
+                        <Button
+                          onClick={() => handleStatusUpdate("cancelled")}
+                          variant="destructive"
+                          className="w-full"
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Hủy giao dịch
+                        </Button>
+                      </>
                     )}
 
                     {isBuyer && transaction.status === "shipping" && (

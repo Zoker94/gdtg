@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -24,10 +23,12 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCreateTransaction, FeeBearer } from "@/hooks/useTransactions";
-import { Calculator, Upload, X, ImageIcon } from "lucide-react";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { Calculator, ImageIcon, X, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CATEGORIES = [
   { value: "game_account", label: "Tài khoản game" },
@@ -42,9 +43,7 @@ const formSchema = z.object({
   product_description: z.string().max(1000).optional(),
   category: z.string().min(1, "Vui lòng chọn danh mục"),
   amount: z.number().min(10000, "Số tiền tối thiểu là 10,000 VNĐ"),
-  platform_fee_percent: z.number().min(1).max(20),
   fee_bearer: z.enum(["buyer", "seller", "split"]),
-  dispute_time_hours: z.number().min(1).max(168),
   role: z.enum(["buyer", "seller"]),
 });
 
@@ -54,6 +53,7 @@ export const CreateTransactionForm = () => {
   const navigate = useNavigate();
   const createTransaction = useCreateTransaction();
   const { user } = useAuth();
+  const { data: platformSettings, isLoading: settingsLoading } = usePlatformSettings();
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,19 +65,19 @@ export const CreateTransactionForm = () => {
       product_description: "",
       category: "",
       amount: 100000,
-      platform_fee_percent: 5,
       fee_bearer: "buyer",
-      dispute_time_hours: 24,
       role: "seller",
     },
   });
 
   const watchAmount = form.watch("amount");
-  const watchFeePercent = form.watch("platform_fee_percent");
   const watchFeeBearer = form.watch("fee_bearer");
 
+  const feePercent = platformSettings?.default_fee_percent || 5;
+  const disputeHours = platformSettings?.default_dispute_hours || 24;
+
   const calculatePreview = () => {
-    const fee = (watchAmount || 0) * ((watchFeePercent || 0) / 100);
+    const fee = (watchAmount || 0) * (feePercent / 100);
     let sellerReceives = watchAmount || 0;
 
     if (watchFeeBearer === "seller") {
@@ -159,9 +159,9 @@ export const CreateTransactionForm = () => {
       product_name: values.product_name,
       product_description: values.product_description,
       amount: values.amount,
-      platform_fee_percent: values.platform_fee_percent,
+      platform_fee_percent: feePercent,
       fee_bearer: values.fee_bearer as FeeBearer,
-      dispute_time_hours: values.dispute_time_hours,
+      dispute_time_hours: disputeHours,
     };
 
     if (values.role === "seller") {
@@ -173,6 +173,21 @@ export const CreateTransactionForm = () => {
     const result = await createTransaction.mutateAsync(transactionData);
     navigate(`/transaction/${result.id}`);
   };
+
+  if (settingsLoading) {
+    return (
+      <Card className="max-w-2xl mx-auto border-border shadow-sm">
+        <CardHeader className="pb-4">
+          <Skeleton className="h-6 w-48" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="max-w-2xl mx-auto border-border shadow-sm">
@@ -314,92 +329,55 @@ export const CreateTransactionForm = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Số tiền (VNĐ) *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="100000"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Số tiền (VNĐ) *</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="100000"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="platform_fee_percent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phí sàn (%) *</FormLabel>
+            <FormField
+              control={form.control}
+              name="fee_bearer"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Người chịu phí *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={20}
-                        step={0.5}
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    <SelectContent>
+                      <SelectItem value="buyer">Người mua</SelectItem>
+                      <SelectItem value="seller">Người bán</SelectItem>
+                      <SelectItem value="split">Chia đôi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="fee_bearer"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Người chịu phí *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="buyer">Người mua</SelectItem>
-                        <SelectItem value="seller">Người bán</SelectItem>
-                        <SelectItem value="split">Chia đôi</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="dispute_time_hours"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Thời gian khiếu nại *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={168}
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormDescription>giờ (max 168h)</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Platform Settings Info */}
+            <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg text-sm">
+              <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="text-muted-foreground">
+                <p>Phí sàn: <span className="font-medium text-foreground">{feePercent}%</span></p>
+                <p>Thời gian khiếu nại: <span className="font-medium text-foreground">{disputeHours} giờ</span></p>
+              </div>
             </div>
 
             {/* Fee Preview */}
