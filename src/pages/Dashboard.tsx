@@ -9,13 +9,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Wallet, Package, CreditCard, ArrowDownToLine } from "lucide-react";
+import { Plus, Wallet, Package, CreditCard, ArrowDownToLine, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import DashboardHeader from "@/components/DashboardHeader";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import DashboardRoomMap from "@/components/DashboardRoomMap";
 import ModeratorsList from "@/components/ModeratorsList";
+import { useState } from "react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -202,11 +203,24 @@ const Dashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <h2 className="text-lg font-semibold mb-3">
-              Lịch sử giao dịch ({completedTransactions.length})
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">
+                Lịch sử giao dịch ({completedTransactions.length})
+              </h2>
+              {completedTransactions.length > 3 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/transaction-history")}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Xem tất cả
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {completedTransactions.slice(0, 6).map((transaction) => (
+              {completedTransactions.slice(0, 3).map((transaction) => (
                 <TransactionCard key={transaction.id} transaction={transaction} />
               ))}
             </div>
