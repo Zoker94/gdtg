@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { Transaction } from "@/hooks/useTransactions";
 
 interface ParticipantsRealtimeConfig {
   transactionId: string;
@@ -17,15 +18,17 @@ export const useParticipantsRealtime = ({
   initialArbiter,
 }: ParticipantsRealtimeConfig) => {
   const queryClient = useQueryClient();
-  const previousModeratorRef = useRef<string | null | undefined>(initialModerator);
-  const previousArbiterRef = useRef<string | null | undefined>(initialArbiter);
+  const notifiedRef = useRef<Set<string>>(new Set());
 
+  // Track already-present staff to prevent duplicate notifications
   useEffect(() => {
-    previousModeratorRef.current = initialModerator;
-    previousArbiterRef.current = initialArbiter;
+    if (initialModerator) notifiedRef.current.add(initialModerator);
+    if (initialArbiter) notifiedRef.current.add(initialArbiter);
   }, [initialModerator, initialArbiter]);
 
   useEffect(() => {
+    if (!transactionId) return;
+
     const channel = supabase
       .channel(`participants-${transactionId}`)
       .on(
@@ -37,57 +40,55 @@ export const useParticipantsRealtime = ({
           filter: `id=eq.${transactionId}`,
         },
         async (payload) => {
-          const newData = payload.new as {
-            moderator_id?: string | null;
-            arbiter_id?: string | null;
-          };
+          const newData = payload.new as Partial<Transaction>;
 
-          // Check if moderator just joined
+          // Immediately update cache for instant UI response
+          queryClient.setQueryData<Transaction>(
+            ["transaction", transactionId],
+            (old) => old ? { ...old, ...newData } : old
+          );
+
+          // Check if moderator just joined (and not already notified)
           if (
             newData.moderator_id &&
-            !previousModeratorRef.current &&
-            newData.moderator_id !== currentUserId
+            newData.moderator_id !== currentUserId &&
+            !notifiedRef.current.has(newData.moderator_id)
           ) {
-            // Fetch moderator profile
+            notifiedRef.current.add(newData.moderator_id);
+            
+            // Fetch moderator name
             const { data: modProfile } = await supabase
               .from("moderator_profiles")
               .select("display_name")
               .eq("user_id", newData.moderator_id)
-              .single();
+              .maybeSingle();
 
             toast({
-              title: "👨‍💼 Quản lý viên đã tham gia",
-              description: modProfile?.display_name 
-                ? `${modProfile.display_name} đã vào phòng`
-                : "Một quản lý viên đã vào phòng hỗ trợ",
+              title: "🎯 Giao dịch viên đã tham gia",
+              description: modProfile?.display_name || "GDV đã vào phòng để hỗ trợ",
             });
-            previousModeratorRef.current = newData.moderator_id;
           }
 
           // Check if arbiter (admin) just joined
           if (
             newData.arbiter_id &&
-            !previousArbiterRef.current &&
-            newData.arbiter_id !== currentUserId
+            newData.arbiter_id !== currentUserId &&
+            !notifiedRef.current.has(newData.arbiter_id)
           ) {
-            // Fetch admin profile
+            notifiedRef.current.add(newData.arbiter_id);
+            
+            // Fetch admin name
             const { data: adminProfile } = await supabase
               .from("profiles")
               .select("full_name")
               .eq("user_id", newData.arbiter_id)
-              .single();
+              .maybeSingle();
 
             toast({
               title: "🛡️ Admin đã tham gia",
-              description: adminProfile?.full_name 
-                ? `${adminProfile.full_name} đã vào phòng để phân xử`
-                : "Một Admin đã vào phòng để phân xử",
+              description: adminProfile?.full_name || "Admin đã vào phòng để phán xử",
             });
-            previousArbiterRef.current = newData.arbiter_id;
           }
-
-          // Invalidate transaction query
-          queryClient.invalidateQueries({ queryKey: ["transaction", transactionId] });
         }
       )
       .subscribe();
