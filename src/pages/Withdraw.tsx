@@ -162,7 +162,7 @@ const Withdraw = () => {
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            <span className="font-display font-bold text-base">EscrowVN</span>
+            <span className="font-display font-bold text-base">GDTG</span>
           </Link>
         </div>
       </header>

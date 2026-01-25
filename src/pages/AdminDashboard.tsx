@@ -274,7 +274,7 @@ const AdminDashboard = () => {
             </Button>
             <Link to="/" className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" />
-              <span className="font-display font-bold text-base">EscrowVN</span>
+              <span className="font-display font-bold text-base">GDTG</span>
               <Badge variant="destructive" className="text-xs">Admin</Badge>
             </Link>
           </div>
