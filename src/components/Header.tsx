@@ -11,8 +11,8 @@ const Header = () => {
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-sm">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <Shield className="w-6 h-6 text-primary" />
-          <span className="font-bold text-lg">EscrowVN</span>
+          <Shield className="w-5 h-5 text-primary" />
+          <span className="font-bold text-base">GDTG</span>
         </Link>
 
         <div className="flex items-center gap-2">
