@@ -53,28 +53,37 @@ serve(async (req) => {
       });
     }
 
-    // Extract deposit ID from content (format: NAP{short_id} where short_id is first 8 chars of UUID)
+    // Extract deposit ID from content
+    // Format supported:
+    // - NAP{8-hex}  (new short format, e.g. NAP941397C5)
+    // - NAP{uuid}   (legacy full UUID)
     let depositId: string | null = null;
-    
-    // Pattern 1: NAP followed by 8 hex chars (short format - new)
+
+    // Pattern 1: NAP followed by 8 hex chars (short format)
     const napShortMatch = content?.match(/NAP([A-F0-9]{8})/i);
     if (napShortMatch) {
       const shortId = napShortMatch[1].toLowerCase();
       console.log("Found short deposit ID prefix:", shortId);
-      
-      // Find deposit where ID starts with this prefix
-      const { data: deposits } = await supabase
+
+      // NOTE: `like/ilike` filters don't work reliably on UUID columns in PostgREST,
+      // so we fetch recent pending deposits and match prefix in JS.
+      const { data: candidates, error: candidatesError } = await supabase
         .from("deposits")
         .select("id")
-        .like("id", `${shortId}%`)
         .eq("status", "pending")
-        .limit(1);
-      
-      if (deposits && deposits.length > 0) {
-        depositId = deposits[0].id;
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (candidatesError) {
+        console.log("Error loading deposit candidates:", candidatesError);
+      }
+
+      const matched = candidates?.find((d) => d.id.toLowerCase().startsWith(shortId));
+      if (matched) {
+        depositId = matched.id;
       }
     }
-    
+
     // Pattern 2: NAP followed by full UUID (legacy support)
     if (!depositId) {
       const napFullMatch = content?.match(/NAP([a-f0-9-]{36})/i);
@@ -114,52 +123,24 @@ serve(async (req) => {
       // Still update but log the discrepancy
     }
 
-    // Update deposit status to completed
-    const { error: updateDepositError } = await supabase
-      .from("deposits")
-      .update({
-        status: "completed",
-        confirmed_at: new Date().toISOString(),
-        transaction_ref: referenceCode || String(sepayTransactionId),
-        admin_note: `Tự động xác nhận qua SePay. Số tiền thực nhận: ${transferAmount.toLocaleString()}đ`,
-      })
-      .eq("id", depositId);
-
-    if (updateDepositError) {
-      console.error("Error updating deposit:", updateDepositError);
-      throw updateDepositError;
-    }
-
-    // Add balance to user profile
-    const { error: updateBalanceError } = await supabase
-      .from("profiles")
-      .update({
-        balance: supabase.rpc("", {}), // We need to use raw SQL for increment
-      })
-      .eq("user_id", deposit.user_id);
-
-    // Use raw update with increment
-    const { error: balanceError } = await supabase.rpc("confirm_deposit_auto", {
-      p_deposit_id: depositId,
-      p_amount: transferAmount,
+    // Confirm deposit & add balance (single source of truth)
+    const { error: confirmError } = await supabase.rpc("confirm_deposit", {
+      deposit_id: depositId,
     });
 
-    // Fallback: direct balance update if RPC doesn't exist
-    if (balanceError) {
-      console.log("RPC not available, using direct update");
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("balance")
-        .eq("user_id", deposit.user_id)
-        .single();
-
-      if (profile) {
-        await supabase
-          .from("profiles")
-          .update({ balance: profile.balance + transferAmount })
-          .eq("user_id", deposit.user_id);
-      }
+    if (confirmError) {
+      console.error("Error confirming deposit via RPC:", confirmError);
+      throw confirmError;
     }
+
+    // Attach SePay reference for traceability (non-critical)
+    await supabase
+      .from("deposits")
+      .update({
+        transaction_ref: referenceCode || String(sepayTransactionId),
+        admin_note: `Tự động xác nhận qua SePay. Số tiền thực nhận: ${Number(transferAmount).toLocaleString()}đ`,
+      })
+      .eq("id", depositId);
 
     console.log("Deposit confirmed successfully:", depositId);
 
