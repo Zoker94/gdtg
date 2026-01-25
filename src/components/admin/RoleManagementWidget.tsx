@@ -272,11 +272,12 @@ const RoleManagementWidget = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="admin">Admin (Toàn quyền)</SelectItem>
                   <SelectItem value="moderator">Quản lý (Moderator)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Chỉ Admin mới có thể thêm quyền. Moderator không có quyền này.
+                Chỉ Admin mới có thể thêm quyền. Admin có toàn quyền hệ thống.
               </p>
             </div>
           </div>
