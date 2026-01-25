@@ -15,7 +15,7 @@ interface TermsConfirmationProps {
 const TERMS_CREATE = [
   "Tôi cam kết cung cấp thông tin sản phẩm chính xác và đầy đủ.",
   "Tôi hiểu rằng phí sàn sẽ được tính theo cài đặt của nền tảng.",
-  "Tôi đồng ý tuân thủ quy trình giao dịch của EscrowVN.",
+  "Tôi đồng ý tuân thủ quy trình giao dịch của GDTG.",
   "Tôi chịu trách nhiệm về tính hợp pháp của sản phẩm giao dịch.",
   "Tôi không thực hiện các hành vi lừa đảo, gian lận.",
 ];

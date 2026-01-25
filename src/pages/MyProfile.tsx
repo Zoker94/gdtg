@@ -97,19 +97,18 @@ const MyProfile = () => {
     try {
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
 
-      // Upload to storage
+      // Upload to storage - path is just the filename since bucket is 'avatars'
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, { upsert: true });
+        .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: urlData } = supabase.storage
         .from("avatars")
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
       // Update profile
       await updateProfile.mutateAsync({ avatar_url: urlData.publicUrl });
@@ -215,8 +214,8 @@ const MyProfile = () => {
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Shield className="w-6 h-6 text-primary" />
-            <span className="font-display font-bold text-xl">EscrowVN</span>
+            <Shield className="w-5 h-5 text-primary" />
+            <span className="font-display font-bold text-base">GDTG</span>
           </Link>
           <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
             Dashboard

@@ -11,8 +11,8 @@ const Index = () => {
       <AnnouncementBanner />
       <main>
         <HeroSection />
-        <section className="py-8 px-4">
-          <div className="container mx-auto max-w-4xl">
+        <section className="py-6 px-4">
+          <div className="container mx-auto max-w-5xl">
             <ModeratorsList variant="compact" maxItems={3} />
           </div>
         </section>
