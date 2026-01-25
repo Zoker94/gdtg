@@ -13,7 +13,7 @@ const Index = () => {
         <HeroSection />
         <section className="py-6 px-4">
           <div className="container mx-auto max-w-5xl">
-            <ModeratorsList variant="compact" maxItems={3} />
+            <ModeratorsList variant="compact" maxItems={9} />
           </div>
         </section>
       </main>
