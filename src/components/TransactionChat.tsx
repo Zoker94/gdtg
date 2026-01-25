@@ -78,7 +78,8 @@ export const TransactionChat = ({ transactionId, className }: TransactionChatPro
   const { data: messages, isLoading } = useMessages(transactionId);
   const sendMessage = useSendMessage();
   const [newMessage, setNewMessage] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const notifiedUsersRef = useRef<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -89,10 +90,13 @@ export const TransactionChat = ({ transactionId, className }: TransactionChatPro
   const { data: userRoles } = useUserRoles(senderIds);
   const { data: userProfiles } = useUserProfiles(senderIds);
 
+  // Auto scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    scrollToBottom();
   }, [messages]);
 
   // Notify when admin/moderator joins (sends first message)
@@ -261,7 +265,7 @@ export const TransactionChat = ({ transactionId, className }: TransactionChatPro
           </div>
         </div>
 
-        <ScrollArea className="flex-1 p-3" ref={scrollRef}>
+        <ScrollArea className="flex-1 p-3" ref={scrollAreaRef}>
           {isLoading ? (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
               Đang tải...
@@ -309,6 +313,8 @@ export const TransactionChat = ({ transactionId, className }: TransactionChatPro
                   </div>
                 );
               })}
+              {/* Scroll anchor */}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>
