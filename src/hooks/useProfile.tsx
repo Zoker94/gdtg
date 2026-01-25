@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
+export type KYCStatus = "none" | "pending" | "approved" | "rejected";
+
 export interface Profile {
   id: string;
   user_id: string;
@@ -11,6 +13,10 @@ export interface Profile {
   balance: number;
   reputation_score: number;
   total_transactions: number;
+  kyc_status: KYCStatus;
+  is_banned: boolean;
+  ban_reason: string | null;
+  warning_message: string | null;
   created_at: string;
   updated_at: string;
 }

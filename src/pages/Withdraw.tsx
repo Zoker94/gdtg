@@ -27,6 +27,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -151,6 +152,43 @@ const Withdraw = () => {
             <Button onClick={() => navigate("/auth")}>Đăng nhập</Button>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Check if KYC is not approved
+  const isKYCApproved = profile?.kyc_status === "approved";
+
+  if (!profileLoading && !isKYCApproved) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-card sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              <span className="font-display font-bold text-base">GDTG</span>
+            </Link>
+          </div>
+        </header>
+        <AnnouncementBanner />
+        <main className="container mx-auto px-4 py-6 max-w-2xl">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Quay lại Dashboard
+          </Button>
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardContent className="py-8 text-center">
+              <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+              <p className="text-lg font-semibold mb-2">Yêu cầu xác minh danh tính</p>
+              <p className="text-muted-foreground mb-4">
+                Bạn cần hoàn thành xác minh KYC để có thể rút tiền. Điều này giúp bảo vệ tài khoản và giao dịch của bạn.
+              </p>
+              <Button onClick={() => navigate("/kyc")}>
+                Xác minh ngay
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
       </div>
     );
   }
