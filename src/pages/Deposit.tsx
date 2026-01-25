@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, ArrowLeft, CreditCard, Building, Smartphone, Copy, Check, QrCode, CheckCircle } from "lucide-react";
+import { Shield, ArrowLeft, CreditCard, Building, Copy, Check, QrCode, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,33 +11,21 @@ import { useProfile } from "@/hooks/useProfile";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { toast } from "@/hooks/use-toast";
 
-const paymentMethods = [
-  {
-    id: "bank",
-    name: "Chuyển khoản ngân hàng",
-    icon: Building,
-    description: "Xác nhận trong 5-15 phút",
-  },
-  {
-    id: "momo",
-    name: "Ví MoMo",
-    icon: Smartphone,
-    description: "Xác nhận tức thì",
-  },
-  {
-    id: "zalopay",
-    name: "ZaloPay",
-    icon: Smartphone,
-    description: "Xác nhận tức thì",
-  },
-];
+const predefinedAmounts = [10000, 50000, 100000, 200000, 500000, 1000000, 2000000];
 
-const momoInfo = {
-  phone: "0912345678",
-  name: "ESCROW VN",
+// Map bank names to VietQR BIN codes
+const bankBinMap: Record<string, string> = {
+  "Vietcombank": "970436",
+  "BIDV": "970418",
+  "VietinBank": "970415",
+  "Techcombank": "970407",
+  "MB Bank": "970422",
+  "ACB": "970416",
+  "Sacombank": "970403",
+  "VPBank": "970432",
+  "TPBank": "970423",
+  "Agribank": "970405",
 };
-
-const predefinedAmounts = [50000, 100000, 200000, 500000, 1000000, 2000000];
 
 const Deposit = () => {
   const navigate = useNavigate();
@@ -46,7 +33,7 @@ const Deposit = () => {
   const { data: profile } = useProfile();
   const { data: settings } = usePlatformSettings();
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState("bank");
+  const [customAmount, setCustomAmount] = useState("");
   const [step, setStep] = useState<"input" | "payment">("input");
   const [loading, setLoading] = useState(false);
   const [depositId, setDepositId] = useState<string | null>(null);
@@ -86,7 +73,7 @@ const Deposit = () => {
       .insert({
         user_id: user.id,
         amount: numAmount,
-        payment_method: method,
+        payment_method: "bank",
         transaction_ref: `DEP-${Date.now()}`,
         is_submitted: false,
       })
@@ -126,6 +113,20 @@ const Deposit = () => {
   };
 
   const transferContent = depositId ? `NAP${depositId}` : "";
+  
+  // Generate VietQR URL
+  const getBankBin = (bankName: string) => {
+    for (const [key, bin] of Object.entries(bankBinMap)) {
+      if (bankName.toLowerCase().includes(key.toLowerCase())) {
+        return bin;
+      }
+    }
+    return "970436"; // Default to Vietcombank
+  };
+
+  const vietQRUrl = depositId && amount 
+    ? `https://img.vietqr.io/image/${getBankBin(bankInfo.bank)}-${bankInfo.account}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(bankInfo.name)}`
+    : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -161,44 +162,43 @@ const Deposit = () => {
             <CardContent className="space-y-6">
               <div>
                 <Label className="mb-2 block">Số tiền nạp</Label>
-                <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="grid grid-cols-4 gap-2 mb-3">
                   {predefinedAmounts.map((a) => (
                     <Button
                       key={a}
                       variant={amount === a.toString() ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setAmount(a.toString())}
+                      onClick={() => {
+                        setAmount(a.toString());
+                        setCustomAmount("");
+                      }}
                     >
                       {a.toLocaleString()}đ
                     </Button>
                   ))}
                 </div>
-                <Input
-                  type="number"
-                  placeholder="Hoặc nhập số tiền khác..."
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  min={10000}
-                />
-                <p className="text-xs text-muted-foreground mt-1">Tối thiểu 10,000đ</p>
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Hoặc nhập số tiền khác:</Label>
+                  <Input
+                    type="number"
+                    placeholder="Nhập số tiền..."
+                    value={customAmount}
+                    onChange={(e) => {
+                      setCustomAmount(e.target.value);
+                      setAmount(e.target.value);
+                    }}
+                    min={10000}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Tối thiểu 10,000đ</p>
               </div>
 
-              <div>
-                <Label className="mb-3 block">Phương thức thanh toán</Label>
-                <RadioGroup value={method} onValueChange={setMethod} className="space-y-3">
-                  {paymentMethods.map((pm) => (
-                    <div key={pm.id} className="flex items-center space-x-3">
-                      <RadioGroupItem value={pm.id} id={pm.id} />
-                      <Label htmlFor={pm.id} className="flex items-center gap-3 cursor-pointer flex-1">
-                        <pm.icon className="w-5 h-5 text-primary" />
-                        <div>
-                          <p className="font-medium">{pm.name}</p>
-                          <p className="text-xs text-muted-foreground">{pm.description}</p>
-                        </div>
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 text-sm">
+                  <Building className="w-4 h-4 text-primary" />
+                  <span className="font-medium">Chuyển khoản ngân hàng</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Xác nhận tự động qua SePay</p>
               </div>
 
               <Button onClick={handleSubmit} className="w-full glow-primary" disabled={loading}>
@@ -218,86 +218,62 @@ const Deposit = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {method === "bank" && (
-                <>
-                  <div className="p-4 bg-muted rounded-lg space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Ngân hàng</span>
-                      <span className="font-medium">{bankInfo.bank}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Số tài khoản</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-medium">{bankInfo.account}</span>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyToClipboard(bankInfo.account, "account")}>
-                          {copiedField === "account" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Chủ tài khoản</span>
-                      <span className="font-medium">{bankInfo.name}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Số tiền</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-primary">{parseFloat(amount).toLocaleString()}đ</span>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyToClipboard(amount, "amount")}>
-                          {copiedField === "amount" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Nội dung CK</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-medium text-primary">{transferContent}</span>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyToClipboard(transferContent, "content")}>
-                          {copiedField === "content" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-center text-muted-foreground">
-                    ⚠️ Vui lòng nhập đúng nội dung chuyển khoản để được xác nhận nhanh nhất
-                  </p>
-                </>
+              {/* VietQR Code */}
+              {vietQRUrl && (
+                <div className="flex flex-col items-center p-4 bg-white rounded-lg border">
+                  <p className="text-sm font-medium text-gray-700 mb-3">Quét mã QR để chuyển khoản</p>
+                  <img 
+                    src={vietQRUrl} 
+                    alt="VietQR Code" 
+                    className="w-64 h-auto rounded-lg"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Quét bằng app ngân hàng hoặc ví điện tử</p>
+                </div>
               )}
 
-              {(method === "momo" || method === "zalopay") && (
-                <>
-                  <div className="p-4 bg-muted rounded-lg space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Số điện thoại</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-medium">{momoInfo.phone}</span>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyToClipboard(momoInfo.phone, "phone")}>
-                          {copiedField === "phone" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Tên</span>
-                      <span className="font-medium">{momoInfo.name}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Số tiền</span>
-                      <span className="font-medium text-primary">{parseFloat(amount).toLocaleString()}đ</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Lời nhắn</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-medium text-primary">{transferContent}</span>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyToClipboard(transferContent, "msg")}>
-                          {copiedField === "msg" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                    </div>
+              {/* Bank Transfer Info */}
+              <div className="p-4 bg-muted rounded-lg space-y-3">
+                <p className="text-sm font-medium text-center mb-2">Hoặc chuyển khoản thủ công:</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Ngân hàng</span>
+                  <span className="font-medium">{bankInfo.bank}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Số tài khoản</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-medium">{bankInfo.account}</span>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyToClipboard(bankInfo.account, "account")}>
+                      {copiedField === "account" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
                   </div>
-                  <p className="text-xs text-center text-muted-foreground">
-                    ⚠️ Vui lòng nhập đúng lời nhắn để được xác nhận tự động
-                  </p>
-                </>
-              )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Chủ tài khoản</span>
+                  <span className="font-medium">{bankInfo.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Số tiền</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-primary">{parseFloat(amount).toLocaleString()}đ</span>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyToClipboard(amount, "amount")}>
+                      {copiedField === "amount" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Nội dung CK</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-medium text-primary">{transferContent}</span>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyToClipboard(transferContent, "content")}>
+                      {copiedField === "content" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-xs text-center text-muted-foreground">
+                ⚠️ Nội dung chuyển khoản đã được điền sẵn trong mã QR. Hệ thống sẽ tự động xác nhận sau khi nhận được tiền.
+              </p>
 
               <div className="pt-4 border-t border-border space-y-3">
                 <p className="text-sm text-center text-muted-foreground">
