@@ -1,31 +1,33 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useModerators } from "@/hooks/useModerators";
-import { Users, ExternalLink, Phone, MessageCircle } from "lucide-react";
+import { Users, ExternalLink } from "lucide-react";
 
 interface ModeratorsListProps {
   variant?: "compact" | "full";
   maxItems?: number;
 }
 
-const ModeratorsList = ({ variant = "compact", maxItems = 3 }: ModeratorsListProps) => {
+const ModeratorsList = ({ variant = "compact", maxItems = 6 }: ModeratorsListProps) => {
   const navigate = useNavigate();
   const { data: moderators, isLoading } = useModerators();
 
   if (isLoading) {
     return (
       <Card>
-        <CardHeader className="py-3">
-          <Skeleton className="h-5 w-32" />
+        <CardHeader className="py-3 px-4">
+          <Skeleton className="h-5 w-40" />
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-16 w-full" />
+        <CardContent className="px-4">
+          <div className="grid grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <Skeleton className="h-16 w-16 rounded-full" />
+                <Skeleton className="h-3 w-16" />
+              </div>
             ))}
           </div>
         </CardContent>
@@ -41,45 +43,31 @@ const ModeratorsList = ({ variant = "compact", maxItems = 3 }: ModeratorsListPro
 
   return (
     <Card>
-      <CardHeader className="py-3">
-        <CardTitle className="text-base flex items-center gap-2">
+      <CardHeader className="py-3 px-4">
+        <CardTitle className="text-sm flex items-center gap-2">
           <Users className="w-4 h-4 text-primary" />
-          Giao Dịch Viên
-          <Badge variant="secondary" className="ml-auto">
-            {moderators.length}
-          </Badge>
+          Giao Dịch Viên theo số thứ tự:
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-2">
-          {displayModerators.map((mod) => (
+      <CardContent className="px-4 pt-0 pb-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+          {displayModerators.map((mod, index) => (
             <div
               key={mod.id}
-              className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+              className="flex flex-col items-center gap-1.5 cursor-pointer group"
               onClick={() => navigate(`/moderator/${mod.user_id}`)}
             >
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={mod.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  {mod.display_name.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{mod.display_name}</p>
-                {mod.specialization && (
-                  <p className="text-xs text-muted-foreground truncate">
-                    {mod.specialization}
-                  </p>
-                )}
+              <div className="relative">
+                <Avatar className="h-14 w-14 sm:h-16 sm:w-16 ring-2 ring-border group-hover:ring-primary transition-all">
+                  <AvatarImage src={mod.avatar_url || undefined} className="object-cover" />
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                    {mod.display_name.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
               </div>
-              <div className="flex items-center gap-1">
-                {mod.phone && (
-                  <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                )}
-                {(mod.facebook_url || mod.zalo_contact) && (
-                  <MessageCircle className="w-3.5 h-3.5 text-muted-foreground" />
-                )}
-              </div>
+              <p className="text-xs text-center font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                {index + 1}. {mod.display_name}
+              </p>
             </div>
           ))}
         </div>
@@ -87,11 +75,12 @@ const ModeratorsList = ({ variant = "compact", maxItems = 3 }: ModeratorsListPro
         {moderators.length > maxItems && (
           <Button 
             variant="ghost" 
-            className="w-full mt-2 text-sm"
+            size="sm"
+            className="w-full mt-3 text-xs"
             onClick={() => navigate("/moderators")}
           >
-            Xem tất cả
-            <ExternalLink className="w-3.5 h-3.5 ml-1" />
+            Xem tất cả ({moderators.length})
+            <ExternalLink className="w-3 h-3 ml-1" />
           </Button>
         )}
       </CardContent>
