@@ -16,15 +16,15 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Find transactions that are pending and older than 30 minutes
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    // Find transactions that are pending and older than 2 hours
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 
     // Get stale pending transactions (both buyer and seller not joined yet, or not deposited)
     const { data: staleTransactions, error: fetchError } = await supabase
       .from("transactions")
       .select("id, room_id, status, created_at")
       .in("status", ["pending"])
-      .lt("created_at", thirtyMinutesAgo);
+      .lt("created_at", twoHoursAgo);
 
     if (fetchError) {
       throw fetchError;
