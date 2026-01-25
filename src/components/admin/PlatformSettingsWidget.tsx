@@ -8,7 +8,7 @@ import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { Settings, Save, Percent, Clock, DollarSign } from "lucide-react";
+import { Settings, Save, Percent, Clock, DollarSign, MessageCircle } from "lucide-react";
 
 const PlatformSettingsWidget = () => {
   const queryClient = useQueryClient();
@@ -17,12 +17,14 @@ const PlatformSettingsWidget = () => {
   const [feePercent, setFeePercent] = useState(5);
   const [disputeHours, setDisputeHours] = useState(24);
   const [minAmount, setMinAmount] = useState(10000);
+  const [adminContactLink, setAdminContactLink] = useState("");
 
   useEffect(() => {
     if (settings) {
       setFeePercent(settings.default_fee_percent);
       setDisputeHours(settings.default_dispute_hours);
       setMinAmount(settings.min_transaction_amount);
+      setAdminContactLink(settings.admin_contact_link);
     }
   }, [settings]);
 
@@ -51,13 +53,15 @@ const PlatformSettingsWidget = () => {
       { key: "default_fee_percent", value: String(feePercent) },
       { key: "default_dispute_hours", value: String(disputeHours) },
       { key: "min_transaction_amount", value: String(minAmount) },
+      { key: "admin_contact_link", value: adminContactLink },
     ]);
   };
 
   const hasChanges = settings && (
     feePercent !== settings.default_fee_percent ||
     disputeHours !== settings.default_dispute_hours ||
-    minAmount !== settings.min_transaction_amount
+    minAmount !== settings.min_transaction_amount ||
+    adminContactLink !== settings.admin_contact_link
   );
 
   if (isLoading) {
@@ -139,6 +143,24 @@ const PlatformSettingsWidget = () => {
           />
           <p className="text-xs text-muted-foreground">
             Giá trị tối thiểu cho mỗi giao dịch
+          </p>
+        </div>
+
+        {/* Admin Contact Link */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 text-sm">
+            <MessageCircle className="w-3.5 h-3.5 text-muted-foreground" />
+            Link liên hệ Admin (Rút tiền)
+          </Label>
+          <Input
+            type="url"
+            placeholder="https://zalo.me/... hoặc https://m.me/..."
+            value={adminContactLink}
+            onChange={(e) => setAdminContactLink(e.target.value)}
+            className="h-9"
+          />
+          <p className="text-xs text-muted-foreground">
+            Link Zalo/Messenger để user liên hệ khi rút tiền
           </p>
         </div>
 
