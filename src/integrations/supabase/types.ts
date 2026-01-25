@@ -453,6 +453,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_balance: {
+        Args: { p_amount: number; p_note?: string; p_user_id: string }
+        Returns: undefined
+      }
       approve_kyc: { Args: { p_submission_id: string }; Returns: undefined }
       confirm_deposit: { Args: { deposit_id: string }; Returns: undefined }
       confirm_deposit_sepay: {

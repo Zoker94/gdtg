@@ -47,6 +47,7 @@ import {
   ArrowLeft,
   Settings,
   IdCard,
+  DollarSign,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -64,6 +65,7 @@ import {
   useRejectWithdrawal,
   useDeleteWithdrawal,
 } from "@/hooks/useWithdrawals";
+import { useAdjustBalance } from "@/hooks/useAdminBalance";
 import {
   useAnnouncements,
   useCreateAnnouncement,
@@ -126,6 +128,12 @@ const AdminDashboard = () => {
   const [rejectWithdrawalId, setRejectWithdrawalId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
+  // Balance adjustment
+  const [adjustBalanceUserId, setAdjustBalanceUserId] = useState<string | null>(null);
+  const [adjustBalanceAmount, setAdjustBalanceAmount] = useState("");
+  const [adjustBalanceNote, setAdjustBalanceNote] = useState("");
+  const [adjustBalanceUserName, setAdjustBalanceUserName] = useState("");
+
   // Hooks
   const { data: deposits, isLoading: depositsLoading, refetch: refetchDeposits } = useQuery({
     queryKey: ["admin-deposits"],
@@ -169,6 +177,7 @@ const AdminDashboard = () => {
   const confirmWithdrawal = useConfirmWithdrawal();
   const rejectWithdrawal = useRejectWithdrawal();
   const deleteWithdrawal = useDeleteWithdrawal();
+  const adjustBalance = useAdjustBalance();
 
   const isAdmin = roles?.isAdmin;
 
@@ -506,6 +515,20 @@ const AdminDashboard = () => {
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7" 
+                                  onClick={() => { 
+                                    setAdjustBalanceUserId(u.user_id); 
+                                    setAdjustBalanceUserName(u.full_name || u.user_id.slice(0, 8));
+                                    setAdjustBalanceAmount("");
+                                    setAdjustBalanceNote("");
+                                  }}
+                                  title="Cộng/Trừ tiền"
+                                >
+                                  <DollarSign className="w-3.5 h-3.5 text-green-500" />
+                                </Button>
                                 {u.is_banned ? (
                                   <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => unbanUser.mutate(u.user_id)}>
                                     <CheckCircle className="w-3.5 h-3.5 text-green-500" />
@@ -826,6 +849,61 @@ const AdminDashboard = () => {
               <Button variant="outline" onClick={() => setDeleteWithdrawalId(null)}>Hủy</Button>
               <Button variant="destructive" onClick={() => { deleteWithdrawal.mutate(deleteWithdrawalId!); setDeleteWithdrawalId(null); }}>
                 Xoá
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog: Adjust Balance */}
+        <Dialog open={!!adjustBalanceUserId} onOpenChange={() => setAdjustBalanceUserId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Điều chỉnh số dư</DialogTitle>
+              <DialogDescription>
+                Cộng hoặc trừ tiền cho tài khoản: <span className="font-semibold">{adjustBalanceUserName}</span>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Số tiền (VND)</label>
+                <Input 
+                  type="number" 
+                  placeholder="VD: 100000 (cộng) hoặc -50000 (trừ)" 
+                  value={adjustBalanceAmount} 
+                  onChange={(e) => setAdjustBalanceAmount(e.target.value)} 
+                />
+                <p className="text-xs text-muted-foreground">
+                  Nhập số dương để cộng tiền, số âm để trừ tiền
+                </p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Ghi chú (tùy chọn)</label>
+                <Textarea 
+                  placeholder="Lý do điều chỉnh..." 
+                  value={adjustBalanceNote} 
+                  onChange={(e) => setAdjustBalanceNote(e.target.value)} 
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAdjustBalanceUserId(null)}>Hủy</Button>
+              <Button 
+                onClick={() => { 
+                  const amount = parseFloat(adjustBalanceAmount);
+                  if (isNaN(amount) || amount === 0) {
+                    toast({ title: "Lỗi", description: "Vui lòng nhập số tiền hợp lệ", variant: "destructive" });
+                    return;
+                  }
+                  adjustBalance.mutate({ 
+                    userId: adjustBalanceUserId!, 
+                    amount, 
+                    note: adjustBalanceNote || undefined 
+                  }); 
+                  setAdjustBalanceUserId(null); 
+                }} 
+                disabled={adjustBalance.isPending || !adjustBalanceAmount}
+              >
+                {adjustBalance.isPending ? "Đang xử lý..." : "Xác nhận"}
               </Button>
             </DialogFooter>
           </DialogContent>
