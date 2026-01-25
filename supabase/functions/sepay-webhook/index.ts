@@ -53,26 +53,34 @@ serve(async (req) => {
       });
     }
 
-    // Extract deposit ID from content (format: NAP{deposit_id} or GDTG{deposit_id})
-    // Try multiple patterns
+    // Extract deposit ID from content (format: NAP{short_id} where short_id is first 8 chars of UUID)
     let depositId: string | null = null;
     
-    // Pattern 1: NAP followed by UUID
-    const napMatch = content?.match(/NAP([a-f0-9-]{36})/i);
-    if (napMatch) {
-      depositId = napMatch[1];
+    // Pattern 1: NAP followed by 8 hex chars (short format - new)
+    const napShortMatch = content?.match(/NAP([A-F0-9]{8})/i);
+    if (napShortMatch) {
+      const shortId = napShortMatch[1].toLowerCase();
+      console.log("Found short deposit ID prefix:", shortId);
+      
+      // Find deposit where ID starts with this prefix
+      const { data: deposits } = await supabase
+        .from("deposits")
+        .select("id")
+        .like("id", `${shortId}%`)
+        .eq("status", "pending")
+        .limit(1);
+      
+      if (deposits && deposits.length > 0) {
+        depositId = deposits[0].id;
+      }
     }
     
-    // Pattern 2: GDTG followed by UUID
-    const gdtgMatch = content?.match(/GDTG([a-f0-9-]{36})/i);
-    if (gdtgMatch) {
-      depositId = gdtgMatch[1];
-    }
-
-    // Pattern 3: Just UUID in content
-    const uuidMatch = content?.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
-    if (!depositId && uuidMatch) {
-      depositId = uuidMatch[1];
+    // Pattern 2: NAP followed by full UUID (legacy support)
+    if (!depositId) {
+      const napFullMatch = content?.match(/NAP([a-f0-9-]{36})/i);
+      if (napFullMatch) {
+        depositId = napFullMatch[1];
+      }
     }
 
     if (!depositId) {

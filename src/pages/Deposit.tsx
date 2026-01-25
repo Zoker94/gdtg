@@ -112,9 +112,11 @@ const Deposit = () => {
     setLoading(false);
   };
 
-  const transferContent = depositId ? `NAP${depositId}` : "";
+  // Shorten the deposit ID for transfer content (first 8 chars)
+  const shortDepositId = depositId ? depositId.substring(0, 8).toUpperCase() : "";
+  const transferContent = depositId ? `NAP${shortDepositId}` : "";
   
-  // Generate VietQR URL
+  // Generate VietQR URL using admin bank settings
   const getBankBin = (bankName: string) => {
     for (const [key, bin] of Object.entries(bankBinMap)) {
       if (bankName.toLowerCase().includes(key.toLowerCase())) {
@@ -124,8 +126,9 @@ const Deposit = () => {
     return "970436"; // Default to Vietcombank
   };
 
+  const bankBin = getBankBin(bankInfo.bank);
   const vietQRUrl = depositId && amount 
-    ? `https://img.vietqr.io/image/${getBankBin(bankInfo.bank)}-${bankInfo.account}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(bankInfo.name)}`
+    ? `https://img.vietqr.io/image/${bankBin}-${bankInfo.account}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(bankInfo.name)}`
     : null;
 
   return (
