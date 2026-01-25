@@ -80,6 +80,54 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_submissions: {
+        Row: {
+          back_image_url: string
+          created_at: string
+          date_of_birth: string | null
+          front_image_url: string
+          full_name: string
+          id: string
+          id_number: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          back_image_url: string
+          created_at?: string
+          date_of_birth?: string | null
+          front_image_url: string
+          full_name: string
+          id?: string
+          id_number: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          back_image_url?: string
+          created_at?: string
+          date_of_birth?: string | null
+          front_image_url?: string
+          full_name?: string
+          id?: string
+          id_number?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -203,6 +251,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_banned: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
           phone: string | null
           reputation_score: number
           total_transactions: number
@@ -219,6 +268,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_banned?: boolean
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
           phone?: string | null
           reputation_score?: number
           total_transactions?: number
@@ -235,6 +285,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_banned?: boolean
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
           phone?: string | null
           reputation_score?: number
           total_transactions?: number
@@ -402,6 +453,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_kyc: { Args: { p_submission_id: string }; Returns: undefined }
       confirm_deposit: { Args: { deposit_id: string }; Returns: undefined }
       confirm_deposit_sepay: {
         Args: {
@@ -423,6 +475,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      reject_kyc: {
+        Args: { p_reason: string; p_submission_id: string }
+        Returns: undefined
+      }
       reject_withdrawal: {
         Args: { reason: string; withdrawal_id: string }
         Returns: undefined
@@ -431,6 +487,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       fee_bearer: "buyer" | "seller" | "split"
+      kyc_status: "none" | "pending" | "approved" | "rejected"
       transaction_status:
         | "pending"
         | "deposited"
@@ -568,6 +625,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       fee_bearer: ["buyer", "seller", "split"],
+      kyc_status: ["none", "pending", "approved", "rejected"],
       transaction_status: [
         "pending",
         "deposited",

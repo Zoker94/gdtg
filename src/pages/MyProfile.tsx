@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useProfileRealtime } from "@/hooks/useProfileRealtime";
+import { useMyKycSubmission } from "@/hooks/useKYC";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -27,6 +28,10 @@ import {
   Check,
   X,
   LogOut,
+  IdCard,
+  CheckCircle,
+  Clock,
+  XCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -35,6 +40,7 @@ const MyProfile = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: profile, isLoading } = useProfile();
+  const { data: kycSubmission } = useMyKycSubmission();
   const updateProfile = useUpdateProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -350,6 +356,66 @@ const MyProfile = () => {
             </Card>
           </div>
 
+          {/* KYC Status Card */}
+          <Card className="border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <IdCard className="w-4 h-4 text-primary" />
+                Xác minh danh tính (KYC)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!kycSubmission || kycSubmission.status === "none" ? (
+                <div className="text-center py-4">
+                  <IdCard className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Xác minh danh tính để tăng độ tin cậy với đối tác giao dịch
+                  </p>
+                  <Button onClick={() => navigate("/kyc")} className="gap-2">
+                    <IdCard className="w-4 h-4" />
+                    Xác minh ngay
+                  </Button>
+                </div>
+              ) : kycSubmission.status === "pending" ? (
+                <div className="flex items-center gap-3 py-2">
+                  <Clock className="w-8 h-8 text-yellow-500" />
+                  <div>
+                    <Badge variant="secondary">Đang chờ duyệt</Badge>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Hồ sơ KYC của bạn đang được xem xét
+                    </p>
+                  </div>
+                </div>
+              ) : kycSubmission.status === "approved" ? (
+                <div className="flex items-center gap-3 py-2">
+                  <CheckCircle className="w-8 h-8 text-green-500" />
+                  <div>
+                    <Badge variant="default" className="bg-green-500">Đã xác minh</Badge>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Tài khoản của bạn đã được xác minh danh tính
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <XCircle className="w-8 h-8 text-destructive" />
+                    <div>
+                      <Badge variant="destructive">Bị từ chối</Badge>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {kycSubmission.rejection_reason || "Hồ sơ không hợp lệ"}
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" onClick={() => navigate("/kyc")} className="w-full gap-2">
+                    <IdCard className="w-4 h-4" />
+                    Gửi lại hồ sơ KYC
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Reputation Progress */}
           <Card className="border-border">
             <CardHeader className="pb-2">
@@ -385,7 +451,7 @@ const MyProfile = () => {
                   : "⚠ Hãy hoàn thành các giao dịch để cải thiện điểm uy tín"}
               </p>
               <p className="text-xs text-muted-foreground">
-                💡 Mẹo: Thêm ảnh đại diện và hoàn thành thông tin cá nhân giúp tăng độ uy tín với đối tác giao dịch.
+                💡 Mẹo: Xác minh KYC và hoàn thành giao dịch giúp tăng độ uy tín với đối tác.
               </p>
             </CardContent>
           </Card>
