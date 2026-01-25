@@ -13,47 +13,136 @@ export interface Message {
   created_at: string;
 }
 
+// Configuration for polling fallback
+const POLLING_INTERVAL = 3000; // 3 seconds fallback polling
+const REALTIME_TIMEOUT = 5000; // If no realtime update in 5s, start polling
+
 export const useMessages = (transactionId: string | undefined) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { playNotificationSound } = useNotificationSound();
   const isInitialMount = useRef(true);
   const processedMessageIds = useRef<Set<string>>(new Set());
+  const lastRealtimeUpdate = useRef<number>(Date.now());
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isRealtimeActive = useRef(false);
 
-  // Optimistic add message to cache for instant UI
-  const addMessageToCache = useCallback((newMessage: Message) => {
-    // Prevent duplicate messages
+  // Fetch messages from database
+  const fetchMessages = useCallback(async () => {
+    if (!transactionId) return [];
+
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("transaction_id", transactionId)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    return data as Message[];
+  }, [transactionId]);
+
+  // Add message to cache with duplicate prevention
+  const addMessageToCache = useCallback((newMessage: Message, fromRealtime = false) => {
     if (processedMessageIds.current.has(newMessage.id)) return;
     processedMessageIds.current.add(newMessage.id);
+
+    if (fromRealtime) {
+      lastRealtimeUpdate.current = Date.now();
+      isRealtimeActive.current = true;
+    }
 
     queryClient.setQueryData<Message[]>(
       ["messages", transactionId],
       (old) => {
         if (!old) return [newMessage];
-        // Double check for duplicates in cache
         if (old.some(m => m.id === newMessage.id)) return old;
-        return [...old, newMessage];
+        return [...old, newMessage].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
       }
     );
 
-    // Play sound only for messages from others
+    // Play sound for messages from others (not during initial load)
     if (newMessage.sender_id !== user?.id && !isInitialMount.current) {
       playNotificationSound();
     }
   }, [transactionId, queryClient, user?.id, playNotificationSound]);
 
-  // Set up realtime subscription - ultra fast updates
+  // Polling fallback - fetch new messages periodically
+  const pollForNewMessages = useCallback(async () => {
+    if (!transactionId) return;
+
+    try {
+      const currentMessages = queryClient.getQueryData<Message[]>(["messages", transactionId]) || [];
+      const lastMessageTime = currentMessages.length > 0 
+        ? currentMessages[currentMessages.length - 1].created_at 
+        : new Date(0).toISOString();
+
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("transaction_id", transactionId)
+        .gt("created_at", lastMessageTime)
+        .order("created_at", { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        data.forEach(msg => addMessageToCache(msg, false));
+      }
+    } catch (error) {
+      console.error("Polling error:", error);
+    }
+  }, [transactionId, queryClient, addMessageToCache]);
+
+  // Start/stop polling based on realtime status
+  const startPolling = useCallback(() => {
+    if (pollingIntervalRef.current) return;
+    
+    console.log("📡 Starting polling fallback...");
+    pollingIntervalRef.current = setInterval(pollForNewMessages, POLLING_INTERVAL);
+  }, [pollForNewMessages]);
+
+  const stopPolling = useCallback(() => {
+    if (pollingIntervalRef.current) {
+      console.log("🔥 Stopping polling - realtime active");
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  }, []);
+
+  // Monitor realtime health and toggle polling
   useEffect(() => {
     if (!transactionId) return;
 
-    // Reset processed IDs when transaction changes
+    const checkRealtimeHealth = () => {
+      const timeSinceLastUpdate = Date.now() - lastRealtimeUpdate.current;
+      
+      if (timeSinceLastUpdate > REALTIME_TIMEOUT && !pollingIntervalRef.current) {
+        startPolling();
+      } else if (isRealtimeActive.current && pollingIntervalRef.current) {
+        stopPolling();
+      }
+    };
+
+    const healthCheckInterval = setInterval(checkRealtimeHealth, 2000);
+
+    return () => {
+      clearInterval(healthCheckInterval);
+      stopPolling();
+    };
+  }, [transactionId, startPolling, stopPolling]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!transactionId) return;
+
     processedMessageIds.current.clear();
+    lastRealtimeUpdate.current = Date.now();
+    isRealtimeActive.current = false;
 
     const channel = supabase
       .channel(`messages-realtime-${transactionId}`, {
         config: {
           broadcast: { self: true },
-          presence: { key: user?.id || 'anonymous' },
         }
       })
       .on(
@@ -66,16 +155,27 @@ export const useMessages = (transactionId: string | undefined) => {
         },
         (payload) => {
           const newMessage = payload.new as Message;
-          addMessageToCache(newMessage);
+          addMessageToCache(newMessage, true);
+          
+          // Stop polling since realtime is working
+          if (pollingIntervalRef.current) {
+            stopPolling();
+          }
         }
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('Chat realtime connected!');
+          console.log('🔥 Chat realtime connected!');
+          isRealtimeActive.current = true;
+          lastRealtimeUpdate.current = Date.now();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.log('⚠️ Realtime issue, activating polling...');
+          isRealtimeActive.current = false;
+          startPolling();
         }
       });
 
-    // Mark initial mount complete after messages load
+    // Initial load complete after delay
     const timer = setTimeout(() => {
       isInitialMount.current = false;
     }, 500);
@@ -83,30 +183,20 @@ export const useMessages = (transactionId: string | undefined) => {
     return () => {
       supabase.removeChannel(channel);
       clearTimeout(timer);
+      stopPolling();
     };
-  }, [transactionId, user?.id, addMessageToCache]);
+  }, [transactionId, addMessageToCache, startPolling, stopPolling]);
 
   return useQuery({
     queryKey: ["messages", transactionId],
     queryFn: async () => {
-      if (!transactionId) return [];
-
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("transaction_id", transactionId)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      
-      // Add all fetched IDs to processed set to prevent duplicates
-      (data || []).forEach(m => processedMessageIds.current.add(m.id));
-      
-      return data as Message[];
+      const messages = await fetchMessages();
+      messages.forEach(m => processedMessageIds.current.add(m.id));
+      return messages;
     },
     enabled: !!transactionId,
-    staleTime: Infinity, // Never refetch automatically - rely on realtime
-    refetchOnWindowFocus: false,
+    staleTime: 30000, // Cache for 30 seconds
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
     refetchOnMount: true,
   });
 };
@@ -138,14 +228,12 @@ export const useSendMessage = () => {
       if (error) throw error;
       return data as Message;
     },
-    // Optimistic update - add message immediately before server confirms
+    // Optimistic update - instant UI feedback
     onMutate: async ({ transactionId, content }) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["messages", transactionId] });
 
-      // Optimistically add the message
       const optimisticMessage: Message = {
-        id: `temp-${Date.now()}`,
+        id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         transaction_id: transactionId,
         sender_id: user?.id || '',
         content,
@@ -161,19 +249,18 @@ export const useSendMessage = () => {
       return { optimisticMessage };
     },
     onSuccess: (data, variables, context) => {
-      // Replace optimistic message with real one
       queryClient.setQueryData<Message[]>(
         ["messages", data.transaction_id],
         (old) => {
           if (!old) return [data];
-          // Remove temp message and add real one (if not already added by realtime)
           const filtered = old.filter(m => !m.id.startsWith('temp-') && m.id !== data.id);
-          return [...filtered, data];
+          return [...filtered, data].sort(
+            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
         }
       );
     },
     onError: (error, variables, context) => {
-      // Remove optimistic message on error
       if (context?.optimisticMessage) {
         queryClient.setQueryData<Message[]>(
           ["messages", variables.transactionId],
