@@ -46,6 +46,7 @@ import {
   ArrowDownToLine,
   ArrowLeft,
   Settings,
+  IdCard,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -78,6 +79,7 @@ import PlatformSettingsWidget from "@/components/admin/PlatformSettingsWidget";
 import RoleManagementWidget from "@/components/admin/RoleManagementWidget";
 import ModeratorManagementWidget from "@/components/admin/ModeratorManagementWidget";
 import AdminBankSettingsWidget from "@/components/admin/AdminBankSettingsWidget";
+import KYCManagementWidget from "@/components/admin/KYCManagementWidget";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -325,12 +327,15 @@ const AdminDashboard = () => {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="w-full max-w-lg grid grid-cols-5">
+            <TabsList className="w-full max-w-2xl grid grid-cols-6">
               <TabsTrigger value="overview" className="text-xs">
                 <Package className="w-3.5 h-3.5 mr-1" /> Tổng quan
               </TabsTrigger>
               <TabsTrigger value="users" className="text-xs">
                 <Users className="w-3.5 h-3.5 mr-1" /> Users
+              </TabsTrigger>
+              <TabsTrigger value="kyc" className="text-xs">
+                <IdCard className="w-3.5 h-3.5 mr-1" /> KYC
               </TabsTrigger>
               <TabsTrigger value="withdrawals" className="text-xs">
                 <ArrowDownToLine className="w-3.5 h-3.5 mr-1" /> Rút
@@ -522,6 +527,11 @@ const AdminDashboard = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* KYC Tab */}
+            <TabsContent value="kyc" className="space-y-4">
+              <KYCManagementWidget />
             </TabsContent>
 
             {/* Withdrawals Tab */}
