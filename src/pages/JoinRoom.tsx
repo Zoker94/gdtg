@@ -40,7 +40,7 @@ const JoinRoom = () => {
 
     const { data: transaction, error } = await supabase
       .from("transactions")
-      .select("id, room_id, room_password, buyer_id, seller_id, amount, platform_fee_amount, fee_bearer")
+      .select("id, room_id, room_password, buyer_id, seller_id, moderator_id, arbiter_id, amount, platform_fee_amount, fee_bearer")
       .eq("room_id", roomId.toUpperCase())
       .maybeSingle();
 
@@ -69,6 +69,35 @@ const JoinRoom = () => {
 
     // Staff can join any room for moderation (without becoming buyer/seller)
     if (isStaff) {
+      // Count current participants
+      const participantCount = [
+        transaction.buyer_id,
+        transaction.seller_id,
+        transaction.moderator_id,
+        transaction.arbiter_id
+      ].filter(Boolean).length;
+      
+      // Check if staff is already in room
+      const isAlreadyStaff = user && (transaction.moderator_id === user.id || transaction.arbiter_id === user.id);
+      
+      if (!isAlreadyStaff && participantCount >= 4) {
+        toast({ 
+          title: "Phòng đã đầy", 
+          description: "Phòng giao dịch đã có đủ 4 người (Mua, Bán, GDV, Admin)", 
+          variant: "destructive" 
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Assign arbiter_id if staff is admin and arbiter slot is empty
+      if (userRole?.isAdmin && !transaction.arbiter_id && user && transaction.moderator_id !== user.id) {
+        await supabase
+          .from("transactions")
+          .update({ arbiter_id: user.id })
+          .eq("id", transaction.id);
+      }
+      
       // Send system message announcing staff entry
       await sendStaffJoinMessage(transaction.id);
       toast({ 
@@ -80,9 +109,27 @@ const JoinRoom = () => {
       return;
     }
 
-    // Check if room is full
+    // Check if room is full (buyer + seller slots)
     if (transaction.buyer_id && transaction.seller_id) {
-      toast({ title: "Lỗi", description: "Phòng đã có đủ người giao dịch", variant: "destructive" });
+      toast({ title: "Lỗi", description: "Phòng đã có đủ 2 người giao dịch (mua và bán)", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+    
+    // Check total participant limit (4 max)
+    const participantCount = [
+      transaction.buyer_id,
+      transaction.seller_id,
+      transaction.moderator_id,
+      transaction.arbiter_id
+    ].filter(Boolean).length;
+    
+    if (participantCount >= 4) {
+      toast({ 
+        title: "Phòng đã đầy", 
+        description: "Phòng giao dịch đã có đủ 4 người", 
+        variant: "destructive" 
+      });
       setLoading(false);
       return;
     }
