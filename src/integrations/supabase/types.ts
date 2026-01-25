@@ -298,6 +298,7 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          arbiter_id: string | null
           buyer_confirmed: boolean | null
           buyer_id: string | null
           category: string | null
@@ -328,6 +329,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          arbiter_id?: string | null
           buyer_confirmed?: boolean | null
           buyer_id?: string | null
           category?: string | null
@@ -358,6 +360,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          arbiter_id?: string | null
           buyer_confirmed?: boolean | null
           buyer_id?: string | null
           category?: string | null
