@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { TransactionProgress } from "@/components/TransactionProgress";
-import { TransactionChatV2 } from "@/components/chat/TransactionChatV2";
+import { TransactionChat } from "@/components/TransactionChat";
 import { RoomInfo } from "@/components/RoomInfo";
 import { StaffArbitrationPanel } from "@/components/StaffArbitrationPanel";
 import { ParticipantsList } from "@/components/ParticipantsList";
@@ -553,7 +553,7 @@ const TransactionDetail = () => {
 
               {/* Chat - visible for all participants and staff */}
               {(isBuyer || isSeller || isStaff) && (
-                <TransactionChatV2 transactionId={transaction.id} />
+                <TransactionChat transactionId={transaction.id} />
               )}
             </div>
 
