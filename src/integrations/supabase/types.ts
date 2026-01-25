@@ -403,6 +403,15 @@ export type Database = {
     }
     Functions: {
       confirm_deposit: { Args: { deposit_id: string }; Returns: undefined }
+      confirm_deposit_sepay: {
+        Args: {
+          p_deposit_id: string
+          p_reference: string
+          p_sepay_tx_id?: number
+          p_transfer_amount: number
+        }
+        Returns: undefined
+      }
       confirm_withdrawal: {
         Args: { withdrawal_id: string }
         Returns: undefined
