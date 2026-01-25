@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Camera, Upload, CheckCircle, XCircle, Clock, Loader2, IdCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import KycImage from "@/components/KycImage";
 
 const KYCForm = () => {
   const { user } = useAuth();
@@ -165,7 +166,7 @@ const KYCForm = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground mb-2">Mặt trước</p>
-              <img
+              <KycImage
                 src={existingSubmission.front_image_url}
                 alt="CCCD mặt trước"
                 className="w-full h-32 object-cover rounded-lg border"
@@ -173,7 +174,7 @@ const KYCForm = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-2">Mặt sau</p>
-              <img
+              <KycImage
                 src={existingSubmission.back_image_url}
                 alt="CCCD mặt sau"
                 className="w-full h-32 object-cover rounded-lg border"

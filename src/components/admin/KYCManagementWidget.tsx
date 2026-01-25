@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/table";
 import { useAllKycSubmissions, useApproveKyc, useRejectKyc, KycSubmission } from "@/hooks/useKYC";
 import { CheckCircle, XCircle, Eye, Loader2, RefreshCw, Search, IdCard } from "lucide-react";
+import KycImage from "@/components/KycImage";
+import { getKycSignedUrls } from "@/hooks/useKycImageUrl";
 
 const KYCManagementWidget = () => {
   const { data: submissions, isLoading, refetch } = useAllKycSubmissions();
@@ -181,20 +183,26 @@ const KYCManagementWidget = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">Mặt trước CCCD</p>
-                  <img
+                  <KycImage
                     src={viewSubmission.front_image_url}
                     alt="Mặt trước"
-                    className="w-full h-48 object-cover rounded-lg border cursor-pointer"
-                    onClick={() => window.open(viewSubmission.front_image_url, "_blank")}
+                    className="w-full h-48 object-cover rounded-lg border"
+                    onClick={async () => {
+                      const urls = await getKycSignedUrls(viewSubmission.front_image_url, viewSubmission.back_image_url);
+                      if (urls.frontSignedUrl) window.open(urls.frontSignedUrl, "_blank");
+                    }}
                   />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">Mặt sau CCCD</p>
-                  <img
+                  <KycImage
                     src={viewSubmission.back_image_url}
                     alt="Mặt sau"
-                    className="w-full h-48 object-cover rounded-lg border cursor-pointer"
-                    onClick={() => window.open(viewSubmission.back_image_url, "_blank")}
+                    className="w-full h-48 object-cover rounded-lg border"
+                    onClick={async () => {
+                      const urls = await getKycSignedUrls(viewSubmission.front_image_url, viewSubmission.back_image_url);
+                      if (urls.backSignedUrl) window.open(urls.backSignedUrl, "_blank");
+                    }}
                   />
                 </div>
               </div>
