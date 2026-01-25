@@ -79,7 +79,6 @@ export const TransactionChat = ({ transactionId, className }: TransactionChatPro
   const sendMessage = useSendMessage();
   const [newMessage, setNewMessage] = useState("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const notifiedUsersRef = useRef<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -90,13 +89,16 @@ export const TransactionChat = ({ transactionId, className }: TransactionChatPro
   const { data: userRoles } = useUserRoles(senderIds);
   const { data: userProfiles } = useUserProfiles(senderIds);
 
-  // Auto scroll to bottom when messages change
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // Auto scroll to bottom within chat container only
   useEffect(() => {
-    scrollToBottom();
+    const scrollArea = scrollAreaRef.current;
+    if (scrollArea) {
+      // Find the viewport element inside ScrollArea (it has data-radix-scroll-area-viewport)
+      const viewport = scrollArea.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
+    }
   }, [messages]);
 
   // Notify when admin/moderator joins (sends first message)
@@ -313,8 +315,6 @@ export const TransactionChat = ({ transactionId, className }: TransactionChatPro
                   </div>
                 );
               })}
-              {/* Scroll anchor */}
-              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>
