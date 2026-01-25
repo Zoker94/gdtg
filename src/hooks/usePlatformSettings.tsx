@@ -8,6 +8,7 @@ export interface PlatformSettings {
   admin_bank_name: string;
   admin_bank_account: string;
   admin_bank_holder: string;
+  admin_contact_link: string;
 }
 
 export const usePlatformSettings = () => {
@@ -27,6 +28,7 @@ export const usePlatformSettings = () => {
         admin_bank_name: "Vietcombank",
         admin_bank_account: "1234567890",
         admin_bank_holder: "ESCROW VN",
+        admin_contact_link: "",
       };
 
       data?.forEach((row) => {
@@ -42,6 +44,8 @@ export const usePlatformSettings = () => {
           settings.admin_bank_account = row.setting_value;
         } else if (row.setting_key === "admin_bank_holder") {
           settings.admin_bank_holder = row.setting_value;
+        } else if (row.setting_key === "admin_contact_link") {
+          settings.admin_contact_link = row.setting_value;
         }
       });
 

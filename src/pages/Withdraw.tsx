@@ -19,6 +19,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import {
   ArrowLeft,
   Shield,
@@ -28,6 +29,7 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  MessageCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -63,6 +65,7 @@ const Withdraw = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
+  const { data: platformSettings } = usePlatformSettings();
 
   // Enable realtime notifications for withdrawals
   useWithdrawalRealtime();
@@ -322,6 +325,29 @@ const Withdraw = () => {
                   {createWithdrawal.isPending ? "Đang xử lý..." : "Tạo yêu cầu rút tiền"}
                 </Button>
               </form>
+
+              {/* Contact Admin Button */}
+              {platformSettings?.admin_contact_link && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    asChild
+                  >
+                    <a
+                      href={platformSettings.admin_contact_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Liên hệ Admin hỗ trợ rút tiền
+                    </a>
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Liên hệ nếu cần hỗ trợ xử lý yêu cầu rút tiền nhanh hơn
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
