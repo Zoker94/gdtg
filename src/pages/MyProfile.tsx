@@ -96,7 +96,7 @@ const MyProfile = () => {
     setIsUploadingAvatar(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${user.id}-${Date.now()}.${fileExt}`;
 
       // Upload to storage - path is just the filename since bucket is 'avatars'
       const { error: uploadError } = await supabase.storage
