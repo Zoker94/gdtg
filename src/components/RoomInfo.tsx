@@ -21,7 +21,7 @@ export const RoomInfo = ({ roomId, roomPassword, inviteLink }: RoomInfoProps) =>
   };
 
   const copyAll = () => {
-    const text = `🔐 Phòng giao dịch EscrowVN\n\nID: ${roomId}\nMật khẩu: ${roomPassword}\n\nLink: ${inviteLink}`;
+    const text = `🔐 Phòng giao dịch GDTG\n\nID: ${roomId}\nMật khẩu: ${roomPassword}\n\nLink: ${inviteLink}`;
     navigator.clipboard.writeText(text);
     toast({ title: "Đã copy thông tin phòng!" });
   };

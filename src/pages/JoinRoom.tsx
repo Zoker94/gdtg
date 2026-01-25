@@ -195,7 +195,7 @@ const JoinRoom = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <Shield className="w-6 h-6 text-primary" />
-            <span className="font-display font-bold text-xl">EscrowVN</span>
+            <span className="font-display font-bold text-xl">GDTG</span>
           </Link>
         </div>
       </header>
