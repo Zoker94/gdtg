@@ -125,7 +125,7 @@ const Deposit = () => {
     setLoading(false);
   };
 
-  const transferContent = depositId ? `NAP ${depositId.substring(0, 8).toUpperCase()}` : "";
+  const transferContent = depositId ? `NAP${depositId}` : "";
 
   return (
     <div className="min-h-screen bg-background">
