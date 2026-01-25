@@ -19,6 +19,7 @@ import { TransactionProgress } from "@/components/TransactionProgress";
 import { TransactionChat } from "@/components/TransactionChat";
 import { RoomInfo } from "@/components/RoomInfo";
 import { StaffArbitrationPanel } from "@/components/StaffArbitrationPanel";
+import { ParticipantsList } from "@/components/ParticipantsList";
 import { useTransaction, useUpdateTransactionStatus, useConfirmTransaction, TransactionStatus } from "@/hooks/useTransactions";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUserRole } from "@/hooks/useProfile";
@@ -557,63 +558,13 @@ const TransactionDetail = () => {
                 />
               )}
 
-              {/* Participants */}
-              <Card className="border-border">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Người tham gia</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {/* Seller */}
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarFallback className="bg-secondary text-secondary-foreground">
-                        S
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">Người bán</p>
-                      {transaction.seller_id ? (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs text-muted-foreground"
-                          onClick={() => navigate(`/user/${transaction.seller_id}`)}
-                        >
-                          Xem hồ sơ →
-                        </Button>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Chưa có</p>
-                      )}
-                    </div>
-                    {isSeller && <Badge variant="outline" className="text-xs">Bạn</Badge>}
-                  </div>
-
-                  {/* Buyer */}
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        B
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">Người mua</p>
-                      {transaction.buyer_id ? (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs text-muted-foreground"
-                          onClick={() => navigate(`/user/${transaction.buyer_id}`)}
-                        >
-                          Xem hồ sơ →
-                        </Button>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Chưa có</p>
-                      )}
-                    </div>
-                    {isBuyer && <Badge variant="outline" className="text-xs">Bạn</Badge>}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Participants - All 4 roles */}
+              <ParticipantsList
+                buyerId={transaction.buyer_id}
+                sellerId={transaction.seller_id}
+                moderatorId={transaction.moderator_id}
+                arbiterId={transaction.arbiter_id}
+              />
 
               {/* Waiting for other party */}
               {((isSeller && !transaction.buyer_id) || (isBuyer && !transaction.seller_id)) && (
