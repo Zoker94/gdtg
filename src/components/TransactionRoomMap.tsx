@@ -4,7 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useProfile";
 import { toast } from "sonner";
+import { Shield, UserCog } from "lucide-react";
 
 type RoomStatus = "available" | "occupied" | "pending";
 
@@ -15,12 +17,17 @@ interface TableData {
   roomId?: string;
   productName?: string;
   amount?: number;
+  hasBuyer?: boolean;
+  hasSeller?: boolean;
 }
 
 const TransactionRoomMap = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: roles } = useUserRole();
   const queryClient = useQueryClient();
+
+  const isStaff = roles?.isAdmin || roles?.isModerator;
 
   // Fetch active transactions to map to tables
   const { data: transactions = [] } = useQuery({
@@ -93,6 +100,8 @@ const TransactionRoomMap = () => {
         roomId: transaction.room_id || undefined,
         productName: transaction.product_name,
         amount: transaction.amount,
+        hasBuyer: !!transaction.buyer_id,
+        hasSeller: !!transaction.seller_id,
       };
     }
     
@@ -116,12 +125,15 @@ const TransactionRoomMap = () => {
     }
   };
 
-  const getStatusBgClass = (status: RoomStatus) => {
+  const getStatusBgClass = (status: RoomStatus, canEnter: boolean) => {
     switch (status) {
       case "available":
         return "bg-background hover:bg-muted/50 border-border";
       case "occupied":
-        return "bg-destructive/20 border-destructive/50 cursor-not-allowed";
+        // Staff can always enter occupied rooms
+        return canEnter 
+          ? "bg-destructive/20 hover:bg-destructive/30 border-destructive/50 cursor-pointer"
+          : "bg-destructive/20 border-destructive/50 cursor-not-allowed";
       case "pending":
         return "bg-chart-4/20 hover:bg-chart-4/30 border-chart-4/50";
       default:
@@ -130,6 +142,12 @@ const TransactionRoomMap = () => {
   };
 
   const handleTableClick = (table: TableData) => {
+    // Staff can enter any room with a room_id
+    if (isStaff && table.roomId) {
+      navigate(`/join/${table.roomId}`);
+      return;
+    }
+
     if (table.status === "occupied") {
       toast.error("Bàn này đã có đủ người giao dịch");
       return;
@@ -159,6 +177,11 @@ const TransactionRoomMap = () => {
     }).format(amount);
   };
 
+  const canEnterTable = (table: TableData) => {
+    if (isStaff && table.roomId) return true;
+    return table.status !== "occupied";
+  };
+
   return (
     <section className="py-12 px-4">
       <div className="container mx-auto max-w-5xl">
@@ -174,7 +197,7 @@ const TransactionRoomMap = () => {
         </motion.div>
 
         {/* Legend */}
-        <div className="flex justify-center gap-6 mb-8">
+        <div className="flex flex-wrap justify-center gap-4 md:gap-6 mb-8">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-background border border-border"></div>
             <span className="text-sm text-muted-foreground">Trống</span>
@@ -187,6 +210,14 @@ const TransactionRoomMap = () => {
             <div className="w-4 h-4 rounded bg-destructive/60 border border-destructive"></div>
             <span className="text-sm text-muted-foreground">Có người</span>
           </div>
+          {isStaff && (
+            <div className="flex items-center gap-2 px-2 py-1 rounded bg-primary/10 border border-primary/30">
+              {roles?.isAdmin ? <Shield className="w-4 h-4 text-primary" /> : <UserCog className="w-4 h-4 text-primary" />}
+              <span className="text-sm text-primary font-medium">
+                {roles?.isAdmin ? "Admin" : "GDV"} - Vào mọi phòng
+              </span>
+            </div>
+          )}
         </div>
 
         <motion.div
@@ -210,14 +241,14 @@ const TransactionRoomMap = () => {
                     damping: 25,
                     delay: index * 0.03 
                   }}
-                  className={`
-                    relative p-4 rounded-xl border-2 transition-colors duration-300
-                    ${getStatusBgClass(table.status)}
-                    ${table.status !== "occupied" ? "cursor-pointer" : ""}
-                  `}
-                  onClick={() => handleTableClick(table)}
-                  whileHover={table.status !== "occupied" ? { scale: 1.05 } : {}}
-                  whileTap={table.status !== "occupied" ? { scale: 0.98 } : {}}
+                className={`
+                  relative p-4 rounded-xl border-2 transition-colors duration-300
+                  ${getStatusBgClass(table.status, canEnterTable(table))}
+                  ${canEnterTable(table) ? "cursor-pointer" : ""}
+                `}
+                onClick={() => handleTableClick(table)}
+                whileHover={canEnterTable(table) ? { scale: 1.05 } : {}}
+                whileTap={canEnterTable(table) ? { scale: 0.98 } : {}}
                 >
                   {/* Status indicator pulse for pending */}
                   {table.status === "pending" && (
