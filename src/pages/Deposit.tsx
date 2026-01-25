@@ -13,18 +13,25 @@ import { toast } from "@/hooks/use-toast";
 
 const predefinedAmounts = [10000, 50000, 100000, 200000, 500000, 1000000, 2000000];
 
-// Map bank names to VietQR BIN codes
+// Map bank names to VietQR BIN codes (case-insensitive matching)
 const bankBinMap: Record<string, string> = {
-  "Vietcombank": "970436",
-  "BIDV": "970418",
-  "VietinBank": "970415",
-  "Techcombank": "970407",
-  "MB Bank": "970422",
-  "ACB": "970416",
-  "Sacombank": "970403",
-  "VPBank": "970432",
-  "TPBank": "970423",
-  "Agribank": "970405",
+  "vietcombank": "970436",
+  "vcb": "970436",
+  "bidv": "970418",
+  "vietinbank": "970415",
+  "icb": "970415",
+  "techcombank": "970407",
+  "tcb": "970407",
+  "mbbank": "970422",
+  "mb bank": "970422",
+  "mb": "970422",
+  "acb": "970416",
+  "sacombank": "970403",
+  "stb": "970403",
+  "vpbank": "970432",
+  "tpbank": "970423",
+  "agribank": "970405",
+  "agb": "970405",
 };
 
 const Deposit = () => {
@@ -117,13 +124,9 @@ const Deposit = () => {
   const transferContent = depositId ? `NAP${shortDepositId}` : "";
   
   // Generate VietQR URL using admin bank settings
-  const getBankBin = (bankName: string) => {
-    for (const [key, bin] of Object.entries(bankBinMap)) {
-      if (bankName.toLowerCase().includes(key.toLowerCase())) {
-        return bin;
-      }
-    }
-    return "970436"; // Default to Vietcombank
+  const getBankBin = (bankName: string): string => {
+    const normalizedName = bankName.toLowerCase().trim();
+    return bankBinMap[normalizedName] || "970436"; // Default to Vietcombank
   };
 
   const bankBin = getBankBin(bankInfo.bank);
