@@ -541,10 +541,10 @@ const TransactionDetail = () => {
                 </>
               )}
 
-              {/* Chat - visible for participants (after deposit) and staff (always) */}
-              {((isBuyer || isSeller) && transaction.status !== "pending") || isStaff ? (
+              {/* Chat - visible for all participants and staff */}
+              {(isBuyer || isSeller || isStaff) && (
                 <TransactionChat transactionId={transaction.id} />
-              ) : null}
+              )}
             </div>
 
             {/* Right Column - Room Info */}
