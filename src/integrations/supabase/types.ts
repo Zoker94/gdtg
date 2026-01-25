@@ -295,6 +295,53 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_data: Json | null
+          new_status: string | null
+          note: string | null
+          old_data: Json | null
+          old_status: string | null
+          performed_by: string | null
+          transaction_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          new_status?: string | null
+          note?: string | null
+          old_data?: Json | null
+          old_status?: string | null
+          performed_by?: string | null
+          transaction_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          new_status?: string | null
+          note?: string | null
+          old_data?: Json | null
+          old_status?: string | null
+          performed_by?: string | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
