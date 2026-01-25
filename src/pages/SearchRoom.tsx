@@ -45,13 +45,29 @@ const SearchRoom = () => {
     setLoading(true);
     setSearched(true);
 
+    // Search by room_id OR product_name
+    const trimmedQuery = searchQuery.trim();
+    
+    // Try exact room_id match first
+    const { data: roomIdData, error: roomIdError } = await supabase
+      .from("transactions")
+      .select("id, room_id, product_name, category, amount, seller_id")
+      .in("status", ["pending", "deposited", "shipping"])
+      .eq("room_id", trimmedQuery)
+      .limit(1);
+
+    if (!roomIdError && roomIdData && roomIdData.length > 0) {
+      setResults(roomIdData);
+      setLoading(false);
+      return;
+    }
+
+    // Search by product name
     const { data, error } = await supabase
       .from("transactions")
       .select("id, room_id, product_name, category, amount, seller_id")
-      .eq("status", "pending")
-      .ilike("product_name", `%${searchQuery}%`)
-      .not("seller_id", "is", null)
-      .is("buyer_id", null)
+      .in("status", ["pending", "deposited", "shipping"])
+      .ilike("product_name", `%${trimmedQuery}%`)
       .limit(20);
 
     if (error) {

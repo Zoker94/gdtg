@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useNotificationSound } from "./useNotificationSound";
 
 export interface Message {
   id: string;
@@ -14,8 +15,11 @@ export interface Message {
 
 export const useMessages = (transactionId: string | undefined) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { playNotificationSound } = useNotificationSound();
+  const isInitialMount = useRef(true);
 
-  // Set up realtime subscription with immediate cache update
+  // Set up realtime subscription with immediate cache update and sound
   useEffect(() => {
     if (!transactionId) return;
 
@@ -36,14 +40,25 @@ export const useMessages = (transactionId: string | undefined) => {
             ["messages", transactionId],
             (old) => old ? [...old, newMessage] : [newMessage]
           );
+
+          // Play sound only for messages from others (not our own)
+          if (newMessage.sender_id !== user?.id && !isInitialMount.current) {
+            playNotificationSound();
+          }
         }
       )
       .subscribe();
 
+    // Mark initial mount complete after a brief delay
+    const timer = setTimeout(() => {
+      isInitialMount.current = false;
+    }, 1000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearTimeout(timer);
     };
-  }, [transactionId, queryClient]);
+  }, [transactionId, queryClient, user?.id, playNotificationSound]);
 
   return useQuery({
     queryKey: ["messages", transactionId],

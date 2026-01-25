@@ -31,13 +31,18 @@ const SearchProfile = () => {
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
 
+      // Use proper filtering syntax for ilike
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .or(`full_name.ilike.%${searchTerm}%,user_id.ilike.%${searchTerm}%`)
+        .order("reputation_score", { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Search error:", error);
+        throw error;
+      }
       return data;
     },
     enabled: !!user && searchTerm.length >= 2,
