@@ -86,15 +86,21 @@ const SearchRoom = () => {
       return;
     }
 
-    const userBalance = profile?.balance || 0;
+    // Skip balance check for empty rooms (amount = 0) or rooms without seller
+    // Balance will be checked later in JoinRoom when user selects their role
+    const isEmptyRoom = transaction.amount === 0 || !transaction.seller_id;
     
-    if (userBalance < transaction.amount) {
-      toast({ 
-        title: "Số dư không đủ", 
-        description: `Bạn cần có ít nhất ${transaction.amount.toLocaleString()}đ để vào phòng này. Số dư hiện tại: ${userBalance.toLocaleString()}đ`, 
-        variant: "destructive" 
-      });
-      return;
+    if (!isEmptyRoom) {
+      const userBalance = profile?.balance || 0;
+      
+      if (userBalance < transaction.amount) {
+        toast({ 
+          title: "Số dư không đủ", 
+          description: `Bạn cần có ít nhất ${transaction.amount.toLocaleString()}đ để vào phòng này. Số dư hiện tại: ${userBalance.toLocaleString()}đ`, 
+          variant: "destructive" 
+        });
+        return;
+      }
     }
 
     navigate(`/join/${transaction.room_id}`);
@@ -176,7 +182,10 @@ const SearchRoom = () => {
                       <Button 
                         size="sm" 
                         onClick={() => handleJoinRoom(tx)}
-                        disabled={profile && profile.balance < tx.amount}
+                        disabled={
+                          // Only disable if: has seller, has amount > 0, and balance is insufficient
+                          tx.seller_id && tx.amount > 0 && profile && profile.balance < tx.amount
+                        }
                       >
                         Vào phòng
                       </Button>
