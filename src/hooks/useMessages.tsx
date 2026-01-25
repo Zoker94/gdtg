@@ -15,7 +15,7 @@ export interface Message {
 export const useMessages = (transactionId: string | undefined) => {
   const queryClient = useQueryClient();
 
-  // Set up realtime subscription
+  // Set up realtime subscription with immediate cache update
   useEffect(() => {
     if (!transactionId) return;
 
@@ -29,8 +29,13 @@ export const useMessages = (transactionId: string | undefined) => {
           table: "messages",
           filter: `transaction_id=eq.${transactionId}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["messages", transactionId] });
+        (payload) => {
+          // Immediately add new message to cache for instant UI update
+          const newMessage = payload.new as Message;
+          queryClient.setQueryData<Message[]>(
+            ["messages", transactionId],
+            (old) => old ? [...old, newMessage] : [newMessage]
+          );
         }
       )
       .subscribe();

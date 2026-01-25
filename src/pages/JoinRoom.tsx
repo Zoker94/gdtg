@@ -69,40 +69,70 @@ const JoinRoom = () => {
 
     // Staff can join any room for moderation (without becoming buyer/seller)
     if (isStaff) {
-      // Count current participants
-      const participantCount = [
-        transaction.buyer_id,
-        transaction.seller_id,
-        transaction.moderator_id,
-        transaction.arbiter_id
-      ].filter(Boolean).length;
-      
       // Check if staff is already in room
       const isAlreadyStaff = user && (transaction.moderator_id === user.id || transaction.arbiter_id === user.id);
       
-      if (!isAlreadyStaff && participantCount >= 4) {
+      if (isAlreadyStaff) {
+        toast({ title: "Thành công", description: "Đã vào phòng giao dịch" });
+        navigate(`/transaction/${transaction.id}`);
+        setLoading(false);
+        return;
+      }
+      
+      // Determine which staff slot to fill
+      let updateData: Record<string, string> = {};
+      let roleDescription = "";
+      
+      if (userRole?.isAdmin) {
+        // Admin goes to arbiter_id slot
+        if (!transaction.arbiter_id) {
+          updateData = { arbiter_id: user!.id };
+          roleDescription = "Admin phân xử";
+        } else if (!transaction.moderator_id) {
+          // Fallback to moderator slot if arbiter is taken
+          updateData = { moderator_id: user!.id };
+          roleDescription = "Hỗ trợ giao dịch";
+        }
+      } else {
+        // Moderator goes to moderator_id slot
+        if (!transaction.moderator_id) {
+          updateData = { moderator_id: user!.id };
+          roleDescription = "Giao dịch viên";
+        } else if (!transaction.arbiter_id) {
+          // Fallback to arbiter slot
+          updateData = { arbiter_id: user!.id };
+          roleDescription = "Hỗ trợ phân xử";
+        }
+      }
+      
+      if (Object.keys(updateData).length === 0) {
         toast({ 
-          title: "Phòng đã đầy", 
-          description: "Phòng giao dịch đã có đủ 4 người (Mua, Bán, GDV, Admin)", 
+          title: "Phòng đã có đủ nhân viên", 
+          description: "Phòng đã có GDV và Admin", 
           variant: "destructive" 
         });
         setLoading(false);
         return;
       }
       
-      // Assign arbiter_id if staff is admin and arbiter slot is empty
-      if (userRole?.isAdmin && !transaction.arbiter_id && user && transaction.moderator_id !== user.id) {
-        await supabase
-          .from("transactions")
-          .update({ arbiter_id: user.id })
-          .eq("id", transaction.id);
+      // Update transaction with staff ID
+      const { error: updateError } = await supabase
+        .from("transactions")
+        .update(updateData)
+        .eq("id", transaction.id);
+        
+      if (updateError) {
+        console.error("Staff join error:", updateError);
+        toast({ title: "Lỗi", description: "Không thể vào phòng", variant: "destructive" });
+        setLoading(false);
+        return;
       }
       
       // Send system message announcing staff entry
       await sendStaffJoinMessage(transaction.id);
       toast({ 
         title: "Vào phòng phán xử", 
-        description: userRole?.isAdmin ? "Bạn đã vào phòng với quyền Admin" : "Bạn đã vào phòng với quyền Quản lý" 
+        description: `Bạn đã vào phòng với vai trò ${roleDescription}` 
       });
       navigate(`/transaction/${transaction.id}`);
       setLoading(false);
