@@ -59,25 +59,28 @@ const DashboardHeader = () => {
             <span className="font-display font-bold text-base">EscrowVN</span>
           </Link>
 
-          {/* Stats Widget - Desktop */}
+          {/* Stats Widget - Desktop - Clickable to MyProfile */}
           <div className="hidden md:flex items-center gap-1">
             {profileLoading ? (
               <Skeleton className="h-7 w-32 rounded-full" />
             ) : (
-              <>
+              <button
+                onClick={() => navigate("/my-profile")}
+                className="flex items-center gap-1 hover:bg-muted/80 rounded-full transition-colors"
+              >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 px-2.5 py-1 bg-muted/50 rounded-full text-xs cursor-default">
+                    <div className="flex items-center gap-1 px-2.5 py-1 bg-muted/50 rounded-full text-xs cursor-pointer">
                       <Wallet className="w-3.5 h-3.5 text-primary" />
                       <span className="font-medium">{formatCurrency(profile?.balance || 0)}</span>
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent>Số dư</TooltipContent>
+                  <TooltipContent>Số dư - Click để xem hồ sơ</TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 px-2.5 py-1 bg-muted/50 rounded-full text-xs cursor-default">
+                    <div className="flex items-center gap-1 px-2.5 py-1 bg-muted/50 rounded-full text-xs cursor-pointer">
                       <Package className="w-3.5 h-3.5 text-primary" />
                       <span className="font-medium">{profile?.total_transactions || 0}</span>
                     </div>
@@ -87,14 +90,14 @@ const DashboardHeader = () => {
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 px-2.5 py-1 bg-muted/50 rounded-full text-xs cursor-default">
+                    <div className="flex items-center gap-1 px-2.5 py-1 bg-muted/50 rounded-full text-xs cursor-pointer">
                       <TrendingUp className="w-3.5 h-3.5 text-primary" />
                       <span className="font-medium">{profile?.reputation_score || 100}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>Điểm uy tín</TooltipContent>
                 </Tooltip>
-              </>
+              </button>
             )}
           </div>
 
@@ -143,23 +146,27 @@ const DashboardHeader = () => {
                 <DropdownMenuContent align="end" className="w-48">
                   {!profileLoading && (
                     <>
-                      <DropdownMenuItem className="flex justify-between">
+                      <DropdownMenuItem onClick={() => navigate("/my-profile")} className="flex justify-between">
                         <span className="flex items-center gap-2">
                           <Wallet className="w-4 h-4" /> Số dư
                         </span>
                         <span className="font-medium">{formatCurrency(profile?.balance || 0)}</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="flex justify-between">
+                      <DropdownMenuItem onClick={() => navigate("/my-profile")} className="flex justify-between">
                         <span className="flex items-center gap-2">
                           <Package className="w-4 h-4" /> Giao dịch
                         </span>
                         <span className="font-medium">{profile?.total_transactions || 0}</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="flex justify-between">
+                      <DropdownMenuItem onClick={() => navigate("/my-profile")} className="flex justify-between">
                         <span className="flex items-center gap-2">
                           <TrendingUp className="w-4 h-4" /> Uy tín
                         </span>
                         <span className="font-medium">{profile?.reputation_score || 100}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate("/my-profile")}>
+                        <User className="w-4 h-4 mr-2" /> Hồ sơ của tôi
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                     </>
