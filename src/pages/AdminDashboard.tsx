@@ -48,6 +48,7 @@ import {
   Settings,
   IdCard,
   DollarSign,
+  FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -82,6 +83,7 @@ import RoleManagementWidget from "@/components/admin/RoleManagementWidget";
 import ModeratorManagementWidget from "@/components/admin/ModeratorManagementWidget";
 import AdminBankSettingsWidget from "@/components/admin/AdminBankSettingsWidget";
 import KYCManagementWidget from "@/components/admin/KYCManagementWidget";
+import { TransactionLogsWidget } from "@/components/admin/TransactionLogsWidget";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -336,7 +338,7 @@ const AdminDashboard = () => {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="w-full max-w-2xl grid grid-cols-6">
+            <TabsList className="w-full max-w-3xl grid grid-cols-7">
               <TabsTrigger value="overview" className="text-xs">
                 <Package className="w-3.5 h-3.5 mr-1" /> Tổng quan
               </TabsTrigger>
@@ -348,6 +350,9 @@ const AdminDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="withdrawals" className="text-xs">
                 <ArrowDownToLine className="w-3.5 h-3.5 mr-1" /> Rút
+              </TabsTrigger>
+              <TabsTrigger value="logs" className="text-xs">
+                <FileText className="w-3.5 h-3.5 mr-1" /> Log
               </TabsTrigger>
               <TabsTrigger value="announcements" className="text-xs">
                 <Megaphone className="w-3.5 h-3.5 mr-1" /> TB
@@ -683,6 +688,11 @@ const AdminDashboard = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Logs Tab */}
+            <TabsContent value="logs" className="space-y-4">
+              <TransactionLogsWidget />
             </TabsContent>
 
             {/* Settings Tab */}
