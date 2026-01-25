@@ -17,6 +17,8 @@ export interface Transaction {
   images: string[] | null;
   buyer_id: string | null;
   seller_id: string | null;
+  moderator_id: string | null;
+  arbiter_id: string | null;
   product_name: string;
   product_description: string | null;
   amount: number;
