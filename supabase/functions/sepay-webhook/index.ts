@@ -123,24 +123,18 @@ serve(async (req) => {
       // Still update but log the discrepancy
     }
 
-    // Confirm deposit & add balance (single source of truth)
-    const { error: confirmError } = await supabase.rpc("confirm_deposit", {
-      deposit_id: depositId,
+    // Confirm deposit & add balance using new RPC (service_role)
+    const { error: confirmError } = await supabase.rpc("confirm_deposit_sepay", {
+      p_deposit_id: depositId,
+      p_transfer_amount: transferAmount,
+      p_reference: referenceCode || String(sepayTransactionId),
+      p_sepay_tx_id: sepayTransactionId || null,
     });
 
     if (confirmError) {
       console.error("Error confirming deposit via RPC:", confirmError);
       throw confirmError;
     }
-
-    // Attach SePay reference for traceability (non-critical)
-    await supabase
-      .from("deposits")
-      .update({
-        transaction_ref: referenceCode || String(sepayTransactionId),
-        admin_note: `Tự động xác nhận qua SePay. Số tiền thực nhận: ${Number(transferAmount).toLocaleString()}đ`,
-      })
-      .eq("id", depositId);
 
     console.log("Deposit confirmed successfully:", depositId);
 
