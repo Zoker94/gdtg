@@ -77,7 +77,7 @@ const ModeratorsList = ({ variant = "compact", maxItems = 6 }: ModeratorsListPro
             variant="ghost" 
             size="sm"
             className="w-full mt-3 text-xs"
-            onClick={() => navigate("/moderators")}
+            onClick={() => navigate("/moderators-full")}
           >
             Xem tất cả ({moderators.length})
             <ExternalLink className="w-3 h-3 ml-1" />

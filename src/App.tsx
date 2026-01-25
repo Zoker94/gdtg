@@ -19,6 +19,7 @@ import MyProfile from "./pages/MyProfile";
 import SearchProfile from "./pages/SearchProfile";
 import ModeratorProfile from "./pages/ModeratorProfile";
 import ModeratorsListPage from "./pages/ModeratorsList";
+import ModeratorsFullList from "./pages/ModeratorsFullList";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/search-profile" element={<ProtectedRoute><SearchProfile /></ProtectedRoute>} />
             <Route path="/moderator/:moderatorId" element={<ModeratorProfile />} />
             <Route path="/moderators" element={<ModeratorsListPage />} />
+            <Route path="/moderators-full" element={<ModeratorsFullList />} />
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
