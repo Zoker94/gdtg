@@ -15,6 +15,7 @@ import SearchRoom from "./pages/SearchRoom";
 import Deposit from "./pages/Deposit";
 import Withdraw from "./pages/Withdraw";
 import UserProfile from "./pages/UserProfile";
+import MyProfile from "./pages/MyProfile";
 import SearchProfile from "./pages/SearchProfile";
 import ModeratorProfile from "./pages/ModeratorProfile";
 import ModeratorsListPage from "./pages/ModeratorsList";
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/create-transaction" element={<ProtectedRoute><CreateTransaction /></ProtectedRoute>} />
             <Route path="/transaction/:id" element={<ProtectedRoute><TransactionDetail /></ProtectedRoute>} />
             <Route path="/user/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+            <Route path="/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
             <Route path="/search-profile" element={<ProtectedRoute><SearchProfile /></ProtectedRoute>} />
             <Route path="/moderator/:moderatorId" element={<ModeratorProfile />} />
             <Route path="/moderators" element={<ModeratorsListPage />} />

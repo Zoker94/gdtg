@@ -18,9 +18,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { TransactionProgress } from "@/components/TransactionProgress";
 import { TransactionChat } from "@/components/TransactionChat";
 import { RoomInfo } from "@/components/RoomInfo";
+import { StaffArbitrationPanel } from "@/components/StaffArbitrationPanel";
 import { useTransaction, useUpdateTransactionStatus, useConfirmTransaction, TransactionStatus } from "@/hooks/useTransactions";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, useUserRole } from "@/hooks/useProfile";
 import { useProfileRealtime } from "@/hooks/useProfileRealtime";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,6 +57,7 @@ const TransactionDetail = () => {
   const { user } = useAuth();
   const { data: transaction, isLoading } = useTransaction(id);
   const { data: profile } = useProfile();
+  const { data: roleInfo } = useUserRole();
   const updateStatus = useUpdateTransactionStatus();
   const confirmTransaction = useConfirmTransaction();
   const [disputeReason, setDisputeReason] = useState("");
@@ -69,6 +71,7 @@ const TransactionDetail = () => {
 
   const isBuyer = user?.id === transaction?.buyer_id;
   const isSeller = user?.id === transaction?.seller_id;
+  const isStaff = roleInfo?.isAdmin || roleInfo?.isModerator;
 
   // Redirect to dashboard when transaction is completed, cancelled, or refunded
   useEffect(() => {
@@ -284,12 +287,23 @@ const TransactionDetail = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={isBuyer ? "default" : isSeller ? "secondary" : "outline"}>
-                    {isBuyer ? "Người mua" : isSeller ? "Người bán" : "Khách"}
+                    {isBuyer ? "Người mua" : isSeller ? "Người bán" : isStaff ? (roleInfo?.isAdmin ? "Admin" : "Moderator") : "Khách"}
                   </Badge>
                 </div>
               </div>
             </CardHeader>
           </Card>
+
+          {/* Staff Arbitration Panel */}
+          {isStaff && transaction && (
+            <StaffArbitrationPanel
+              transactionId={transaction.id}
+              transactionStatus={transaction.status}
+              disputeReason={transaction.dispute_reason}
+              isAdmin={roleInfo?.isAdmin || false}
+              isModerator={roleInfo?.isModerator || false}
+            />
+          )}
 
           {/* Progress */}
           <Card className="mb-4 border-border">
