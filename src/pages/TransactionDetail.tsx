@@ -24,6 +24,7 @@ import { useTransaction, useUpdateTransactionStatus, useConfirmTransaction, Tran
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUserRole } from "@/hooks/useProfile";
 import { useProfileRealtime } from "@/hooks/useProfileRealtime";
+import { useParticipantsRealtime } from "@/hooks/useParticipantsRealtime";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -69,6 +70,14 @@ const TransactionDetail = () => {
 
   // Enable realtime for profile balance
   useProfileRealtime();
+
+  // Enable realtime for participants (GDV/Admin joining)
+  useParticipantsRealtime({
+    transactionId: id || "",
+    currentUserId: user?.id,
+    initialModerator: transaction?.moderator_id,
+    initialArbiter: transaction?.arbiter_id,
+  });
 
   const isBuyer = user?.id === transaction?.buyer_id;
   const isSeller = user?.id === transaction?.seller_id;

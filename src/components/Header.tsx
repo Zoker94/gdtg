@@ -1,11 +1,17 @@
-import { Link } from "react-router-dom";
-import { Shield, Search, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Shield, Search, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Header = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-sm">
@@ -49,9 +55,23 @@ const Header = () => {
           )}
 
           {user ? (
-            <Button asChild size="sm">
-              <Link to="/dashboard">Dashboard</Link>
-            </Button>
+            <>
+              <Button asChild size="sm">
+                <Link to="/dashboard">Dashboard</Link>
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                      <LogOut className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Đăng xuất</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </>
           ) : (
             <>
               <Button asChild variant="ghost" size="sm">
