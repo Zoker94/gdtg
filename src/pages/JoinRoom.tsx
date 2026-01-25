@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Shield, ArrowLeft, LogIn } from "lucide-react";
+import { Shield, ArrowLeft, LogIn, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useProfile";
 import { toast } from "@/hooks/use-toast";
 import { TermsConfirmation } from "@/components/TermsConfirmation";
 
@@ -13,11 +14,14 @@ const JoinRoom = () => {
   const navigate = useNavigate();
   const { roomId: urlRoomId } = useParams();
   const { user } = useAuth();
+  const { data: userRole, isLoading: roleLoading } = useUserRole();
   const [roomId, setRoomId] = useState(urlRoomId || "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [verifiedTransaction, setVerifiedTransaction] = useState<any>(null);
+  
+  const isStaff = userRole?.isAdmin || userRole?.isModerator;
 
   // Step 1: Verify room credentials
   const handleVerifyRoom = async () => {
@@ -25,7 +29,9 @@ const JoinRoom = () => {
       toast({ title: "Lỗi", description: "Vui lòng nhập ID phòng", variant: "destructive" });
       return;
     }
-    if (!password.trim()) {
+    
+    // Admin/Moderator can skip password
+    if (!isStaff && !password.trim()) {
       toast({ title: "Lỗi", description: "Vui lòng nhập mật khẩu phòng", variant: "destructive" });
       return;
     }
@@ -44,7 +50,8 @@ const JoinRoom = () => {
       return;
     }
 
-    if (transaction.room_password !== password) {
+    // Regular users need correct password, staff can skip
+    if (!isStaff && transaction.room_password !== password) {
       toast({ title: "Lỗi", description: "Sai mật khẩu phòng", variant: "destructive" });
       setLoading(false);
       return;
@@ -55,6 +62,19 @@ const JoinRoom = () => {
     
     if (isAlreadyParticipant) {
       toast({ title: "Thành công", description: "Đã vào phòng giao dịch" });
+      navigate(`/transaction/${transaction.id}`);
+      setLoading(false);
+      return;
+    }
+
+    // Staff can join any room for moderation (without becoming buyer/seller)
+    if (isStaff) {
+      // Send system message announcing staff entry
+      await sendStaffJoinMessage(transaction.id);
+      toast({ 
+        title: "Vào phòng phán xử", 
+        description: userRole?.isAdmin ? "Bạn đã vào phòng với quyền Admin" : "Bạn đã vào phòng với quyền Quản lý" 
+      });
       navigate(`/transaction/${transaction.id}`);
       setLoading(false);
       return;
@@ -111,6 +131,20 @@ const JoinRoom = () => {
     setVerifiedTransaction({ ...transaction, roleToAssign });
     setShowTerms(true);
     setLoading(false);
+  };
+  
+  // Send a system message when staff joins the room
+  const sendStaffJoinMessage = async (transactionId: string) => {
+    if (!user) return;
+    
+    const roleLabel = userRole?.isAdmin ? "Admin" : "Quản lý";
+    const message = `🛡️ ${roleLabel} đã vào phòng để hỗ trợ phán xử giao dịch.`;
+    
+    await supabase.from("messages").insert({
+      transaction_id: transactionId,
+      sender_id: user.id,
+      content: message,
+    });
   };
 
   // Step 2: After confirming terms, actually join
@@ -187,9 +221,15 @@ const JoinRoom = () => {
           <Card className="max-w-md mx-auto border-border">
             <CardHeader>
               <CardTitle className="text-center flex items-center justify-center gap-2">
-                <LogIn className="w-5 h-5" />
-                Vào phòng giao dịch
+                {isStaff ? <ShieldCheck className="w-5 h-5 text-primary" /> : <LogIn className="w-5 h-5" />}
+                {isStaff ? "Vào phòng phán xử" : "Vào phòng giao dịch"}
               </CardTitle>
+              {isStaff && (
+                <CardDescription className="text-center text-primary">
+                  {userRole?.isAdmin ? "Bạn đang vào với quyền Admin" : "Bạn đang vào với quyền Quản lý"}
+                  {" - Không cần mật khẩu"}
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -203,25 +243,27 @@ const JoinRoom = () => {
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-1 block">Mật khẩu</label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="4 số"
-                  className="text-center text-lg tracking-widest font-mono"
-                  maxLength={4}
-                />
-              </div>
+              {!isStaff && (
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Mật khẩu</label>
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="4 số"
+                    className="text-center text-lg tracking-widest font-mono"
+                    maxLength={4}
+                  />
+                </div>
+              )}
 
               <Button
                 onClick={handleVerifyRoom}
                 className="w-full glow-primary"
                 size="lg"
-                disabled={loading}
+                disabled={loading || roleLoading}
               >
-                {loading ? "Đang kiểm tra..." : "Vào phòng"}
+                {loading ? "Đang kiểm tra..." : isStaff ? "Vào phòng phán xử" : "Vào phòng"}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
