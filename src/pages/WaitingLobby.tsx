@@ -253,13 +253,6 @@ const WaitingLobby = () => {
                 {sellerJoined ? "Đang chuyển hướng..." : "Vào phòng thủ công"}
               </Button>
 
-              <Button
-                variant="ghost"
-                className="w-full"
-                onClick={() => navigate("/dashboard")}
-              >
-                Quay lại Dashboard
-              </Button>
             </CardContent>
           </Card>
         </motion.div>
