@@ -22,6 +22,7 @@ import ModeratorsListPage from "./pages/ModeratorsList";
 import ModeratorsFullList from "./pages/ModeratorsFullList";
 import KYCVerification from "./pages/KYCVerification";
 import TransactionHistory from "./pages/TransactionHistory";
+import WaitingLobby from "./pages/WaitingLobby";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/transaction-history" element={<ProtectedRoute><TransactionHistory /></ProtectedRoute>} />
             <Route path="/create-transaction" element={<ProtectedRoute><CreateTransaction /></ProtectedRoute>} />
             <Route path="/transaction/:id" element={<ProtectedRoute><TransactionDetail /></ProtectedRoute>} />
+            <Route path="/waiting/:transactionId" element={<ProtectedRoute><WaitingLobby /></ProtectedRoute>} />
             <Route path="/user/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
             <Route path="/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
             <Route path="/search-profile" element={<ProtectedRoute><SearchProfile /></ProtectedRoute>} />
