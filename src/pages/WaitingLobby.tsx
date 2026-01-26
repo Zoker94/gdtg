@@ -237,9 +237,20 @@ const WaitingLobby = () => {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => navigate(`/transaction/${transactionId}`)}
+                onClick={() => {
+                  if (sellerJoined) {
+                    navigate(`/transaction/${transactionId}`);
+                  } else {
+                    toast({
+                      title: "Chưa thể vào phòng",
+                      description: "Vui lòng chờ người bán vào và đăng thông tin sản phẩm",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                disabled={sellerJoined}
               >
-                Vào phòng thủ công
+                {sellerJoined ? "Đang chuyển hướng..." : "Vào phòng thủ công"}
               </Button>
 
               <Button
