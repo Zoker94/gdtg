@@ -48,8 +48,9 @@ const formSchema = z.object({
   fee_bearer: z.enum(["buyer", "seller", "split"]),
   role: z.enum(["buyer", "seller", "moderator"]),
 }).refine((data) => {
-  // If not moderator, require product_name, category, and amount
-  if (data.role !== "moderator") {
+  // If seller role, require product_name, category, and amount
+  // Buyer and moderator roles don't need product details
+  if (data.role === "seller") {
     return data.product_name && data.product_name.length >= 1 && data.category && data.category.length >= 1 && data.amount && data.amount >= 10000;
   }
   return true;
@@ -166,7 +167,8 @@ export const CreateTransactionForm = () => {
       onConfirmTermsWithValues(values);
       return;
     }
-    // Show terms confirmation before actually creating
+    // For buyer, they will see buyer-specific terms
+    // For seller, they see seller/create terms
     setPendingSubmit(values);
     setShowTerms(true);
   };
@@ -188,9 +190,9 @@ export const CreateTransactionForm = () => {
       images?: string[];
       moderator_id?: string;
     } = {
-      product_name: values.product_name || "Phòng giao dịch viên",
+      product_name: values.role === "buyer" ? "Phòng người mua" : (values.product_name || "Phòng giao dịch viên"),
       product_description: values.product_description,
-      amount: values.amount || 0,
+      amount: values.role === "buyer" ? 0 : (values.amount || 0),
       platform_fee_percent: feePercent,
       fee_bearer: values.fee_bearer as FeeBearer,
       dispute_time_hours: disputeHours,
@@ -204,7 +206,7 @@ export const CreateTransactionForm = () => {
       // Don't assign them as buyer or seller
     } else if (values.role === "seller") {
       transactionData.seller_id = user?.id;
-    } else {
+    } else if (values.role === "buyer") {
       transactionData.buyer_id = user?.id;
     }
 
@@ -245,7 +247,7 @@ export const CreateTransactionForm = () => {
   if (showTerms) {
     return (
       <TermsConfirmation
-        type="create"
+        type={pendingSubmit?.role === "buyer" ? "buyer_create" : "create"}
         onConfirm={onConfirmTerms}
         onCancel={onCancelTerms}
         loading={createTransaction.isPending}
@@ -301,8 +303,8 @@ export const CreateTransactionForm = () => {
               )}
             />
 
-            {/* Show form fields only if not moderator role */}
-            {watchRole !== "moderator" && (
+            {/* Show form fields only for seller role */}
+            {watchRole === "seller" && (
               <>
                 {/* Category */}
                 <FormField
@@ -487,6 +489,19 @@ export const CreateTransactionForm = () => {
                   <p className="font-medium text-foreground">Tạo phòng nhanh</p>
                   <p className="text-muted-foreground mt-1">
                     Bạn đang tạo phòng với tư cách Giao dịch viên. Phòng sẽ được tạo ngay lập tức và bạn sẽ nhận 100% phí sàn khi giao dịch hoàn tất.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Buyer create message */}
+            {watchRole === "buyer" && (
+              <div className="flex items-start gap-2 p-4 bg-blue-500/10 rounded-lg text-sm border border-blue-500/20">
+                <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">Tạo phòng với vai trò Người mua</p>
+                  <p className="text-muted-foreground mt-1">
+                    Phòng sẽ được tạo và bạn cần chia sẻ ID + mật khẩu cho người bán. Người bán vào phòng và điền thông tin sản phẩm, sau đó bạn mới có thể đặt cọc.
                   </p>
                 </div>
               </div>
