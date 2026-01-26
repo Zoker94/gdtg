@@ -212,7 +212,12 @@ export const CreateTransactionForm = () => {
 
     try {
       const result = await createTransaction.mutateAsync(transactionData);
-      navigate(`/transaction/${result.id}`);
+      // If buyer created the room, send them to waiting lobby
+      if (values.role === "buyer") {
+        navigate(`/waiting/${result.id}`);
+      } else {
+        navigate(`/transaction/${result.id}`);
+      }
     } catch (error) {
       // Error handled by mutation
     }
