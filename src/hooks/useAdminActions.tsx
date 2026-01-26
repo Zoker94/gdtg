@@ -105,27 +105,13 @@ export const useSetWarning = () => {
   });
 };
 
-// Delete transaction (must delete logs first due to FK constraint)
+// Delete transaction (CASCADE will auto-delete related logs and messages)
 export const useDeleteTransaction = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (transactionId: string) => {
-      // First delete related transaction logs
-      const { error: logsError } = await supabase
-        .from("transaction_logs")
-        .delete()
-        .eq("transaction_id", transactionId);
-      if (logsError) throw logsError;
-
-      // Then delete related messages
-      const { error: messagesError } = await supabase
-        .from("messages")
-        .delete()
-        .eq("transaction_id", transactionId);
-      if (messagesError) throw messagesError;
-
-      // Finally delete the transaction
+      // Just delete the transaction - CASCADE will handle logs and messages
       const { error } = await supabase
         .from("transactions")
         .delete()
