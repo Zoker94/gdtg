@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield, Copy, Loader2, Users, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -123,13 +123,13 @@ const WaitingLobby = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Header - No link to prevent buyer from leaving */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Shield className="w-6 h-6 text-primary" />
             <span className="font-display font-bold text-xl">GDTG</span>
-          </Link>
+          </div>
         </div>
       </header>
 
