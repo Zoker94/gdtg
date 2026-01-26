@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Shield, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle, Info, ShoppingCart } from "lucide-react";
 
 interface TermsConfirmationProps {
-  type: "create" | "join";
+  type: "create" | "join" | "buyer_create";
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
@@ -28,6 +28,15 @@ const TERMS_JOIN = [
   "Tôi hiểu rằng số dư phải đủ để tham gia với vai trò người mua.",
 ];
 
+const TERMS_BUYER_CREATE = [
+  "Tôi hiểu rằng tôi đang tạo phòng với vai trò người mua.",
+  "Tôi sẽ chờ người bán vào phòng và điền thông tin sản phẩm.",
+  "Tôi chỉ có thể đặt cọc sau khi người bán đã đăng thông tin sản phẩm.",
+  "Tôi hiểu rằng tiền sẽ bị treo giữ sau khi đặt cọc.",
+  "Tôi cam kết chỉ giải ngân khi đã nhận được sản phẩm đúng mô tả.",
+  "Tôi không thực hiện các hành vi lừa đảo, gian lận.",
+];
+
 const GUIDELINES = {
   create: [
     { icon: Info, text: "Mô tả sản phẩm chi tiết, rõ ràng để tránh tranh chấp." },
@@ -39,6 +48,12 @@ const GUIDELINES = {
     { icon: AlertTriangle, text: "Chỉ giải ngân khi đã nhận đúng sản phẩm." },
     { icon: CheckCircle, text: "Sử dụng khiếu nại nếu có vấn đề trong thời hạn cho phép." },
   ],
+  buyer_create: [
+    { icon: ShoppingCart, text: "Bạn đang tạo phòng với vai trò người mua." },
+    { icon: Info, text: "Chia sẻ ID & mật khẩu phòng cho người bán để họ vào đăng sản phẩm." },
+    { icon: AlertTriangle, text: "Bạn chỉ có thể đặt cọc sau khi người bán điền xong thông tin." },
+    { icon: CheckCircle, text: "Chỉ giải ngân khi đã nhận đúng sản phẩm như mô tả." },
+  ],
 };
 
 export const TermsConfirmation = ({
@@ -47,12 +62,19 @@ export const TermsConfirmation = ({
   onCancel,
   loading,
 }: TermsConfirmationProps) => {
+  const getTerms = () => {
+    if (type === "buyer_create") return TERMS_BUYER_CREATE;
+    if (type === "create") return TERMS_CREATE;
+    return TERMS_JOIN;
+  };
+
+  const terms = getTerms();
+  const guidelines = GUIDELINES[type];
+
   const [accepted, setAccepted] = useState<boolean[]>(
-    new Array(type === "create" ? TERMS_CREATE.length : TERMS_JOIN.length).fill(false)
+    new Array(terms.length).fill(false)
   );
 
-  const terms = type === "create" ? TERMS_CREATE : TERMS_JOIN;
-  const guidelines = GUIDELINES[type];
   const allAccepted = accepted.every((a) => a);
 
   const handleCheckChange = (index: number, checked: boolean) => {
@@ -61,12 +83,18 @@ export const TermsConfirmation = ({
     setAccepted(newAccepted);
   };
 
+  const getTitle = () => {
+    if (type === "buyer_create") return "Nội quy dành cho người mua";
+    if (type === "create") return "Nội quy tạo phòng giao dịch";
+    return "Nội quy tham gia phòng";
+  };
+
   return (
     <Card className="border-border max-w-lg mx-auto">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Shield className="w-5 h-5 text-primary" />
-          {type === "create" ? "Nội quy tạo phòng giao dịch" : "Nội quy tham gia phòng"}
+          {getTitle()}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

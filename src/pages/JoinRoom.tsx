@@ -118,9 +118,9 @@ const JoinRoom = () => {
       return;
     }
 
-    // Check if this is an empty room created by GDV (no buyer, no seller, and default product name)
-    const isEmptyRoom = !transaction.buyer_id && !transaction.seller_id && 
-      (transaction.product_name === "Phòng giao dịch viên" || transaction.amount === 0);
+    // Check if this is an empty room (created by GDV or buyer - no seller, and default product name or 0 amount)
+    const isEmptyRoom = !transaction.seller_id && 
+      (transaction.product_name === "Phòng giao dịch viên" || transaction.product_name === "Phòng người mua" || transaction.amount === 0);
 
     // Store verified transaction
     setVerifiedTransaction({ 
@@ -128,9 +128,17 @@ const JoinRoom = () => {
       isEmptyRoom,
     });
 
-    // If empty room, show role selection
+    // If empty room (GDV or buyer created), need role selection or seller form
     if (isEmptyRoom) {
-      setStep("role_select");
+      // If buyer already exists, the person joining must be seller
+      if (transaction.buyer_id) {
+        // Direct to seller form
+        setVerifiedTransaction(prev => prev ? { ...prev, roleToAssign: "seller" } : null);
+        setStep("seller_form");
+      } else {
+        // No buyer, no seller - show role selection
+        setStep("role_select");
+      }
     } else {
       // Determine role and proceed to terms
       let roleToAssign: "buyer" | "seller" = "seller";
