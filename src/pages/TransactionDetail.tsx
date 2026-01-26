@@ -330,11 +330,16 @@ const TransactionDetail = () => {
                 <Card className="border-border">
                   <CardContent className="py-12 text-center">
                     <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Chờ đặt cọc</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      {transaction.seller_id && transaction.amount > 0 ? "Chờ đặt cọc" : "Chờ người bán"}
+                    </h3>
                     <p className="text-muted-foreground text-sm mb-4">
-                      Thông tin chi tiết sẽ hiển thị sau khi người mua đặt cọc thành công.
+                      {transaction.seller_id && transaction.amount > 0 
+                        ? "Thông tin chi tiết sẽ hiển thị sau khi người mua đặt cọc thành công."
+                        : "Vui lòng chờ người bán vào phòng và đăng thông tin sản phẩm."}
                     </p>
-                    {isBuyer && (
+                    {/* Only show deposit button if seller has joined and set up product */}
+                    {isBuyer && transaction.seller_id && transaction.amount > 0 && (
                       <>
                         <div className="p-4 bg-muted rounded-lg mb-4">
                           <p className="text-sm text-muted-foreground mb-1">Số tiền cần đặt cọc</p>
