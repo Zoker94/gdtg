@@ -105,12 +105,27 @@ export const useSetWarning = () => {
   });
 };
 
-// Delete transaction
+// Delete transaction (must delete logs first due to FK constraint)
 export const useDeleteTransaction = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (transactionId: string) => {
+      // First delete related transaction logs
+      const { error: logsError } = await supabase
+        .from("transaction_logs")
+        .delete()
+        .eq("transaction_id", transactionId);
+      if (logsError) throw logsError;
+
+      // Then delete related messages
+      const { error: messagesError } = await supabase
+        .from("messages")
+        .delete()
+        .eq("transaction_id", transactionId);
+      if (messagesError) throw messagesError;
+
+      // Finally delete the transaction
       const { error } = await supabase
         .from("transactions")
         .delete()
@@ -120,6 +135,7 @@ export const useDeleteTransaction = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["all-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["all-transaction-logs"] });
       toast({ title: "Đã xoá giao dịch!" });
     },
     onError: (error: Error) => {
