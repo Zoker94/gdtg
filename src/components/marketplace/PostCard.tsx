@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -6,12 +6,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   ThumbsUp,
   Heart,
@@ -23,6 +31,10 @@ import {
   Send,
   User,
   MessageSquare,
+  Edit,
+  X,
+  ImagePlus,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -31,9 +43,12 @@ import {
   useAddComment,
   useDeletePost,
   useDeleteComment,
+  useUpdatePost,
 } from "@/hooks/useMarketplace";
 import { cn } from "@/lib/utils";
 import PrivateMessageDialog from "@/components/messaging/PrivateMessageDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface PostCardProps {
   post: MarketplacePost;
@@ -53,11 +68,19 @@ const PostCard = ({ post }: PostCardProps) => {
   const [showReactions, setShowReactions] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [showMessageDialog, setShowMessageDialog] = useState(false);
+  
+  // Edit state
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editContent, setEditContent] = useState(post.content);
+  const [editImages, setEditImages] = useState<string[]>(post.images || []);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const editImageInputRef = useRef<HTMLInputElement>(null);
 
   const toggleReaction = useToggleReaction();
   const addComment = useAddComment();
   const deletePost = useDeletePost();
   const deleteComment = useDeleteComment();
+  const updatePost = useUpdatePost();
 
   const isOwner = user?.id === post.user_id;
 
@@ -98,6 +121,74 @@ const PostCard = ({ post }: PostCardProps) => {
     navigate(`/user/${post.user_id}`);
   };
 
+  const handleOpenEditDialog = () => {
+    setEditContent(post.content);
+    setEditImages(post.images || []);
+    setShowEditDialog(true);
+  };
+
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !user) return;
+
+    if (editImages.length + files.length > 5) {
+      toast.error("Chỉ được tải tối đa 5 ảnh");
+      return;
+    }
+
+    setIsUploadingImages(true);
+    const uploadedUrls: string[] = [];
+
+    try {
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        const { error } = await supabase.storage
+          .from("chat-images")
+          .upload(fileName, file);
+
+        if (error) throw error;
+
+        const { data: urlData } = supabase.storage
+          .from("chat-images")
+          .getPublicUrl(fileName);
+
+        uploadedUrls.push(urlData.publicUrl);
+      }
+
+      setEditImages((prev) => [...prev, ...uploadedUrls]);
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Tải ảnh thất bại");
+    } finally {
+      setIsUploadingImages(false);
+      if (editImageInputRef.current) {
+        editImageInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveEditImage = (index: number) => {
+    setEditImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim()) {
+      toast.error("Nội dung không được để trống");
+      return;
+    }
+
+    await updatePost.mutateAsync({
+      postId: post.id,
+      content: editContent.trim(),
+      images: editImages,
+      category: post.category,
+    });
+
+    setShowEditDialog(false);
+  };
+
   return (
     <>
       <Card className="border-border overflow-hidden">
@@ -125,6 +216,7 @@ const PostCard = ({ post }: PostCardProps) => {
                     addSuffix: true,
                     locale: vi,
                   })}
+                  {post.updated_at !== post.created_at && " (đã chỉnh sửa)"}
                 </p>
               </div>
             </div>
@@ -137,6 +229,10 @@ const PostCard = ({ post }: PostCardProps) => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleOpenEditDialog}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Chỉnh sửa bài viết
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => deletePost.mutate(post.id)}
                     className="text-destructive"
@@ -357,6 +453,89 @@ const PostCard = ({ post }: PostCardProps) => {
         otherUserName={post.profile?.full_name || "Người dùng"}
         otherUserAvatar={post.profile?.avatar_url}
       />
+
+      {/* Edit Post Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa bài viết</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Nội dung bài viết..."
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              rows={4}
+              className="resize-none"
+            />
+
+            {/* Image Previews */}
+            {editImages.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {editImages.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={url}
+                      alt={`Image ${index + 1}`}
+                      className="w-full h-20 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => handleRemoveEditImage(index)}
+                      className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add Image Button */}
+            {editImages.length < 5 && (
+              <div>
+                <input
+                  type="file"
+                  ref={editImageInputRef}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleEditImageUpload}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => editImageInputRef.current?.click()}
+                  disabled={isUploadingImages}
+                >
+                  {isUploadingImages ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <ImagePlus className="w-4 h-4 mr-2" />
+                  )}
+                  Thêm ảnh ({editImages.length}/5)
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Hủy
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={!editContent.trim() || updatePost.isPending}
+            >
+              {updatePost.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : null}
+              Lưu thay đổi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

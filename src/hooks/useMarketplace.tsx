@@ -136,6 +136,46 @@ export const useCreatePost = () => {
   });
 };
 
+export const useUpdatePost = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      postId,
+      content,
+      images,
+      category,
+    }: {
+      postId: string;
+      content: string;
+      images?: string[];
+      category?: string;
+    }) => {
+      const { data, error } = await supabase
+        .from("marketplace_posts")
+        .update({
+          content,
+          images: images || [],
+          category: category || "general",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", postId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["marketplace-posts"] });
+      toast.success("Đã cập nhật bài viết!");
+    },
+    onError: (error) => {
+      toast.error("Cập nhật thất bại: " + error.message);
+    },
+  });
+};
+
 export const useDeletePost = () => {
   const queryClient = useQueryClient();
 
