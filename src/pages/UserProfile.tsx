@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -16,14 +17,17 @@ import {
   Calendar,
   User,
   AlertTriangle,
+  MessageSquare,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import PrivateMessageDialog from "@/components/messaging/PrivateMessageDialog";
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
 
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ["user-profile", userId],
@@ -153,7 +157,7 @@ const UserProfile = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <CardTitle className="text-xl flex items-center gap-2">
+                  <CardTitle className="text-xl flex items-center gap-2 flex-wrap">
                     {profile.full_name || "Người dùng"}
                     {isOwnProfile && (
                       <Badge variant="outline" className="text-xs">Bạn</Badge>
@@ -168,6 +172,18 @@ const UserProfile = () => {
                   <p className="text-sm text-muted-foreground mt-1">
                     ID: {userId?.slice(0, 8)}...
                   </p>
+                  
+                  {/* Message Button */}
+                  {!isOwnProfile && (
+                    <Button 
+                      onClick={() => setShowMessageDialog(true)}
+                      className="mt-3 glow-primary"
+                      size="sm"
+                    >
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Nhắn tin
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -250,6 +266,15 @@ const UserProfile = () => {
           </Card>
         </motion.div>
       </main>
+
+      {/* Private Message Dialog */}
+      <PrivateMessageDialog
+        open={showMessageDialog}
+        onOpenChange={setShowMessageDialog}
+        otherUserId={userId || ""}
+        otherUserName={profile.full_name || "Người dùng"}
+        otherUserAvatar={profile.avatar_url}
+      />
     </div>
   );
 };
