@@ -43,12 +43,18 @@ const PrivateMessageDialog = ({
   const sendMessage = useSendPrivateMessage();
   const markRead = useMarkMessagesRead();
 
-  // Mark messages as read when opening
+  // Mark messages as read when opening and when new messages arrive
   useEffect(() => {
-    if (open && otherUserId) {
-      markRead.mutate(otherUserId);
+    if (open && otherUserId && messages && messages.length > 0) {
+      // Check if there are unread messages from the other user
+      const hasUnread = messages.some(
+        (msg) => msg.sender_id === otherUserId && !msg.is_read
+      );
+      if (hasUnread) {
+        markRead.mutate(otherUserId);
+      }
     }
-  }, [open, otherUserId]);
+  }, [open, otherUserId, messages]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
