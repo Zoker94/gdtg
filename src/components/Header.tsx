@@ -3,6 +3,7 @@ import { Shield, Search, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -23,6 +24,7 @@ const Header = () => {
 
         <div className="flex items-center gap-2">
           <TooltipProvider>
+            <ThemeToggle />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button asChild variant="ghost" size="icon">
