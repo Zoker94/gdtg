@@ -25,6 +25,7 @@ import {
   TrendingUp,
   Menu,
 } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUserRole } from "@/hooks/useProfile";
 import { useProfileRealtime } from "@/hooks/useProfileRealtime";
@@ -103,6 +104,9 @@ const DashboardHeader = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-1">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Room Search */}
             <Tooltip>
               <TooltipTrigger asChild>
