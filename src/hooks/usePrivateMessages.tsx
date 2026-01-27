@@ -215,6 +215,7 @@ export const useMarkMessagesRead = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       queryClient.invalidateQueries({ queryKey: ["private-messages"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-messages-count"] });
     },
   });
 };

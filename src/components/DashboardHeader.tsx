@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -24,17 +25,20 @@ import {
   Package,
   TrendingUp,
   Menu,
+  MessageCircle,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUserRole } from "@/hooks/useProfile";
 import { useProfileRealtime } from "@/hooks/useProfileRealtime";
+import { useUnreadMessagesCount } from "@/hooks/useUnreadMessages";
 
 const DashboardHeader = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: roles } = useUserRole();
+  const { data: unreadCount } = useUnreadMessagesCount();
 
   // Enable realtime updates for profile balance
   useProfileRealtime();
@@ -106,6 +110,24 @@ const DashboardHeader = () => {
           <div className="flex items-center gap-1">
             {/* Theme Toggle */}
             <ThemeToggle />
+
+            {/* Messages */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 relative" onClick={() => navigate("/messages")}>
+                  <MessageCircle className="w-4 h-4" />
+                  {unreadCount && unreadCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-1 -right-1 h-4 min-w-4 flex items-center justify-center p-0 text-[10px]"
+                    >
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Tin nhắn {unreadCount && unreadCount > 0 ? `(${unreadCount} chưa đọc)` : ""}</TooltipContent>
+            </Tooltip>
 
             {/* Room Search */}
             <Tooltip>
