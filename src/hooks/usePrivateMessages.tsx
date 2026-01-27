@@ -205,17 +205,25 @@ export const useMarkMessagesRead = () => {
     mutationFn: async (senderId: string) => {
       if (!user) return;
 
-      await supabase
+      const { error } = await supabase
         .from("private_messages")
         .update({ is_read: true })
         .eq("sender_id", senderId)
         .eq("receiver_id", user.id)
         .eq("is_read", false);
+
+      if (error) {
+        console.error("Mark read error:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       queryClient.invalidateQueries({ queryKey: ["private-messages"] });
       queryClient.invalidateQueries({ queryKey: ["unread-messages-count"] });
+    },
+    onError: (error) => {
+      console.error("Failed to mark messages read:", error);
     },
   });
 };
