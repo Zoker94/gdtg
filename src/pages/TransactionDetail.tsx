@@ -1,10 +1,9 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -20,11 +19,13 @@ import { TransactionChat } from "@/components/TransactionChat";
 import { RoomInfo } from "@/components/RoomInfo";
 import { StaffArbitrationPanel } from "@/components/StaffArbitrationPanel";
 import { ParticipantsList } from "@/components/ParticipantsList";
+import LoadingScreen from "@/components/LoadingScreen";
 import { useTransaction, useUpdateTransactionStatus, useConfirmTransaction, TransactionStatus } from "@/hooks/useTransactions";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUserRole } from "@/hooks/useProfile";
 import { useProfileRealtime } from "@/hooks/useProfileRealtime";
 import { useParticipantsRealtime } from "@/hooks/useParticipantsRealtime";
+import { usePageLoading } from "@/hooks/usePageLoading";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -67,6 +68,9 @@ const TransactionDetail = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDepositing, setIsDepositing] = useState(false);
   const previousStatusRef = useRef<string | null>(null);
+
+  // Loading screen with minimum duration
+  const showLoading = usePageLoading(isLoading, { minDuration: 2500 });
 
   // Enable realtime for profile balance
   useProfileRealtime();
@@ -222,18 +226,12 @@ const TransactionDetail = () => {
     }
   };
 
-  if (isLoading) {
+  // Show loading screen
+  if (showLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <header className="border-b border-border bg-card sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4">
-            <Skeleton className="h-8 w-40" />
-          </div>
-        </header>
-        <main className="container mx-auto px-4 py-8">
-          <Skeleton className="h-[600px] w-full" />
-        </main>
-      </div>
+      <AnimatePresence>
+        <LoadingScreen message="Đang tải phòng giao dịch..." />
+      </AnimatePresence>
     );
   }
 
