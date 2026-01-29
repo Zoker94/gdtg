@@ -2,9 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { TransactionCard } from "@/components/TransactionCard";
+import { TransactionCardSkeleton } from "@/components/skeletons/TransactionCardSkeleton";
+import { DepositListSkeleton } from "@/components/skeletons/DepositListSkeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useQuery } from "@tanstack/react-query";
@@ -85,7 +86,7 @@ const DashboardContent = () => {
         {transactionsLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-32" />
+              <TransactionCardSkeleton key={i} />
             ))}
           </div>
         ) : activeTransactions?.length === 0 ? (
@@ -123,7 +124,7 @@ const DashboardContent = () => {
           Lịch sử nạp tiền
         </h2>
         {depositsLoading ? (
-          <Skeleton className="h-24" />
+          <DepositListSkeleton />
         ) : deposits?.length === 0 ? (
           <Card className="border-border">
             <CardContent className="py-6 text-center">
