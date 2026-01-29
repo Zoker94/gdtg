@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ModeratorGridSkeleton } from "@/components/skeletons/ModeratorGridSkeleton";
 import { useModerators } from "@/hooks/useModerators";
 import { Users, ExternalLink } from "lucide-react";
 
@@ -16,23 +16,7 @@ const ModeratorsList = ({ variant = "compact", maxItems = 6 }: ModeratorsListPro
   const { data: moderators, isLoading } = useModerators();
 
   if (isLoading) {
-    return (
-      <Card>
-        <CardHeader className="py-3 px-4">
-          <Skeleton className="h-5 w-40" />
-        </CardHeader>
-        <CardContent className="px-4">
-          <div className="grid grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="flex flex-col items-center gap-2">
-                <Skeleton className="h-16 w-16 rounded-full" />
-                <Skeleton className="h-3 w-16" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <ModeratorGridSkeleton count={maxItems} />;
   }
 
   if (!moderators || moderators.length === 0) {
