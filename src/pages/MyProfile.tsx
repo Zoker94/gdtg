@@ -7,13 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useProfileRealtime } from "@/hooks/useProfileRealtime";
 import { useMyKycSubmission } from "@/hooks/useKYC";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import TelegramVerification from "@/components/TelegramVerification";
 import {
   Shield,
   TrendingUp,
@@ -416,7 +416,11 @@ const MyProfile = () => {
             </CardContent>
           </Card>
 
-          {/* Reputation Progress */}
+          {/* Telegram Verification */}
+          <TelegramVerification
+            isVerified={profile.is_verified || false}
+            phoneNumber={profile.phone_number}
+          />
           <Card className="border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
