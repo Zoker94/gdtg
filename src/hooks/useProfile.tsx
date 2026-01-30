@@ -9,14 +9,17 @@ export interface Profile {
   user_id: string;
   full_name: string | null;
   phone: string | null;
+  phone_number: string | null;
   avatar_url: string | null;
   balance: number;
   reputation_score: number;
   total_transactions: number;
   kyc_status: KYCStatus;
   is_banned: boolean;
+  is_verified: boolean | null;
   ban_reason: string | null;
   warning_message: string | null;
+  telegram_chat_id: string | null;
   created_at: string;
   updated_at: string;
 }
