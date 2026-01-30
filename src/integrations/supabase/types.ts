@@ -399,9 +399,12 @@ export type Database = {
           full_name: string | null
           id: string
           is_banned: boolean
+          is_verified: boolean | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           phone: string | null
+          phone_number: string | null
           reputation_score: number
+          telegram_chat_id: string | null
           total_transactions: number
           updated_at: string
           user_id: string
@@ -416,9 +419,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_banned?: boolean
+          is_verified?: boolean | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           phone?: string | null
+          phone_number?: string | null
           reputation_score?: number
+          telegram_chat_id?: string | null
           total_transactions?: number
           updated_at?: string
           user_id: string
@@ -433,9 +439,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_banned?: boolean
+          is_verified?: boolean | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           phone?: string | null
+          phone_number?: string | null
           reputation_score?: number
+          telegram_chat_id?: string | null
           total_transactions?: number
           updated_at?: string
           user_id?: string
