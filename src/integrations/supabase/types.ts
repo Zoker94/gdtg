@@ -152,6 +152,39 @@ export type Database = {
         }
         Relationships: []
       }
+      linked_bank_accounts: {
+        Row: {
+          bank_account_name: string
+          bank_account_number: string
+          bank_name: string
+          created_at: string
+          id: string
+          is_verified: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank_account_name: string
+          bank_account_number: string
+          bank_name: string
+          created_at?: string
+          id?: string
+          is_verified?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank_account_name?: string
+          bank_account_number?: string
+          bank_name?: string
+          created_at?: string
+          id?: string
+          is_verified?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       marketplace_posts: {
         Row: {
           category: string | null
@@ -399,11 +432,14 @@ export type Database = {
           full_name: string | null
           id: string
           is_banned: boolean
+          is_suspicious: boolean | null
           is_verified: boolean | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           phone: string | null
           phone_number: string | null
           reputation_score: number
+          suspicious_at: string | null
+          suspicious_reason: string | null
           telegram_chat_id: string | null
           total_transactions: number
           updated_at: string
@@ -419,11 +455,14 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_banned?: boolean
+          is_suspicious?: boolean | null
           is_verified?: boolean | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           phone?: string | null
           phone_number?: string | null
           reputation_score?: number
+          suspicious_at?: string | null
+          suspicious_reason?: string | null
           telegram_chat_id?: string | null
           total_transactions?: number
           updated_at?: string
@@ -439,16 +478,58 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_banned?: boolean
+          is_suspicious?: boolean | null
           is_verified?: boolean | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           phone?: string | null
           phone_number?: string | null
           reputation_score?: number
+          suspicious_at?: string | null
+          suspicious_reason?: string | null
           telegram_chat_id?: string | null
           total_transactions?: number
           updated_at?: string
           user_id?: string
           warning_message?: string | null
+        }
+        Relationships: []
+      }
+      risk_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          description: string
+          id: string
+          is_resolved: boolean | null
+          metadata: Json | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          description: string
+          id?: string
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -685,6 +766,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      hold_withdrawal: {
+        Args: { reason?: string; withdrawal_id: string }
+        Returns: undefined
       }
       reject_kyc: {
         Args: { p_reason: string; p_submission_id: string }

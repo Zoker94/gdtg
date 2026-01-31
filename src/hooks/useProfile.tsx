@@ -20,6 +20,9 @@ export interface Profile {
   ban_reason: string | null;
   warning_message: string | null;
   telegram_chat_id: string | null;
+  is_suspicious: boolean;
+  suspicious_reason: string | null;
+  suspicious_at: string | null;
   created_at: string;
   updated_at: string;
 }

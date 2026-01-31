@@ -73,6 +73,29 @@ export const useRejectWithdrawal = () => {
   });
 };
 
+// Hold withdrawal (admin) - put on hold for review
+export const useHoldWithdrawal = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ withdrawalId, reason }: { withdrawalId: string; reason?: string }) => {
+      const { error } = await supabase.rpc("hold_withdrawal", { 
+        withdrawal_id: withdrawalId, 
+        reason: reason || "Đang kiểm tra" 
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["user-withdrawals"] });
+      toast({ title: "Đã tạm giữ yêu cầu rút tiền để kiểm tra!" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+    },
+  });
+};
+
 // Delete withdrawal (admin)
 export const useDeleteWithdrawal = () => {
   const queryClient = useQueryClient();

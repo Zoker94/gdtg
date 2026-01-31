@@ -9,6 +9,8 @@ import {
   User,
   Building2,
   CreditCard,
+  ShieldAlert,
+  Clock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -29,6 +31,7 @@ interface PendingWithdrawalsWidgetProps {
   withdrawals: Withdrawal[];
   onConfirm: (id: string) => void;
   onReject: (id: string) => void;
+  onHold?: (id: string) => void;
   formatCurrency: (amount: number) => string;
 }
 
@@ -36,11 +39,14 @@ const PendingWithdrawalsWidget = ({
   withdrawals,
   onConfirm,
   onReject,
+  onHold,
   formatCurrency,
 }: PendingWithdrawalsWidgetProps) => {
   const pendingWithdrawals = withdrawals.filter((w) => w.status === "pending");
+  const onHoldWithdrawals = withdrawals.filter((w) => w.status === "on_hold");
+  const allPending = [...pendingWithdrawals, ...onHoldWithdrawals];
 
-  if (pendingWithdrawals.length === 0) return null;
+  if (allPending.length === 0) return null;
 
   return (
     <Card className="border-blue-500/30 bg-blue-500/5">
@@ -49,17 +55,19 @@ const PendingWithdrawalsWidget = ({
           <ArrowDownToLine className="w-4 h-4" />
           Rút tiền chờ duyệt
           <Badge variant="secondary" className="ml-auto text-xs">
-            {pendingWithdrawals.length}
+            {allPending.length}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <ScrollArea className={pendingWithdrawals.length > 2 ? "h-[200px]" : ""}>
+        <ScrollArea className={allPending.length > 2 ? "h-[250px]" : ""}>
           <div className="space-y-2">
-            {pendingWithdrawals.map((w) => (
+            {allPending.map((w) => (
               <div
                 key={w.id}
-                className="p-3 rounded-lg bg-background border shadow-sm"
+                className={`p-3 rounded-lg bg-background border shadow-sm ${
+                  w.status === "on_hold" ? "border-amber-500/50" : ""
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1.5 min-w-0 flex-1">
@@ -67,6 +75,12 @@ const PendingWithdrawalsWidget = ({
                       <span className="text-base font-bold text-blue-600">
                         {formatCurrency(w.amount)}
                       </span>
+                      {w.status === "on_hold" && (
+                        <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                          <ShieldAlert className="w-3 h-3 mr-1" />
+                          Đang kiểm tra
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Building2 className="w-3 h-3 shrink-0" />
@@ -83,6 +97,11 @@ const PendingWithdrawalsWidget = ({
                     <p className="text-[10px] text-muted-foreground">
                       {format(new Date(w.created_at), "dd/MM/yyyy HH:mm", { locale: vi })}
                     </p>
+                    {w.admin_note && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        Ghi chú: {w.admin_note}
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1 shrink-0">
                     <Button
@@ -93,6 +112,17 @@ const PendingWithdrawalsWidget = ({
                       <CheckCircle className="w-3 h-3 mr-1" />
                       Duyệt
                     </Button>
+                    {w.status === "pending" && onHold && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs text-amber-600 border-amber-500/30 hover:bg-amber-500/10"
+                        onClick={() => onHold(w.id)}
+                      >
+                        <Clock className="w-3 h-3 mr-1" />
+                        Giữ lại
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
