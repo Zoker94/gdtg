@@ -65,7 +65,9 @@ import {
   useConfirmWithdrawal,
   useRejectWithdrawal,
   useDeleteWithdrawal,
+  useHoldWithdrawal,
 } from "@/hooks/useWithdrawals";
+import { useRiskAlerts } from "@/hooks/useRiskAlerts";
 import { useAdjustBalance } from "@/hooks/useAdminBalance";
 import {
   useAnnouncements,
@@ -84,6 +86,7 @@ import ModeratorManagementWidget from "@/components/admin/ModeratorManagementWid
 import AdminBankSettingsWidget from "@/components/admin/AdminBankSettingsWidget";
 import KYCManagementWidget from "@/components/admin/KYCManagementWidget";
 import { TransactionLogsWidget } from "@/components/admin/TransactionLogsWidget";
+import RiskAlertsWidget from "@/components/admin/RiskAlertsWidget";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -152,6 +155,7 @@ const AdminDashboard = () => {
   const { data: users, isLoading: usersLoading, refetch: refetchUsers } = useAllUsers();
   const { data: announcements, isLoading: announcementsLoading, refetch: refetchAnnouncements } = useAnnouncements();
   const { data: withdrawals, isLoading: withdrawalsLoading, refetch: refetchWithdrawals } = useAllWithdrawals();
+  const { data: riskAlerts } = useRiskAlerts();
 
   const confirmDeposit = useMutation({
     mutationFn: async (depositId: string) => {
@@ -179,6 +183,7 @@ const AdminDashboard = () => {
   const confirmWithdrawal = useConfirmWithdrawal();
   const rejectWithdrawal = useRejectWithdrawal();
   const deleteWithdrawal = useDeleteWithdrawal();
+  const holdWithdrawal = useHoldWithdrawal();
   const adjustBalance = useAdjustBalance();
 
   const isAdmin = roles?.isAdmin;
@@ -273,8 +278,9 @@ const AdminDashboard = () => {
   };
 
   const pendingDepositsCount = deposits?.filter((d) => d.status === "pending").length || 0;
-  const pendingWithdrawalsCount = withdrawals?.filter((w) => w.status === "pending").length || 0;
-  const hasPendingItems = pendingDepositsCount > 0 || pendingWithdrawalsCount > 0 || disputedTransactions.length > 0;
+  const pendingWithdrawalsCount = withdrawals?.filter((w) => w.status === "pending" || (w.status as string) === "on_hold").length || 0;
+  const unresolvedRiskAlerts = riskAlerts?.filter((r) => !r.is_resolved).length || 0;
+  const hasPendingItems = pendingDepositsCount > 0 || pendingWithdrawalsCount > 0 || disputedTransactions.length > 0 || unresolvedRiskAlerts > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -315,7 +321,8 @@ const AdminDashboard = () => {
 
           {/* Quick Action Widgets */}
           {hasPendingItems && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <RiskAlertsWidget />
               <DisputesWidget
                 transactions={transactions || []}
                 onResolve={(id) => { setSelectedTransaction(id); setActionType("resolve"); }}
@@ -326,6 +333,7 @@ const AdminDashboard = () => {
                 withdrawals={withdrawals || []}
                 onConfirm={(id) => setSelectedWithdrawal(id)}
                 onReject={(id) => setRejectWithdrawalId(id)}
+                onHold={(id) => holdWithdrawal.mutate({ withdrawalId: id })}
                 formatCurrency={formatCurrency}
               />
               <PendingDepositsWidget
