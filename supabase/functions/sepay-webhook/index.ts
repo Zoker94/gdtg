@@ -123,38 +123,35 @@ serve(async (req) => {
       // Still update but log the discrepancy
     }
 
-    // DIRECT UPDATE instead of RPC to avoid parameter ordering issues
-    // Step 1: Update deposit status
+    // Fallback: do direct updates but DO NOT write transaction_ref strings (FT.../DEP...)
+    // because PostgREST is currently throwing UUID cast errors when those are present.
+    // Goal: ensure money is credited and deposit is marked completed.
     const { error: updateDepositError } = await supabase
       .from("deposits")
       .update({
         status: "completed",
         confirmed_at: new Date().toISOString(),
-        transaction_ref: referenceCode || String(sepayTransactionId),
-        admin_note: `Tự động xác nhận qua SePay. Số tiền thực nhận: ${transferAmount}đ`,
       })
       .eq("id", depositId)
-      .eq("status", "pending"); // Ensure idempotency
+      .eq("status", "pending");
 
     if (updateDepositError) {
       console.error("Error updating deposit:", updateDepositError);
       throw updateDepositError;
     }
 
-    // Step 2: Add balance to user profile
-    // First get current balance
-    const { data: profile, error: profileError } = await supabase
+    const { data: profileBefore, error: profileBeforeError } = await supabase
       .from("profiles")
       .select("balance")
       .eq("user_id", deposit.user_id)
       .single();
 
-    if (profileError) {
-      console.error("Error fetching profile:", profileError);
-      throw profileError;
+    if (profileBeforeError) {
+      console.error("Error fetching profile before credit:", profileBeforeError);
+      throw profileBeforeError;
     }
 
-    const newBalance = (profile?.balance || 0) + transferAmount;
+    const newBalance = Number(profileBefore?.balance || 0) + Number(transferAmount);
 
     const { error: updateProfileError } = await supabase
       .from("profiles")
