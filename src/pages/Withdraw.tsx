@@ -196,7 +196,7 @@ const Withdraw = () => {
               <p className="text-muted-foreground mb-4">
                 Bạn cần xác thực số điện thoại qua Telegram để có thể rút tiền. Điều này giúp bảo vệ tài khoản của bạn.
               </p>
-              <Button onClick={() => navigate("/profile")}>
+              <Button onClick={() => navigate("/my-profile")}>
                 Xác minh ngay
               </Button>
             </CardContent>
