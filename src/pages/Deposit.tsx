@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, ArrowLeft, CreditCard, Building, Copy, Check, QrCode, Loader2 } from "lucide-react";
+import { Shield, ArrowLeft, CreditCard, Building, Copy, Check, QrCode, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
+import confetti from "canvas-confetti";
 
 const predefinedAmounts = [10000, 50000, 100000, 200000, 500000, 1000000, 2000000];
 
@@ -42,11 +43,12 @@ const Deposit = () => {
   const { data: settings } = usePlatformSettings();
   const [amount, setAmount] = useState("");
   const [customAmount, setCustomAmount] = useState("");
-  const [step, setStep] = useState<"input" | "payment">("input");
+  const [step, setStep] = useState<"input" | "payment" | "success">("input");
   const [loading, setLoading] = useState(false);
   const [depositId, setDepositId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isWaitingForPayment, setIsWaitingForPayment] = useState(false);
+  const [successAmount, setSuccessAmount] = useState<number>(0);
 
   // Use admin bank settings from platform_settings
   const bankInfo = {
@@ -62,11 +64,35 @@ const Deposit = () => {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  // Fire confetti animation
+  const fireConfetti = useCallback(() => {
+    const count = 200;
+    const defaults = {
+      origin: { y: 0.7 },
+      zIndex: 9999,
+    };
+
+    function fire(particleRatio: number, opts: confetti.Options) {
+      confetti({
+        ...defaults,
+        ...opts,
+        particleCount: Math.floor(count * particleRatio),
+      });
+    }
+
+    fire(0.25, { spread: 26, startVelocity: 55 });
+    fire(0.2, { spread: 60 });
+    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+    fire(0.1, { spread: 120, startVelocity: 45 });
+  }, []);
+
   // Subscribe to deposit status changes for auto-redirect
   useEffect(() => {
     if (!depositId) return;
 
     setIsWaitingForPayment(true);
+    console.log("Subscribing to deposit updates:", depositId);
 
     const channel = supabase
       .channel(`deposit-${depositId}`)
@@ -79,26 +105,38 @@ const Deposit = () => {
           filter: `id=eq.${depositId}`,
         },
         (payload) => {
+          console.log("Deposit update received:", payload);
           const newStatus = payload.new?.status;
           if (newStatus === 'completed') {
+            const depositAmount = Number(payload.new?.amount) || 0;
+            setSuccessAmount(depositAmount);
+            setIsWaitingForPayment(false);
+            setStep("success");
+            
+            // Fire confetti
+            fireConfetti();
+            
             toast({ 
               title: "🎉 Nạp tiền thành công!", 
-              description: `Số tiền ${Number(payload.new?.amount).toLocaleString()}đ đã được cộng vào tài khoản` 
+              description: `Số tiền ${depositAmount.toLocaleString()}đ đã được cộng vào tài khoản` 
             });
-            setIsWaitingForPayment(false);
-            // Auto redirect after 2 seconds
+            
+            // Auto redirect after 3 seconds
             setTimeout(() => {
               navigate('/dashboard');
-            }, 2000);
+            }, 3000);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Subscription status:", status);
+      });
 
     return () => {
+      console.log("Unsubscribing from deposit updates");
       supabase.removeChannel(channel);
     };
-  }, [depositId, navigate]);
+  }, [depositId, navigate, fireConfetti]);
 
   const handleSubmit = async () => {
     const numAmount = parseFloat(amount);
@@ -230,7 +268,7 @@ const Deposit = () => {
               </Button>
             </CardContent>
           </Card>
-        ) : (
+        ) : step === "payment" ? (
           <Card className="max-w-lg mx-auto border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -309,6 +347,28 @@ const Deposit = () => {
                 <Button variant="outline" className="w-full" onClick={() => navigate("/dashboard")}>
                   Về Dashboard
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          // Success step with confetti
+          <Card className="max-w-lg mx-auto border-border animate-scale-in">
+            <CardContent className="pt-8 pb-8">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center animate-fade-in">
+                  <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">Nạp tiền thành công!</h2>
+                <p className="text-3xl font-bold text-primary">
+                  +{successAmount.toLocaleString()}đ
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Số tiền đã được cộng vào tài khoản của bạn
+                </p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang chuyển về Dashboard...</span>
+                </div>
               </div>
             </CardContent>
           </Card>
