@@ -291,7 +291,7 @@ const Withdraw = () => {
   }
 
   // Show balance frozen warning
-  if (!profileLoading && profile?.is_balance_frozen) {
+  if (!profileLoading && profile?.is_balance_frozen === true) {
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b border-border bg-card sticky top-0 z-50">
