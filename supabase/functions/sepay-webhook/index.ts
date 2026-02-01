@@ -123,25 +123,50 @@ serve(async (req) => {
       // Still update but log the discrepancy
     }
 
-    // Build RPC params with explicit types
-    const rpcParams = {
-      p_deposit_id: String(depositId), // Ensure it's a string UUID
-      p_transfer_amount: Number(transferAmount),
-      p_reference: String(referenceCode || sepayTransactionId || ""),
-      p_sepay_tx_id: sepayTransactionId ? Number(sepayTransactionId) : null,
-    };
+    // DIRECT UPDATE instead of RPC to avoid parameter ordering issues
+    // Step 1: Update deposit status
+    const { error: updateDepositError } = await supabase
+      .from("deposits")
+      .update({
+        status: "completed",
+        confirmed_at: new Date().toISOString(),
+        transaction_ref: referenceCode || String(sepayTransactionId),
+        admin_note: `Tự động xác nhận qua SePay. Số tiền thực nhận: ${transferAmount}đ`,
+      })
+      .eq("id", depositId)
+      .eq("status", "pending"); // Ensure idempotency
 
-    console.log("Calling RPC with params:", JSON.stringify(rpcParams));
-
-    // Confirm deposit & add balance using new RPC (service_role)
-    const { error: confirmError } = await supabase.rpc("confirm_deposit_sepay", rpcParams);
-
-    if (confirmError) {
-      console.error("Error confirming deposit via RPC:", confirmError);
-      throw confirmError;
+    if (updateDepositError) {
+      console.error("Error updating deposit:", updateDepositError);
+      throw updateDepositError;
     }
 
-    console.log("Deposit confirmed successfully:", depositId);
+    // Step 2: Add balance to user profile
+    // First get current balance
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("balance")
+      .eq("user_id", deposit.user_id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching profile:", profileError);
+      throw profileError;
+    }
+
+    const newBalance = (profile?.balance || 0) + transferAmount;
+
+    const { error: updateProfileError } = await supabase
+      .from("profiles")
+      .update({ balance: newBalance })
+      .eq("user_id", deposit.user_id);
+
+    if (updateProfileError) {
+      console.error("Error updating profile balance:", updateProfileError);
+      throw updateProfileError;
+    }
+
+    console.log("Deposit confirmed successfully:", depositId, "New balance:", newBalance);
 
     return new Response(
       JSON.stringify({ 
@@ -149,6 +174,7 @@ serve(async (req) => {
         message: "Deposit confirmed",
         depositId,
         amount: transferAmount,
+        newBalance,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
