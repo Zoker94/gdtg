@@ -311,6 +311,16 @@ const Auth = () => {
                 {isLogin ? "Đăng ký ngay" : "Đăng nhập"}
               </button>
             </div>
+
+            {!isLogin && (
+              <p className="mt-4 text-center text-xs text-muted-foreground">
+                Bằng việc đăng ký, bạn đồng ý với{" "}
+                <Link to="/terms" className="text-primary hover:underline">
+                  Điều khoản sử dụng
+                </Link>{" "}
+                của chúng tôi.
+              </p>
+            )}
           </CardContent>
         </Card>
       </motion.div>

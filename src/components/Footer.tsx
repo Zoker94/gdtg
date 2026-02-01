@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Shield } from "lucide-react";
 
 const Footer = () => {
@@ -9,9 +10,12 @@ const Footer = () => {
             <Shield className="w-4 h-4 text-primary" />
             <span className="font-bold text-sm">GDTG</span>
           </div>
-          <p className="text-xs text-muted-foreground text-center">
-            Giao dịch trung gian an toàn cho game thủ Việt
-          </p>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <p>Giao dịch trung gian an toàn cho game thủ Việt</p>
+            <Link to="/terms" className="hover:text-primary transition-colors underline">
+              Điều khoản sử dụng
+            </Link>
+          </div>
           <p className="text-xs text-muted-foreground">
             © Bản quyền website thuộc về Nguyễn Quốc Dũng
           </p>
