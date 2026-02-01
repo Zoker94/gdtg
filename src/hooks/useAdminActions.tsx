@@ -7,6 +7,7 @@ export interface UserProfile {
   id: string;
   user_id: string;
   full_name: string | null;
+  phone_number: string | null;
   balance: number;
   reputation_score: number;
   total_transactions: number;

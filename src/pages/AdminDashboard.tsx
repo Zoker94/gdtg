@@ -569,6 +569,7 @@ const AdminDashboard = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="text-xs">Tên</TableHead>
+                        <TableHead className="text-xs">Số điện thoại</TableHead>
                         <TableHead className="text-xs">Số dư</TableHead>
                         <TableHead className="text-xs">GD</TableHead>
                         <TableHead className="text-xs">Uy tín</TableHead>
@@ -584,6 +585,13 @@ const AdminDashboard = () => {
                               <p className="font-medium">{u.full_name || "Chưa đặt tên"}</p>
                               <p className="text-muted-foreground font-mono text-xs">{u.user_id.slice(0, 8)}...</p>
                             </div>
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {u.phone_number ? (
+                              <span className="font-mono">{u.phone_number}</span>
+                            ) : (
+                              <span className="text-muted-foreground italic">Chưa xác thực</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-xs">{formatCurrency(u.balance)}</TableCell>
                           <TableCell className="text-xs">{u.total_transactions}</TableCell>
