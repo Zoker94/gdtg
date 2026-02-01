@@ -23,6 +23,7 @@ import ModeratorsListPage from "./pages/ModeratorsList";
 import ModeratorsFullList from "./pages/ModeratorsFullList";
 import KYCVerification from "./pages/KYCVerification";
 import TransactionHistory from "./pages/TransactionHistory";
+import TransactionWallet from "./pages/TransactionWallet";
 import WaitingLobby from "./pages/WaitingLobby";
 import Messages from "./pages/Messages";
 import TermsOfService from "./pages/TermsOfService";
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/withdraw" element={<ProtectedRoute><Withdraw /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/transaction-history" element={<ProtectedRoute><TransactionHistory /></ProtectedRoute>} />
+              <Route path="/wallet-history" element={<ProtectedRoute><TransactionWallet /></ProtectedRoute>} />
               <Route path="/create-transaction" element={<ProtectedRoute><CreateTransaction /></ProtectedRoute>} />
               <Route path="/transaction/:id" element={<ProtectedRoute><TransactionDetail /></ProtectedRoute>} />
               <Route path="/waiting/:transactionId" element={<ProtectedRoute><WaitingLobby /></ProtectedRoute>} />
