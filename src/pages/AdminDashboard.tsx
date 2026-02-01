@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -870,8 +870,18 @@ const AdminDashboard = () => {
                 formatCurrency={formatCurrency}
               />
 
-              {/* Content */}
-              {renderContent()}
+              {/* Content with tab transition */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                >
+                  {renderContent()}
+                </motion.div>
+              </AnimatePresence>
             </motion.div>
 
             {/* Dialogs */}
