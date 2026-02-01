@@ -15,7 +15,7 @@ const Footer = () => {
             Điều khoản
           </Link>
           <span>•</span>
-          <span>© Nguyễn Quốc Dũng</span>
+          <span>© Bản quyền thuộc về Nguyễn Quốc Dũng</span>
         </div>
       </div>
     </footer>
