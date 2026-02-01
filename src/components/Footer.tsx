@@ -3,22 +3,19 @@ import { Shield } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="py-6 px-4 border-t border-border">
+    <footer className="py-4 px-4 border-t border-border bg-background/50">
       <div className="container mx-auto max-w-5xl">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-primary" />
-            <span className="font-bold text-sm">GDTG</span>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <Shield className="w-3.5 h-3.5 text-primary" />
+            <span className="font-semibold text-foreground">GDTG</span>
           </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <p>Giao dịch trung gian an toàn cho game thủ Việt</p>
-            <Link to="/terms" className="hover:text-primary transition-colors underline">
-              Điều khoản sử dụng
-            </Link>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            © Bản quyền website thuộc về Nguyễn Quốc Dũng
-          </p>
+          <span className="hidden sm:inline">•</span>
+          <Link to="/terms" className="hover:text-primary transition-colors underline-offset-2 hover:underline">
+            Điều khoản
+          </Link>
+          <span>•</span>
+          <span>© Nguyễn Quốc Dũng</span>
         </div>
       </div>
     </footer>
