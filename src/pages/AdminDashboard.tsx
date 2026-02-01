@@ -131,32 +131,70 @@ const menuItems = [
 
 const AdminSidebar = ({ activeTab, setActiveTab }: { activeTab: string; setActiveTab: (tab: string) => void }) => {
   const { state } = useSidebar();
+  const navigate = useNavigate();
   const collapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarContent className="pt-2">
+    <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar/95 backdrop-blur-sm">
+      {/* Header */}
+      <div className={`flex items-center gap-3 px-4 py-4 border-b border-border/50 ${collapsed ? "justify-center" : ""}`}>
+        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary">
+          <Shield className="w-5 h-5" />
+        </div>
+        {!collapsed && (
+          <div className="flex flex-col">
+            <span className="font-semibold text-sm text-foreground">Admin Panel</span>
+            <span className="text-xs text-muted-foreground">Quản trị hệ thống</span>
+          </div>
+        )}
+      </div>
+
+      <SidebarContent className="px-2 py-3">
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>Quản trị</SidebarGroupLabel>
+          {!collapsed && (
+            <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium mb-1">
+              Menu chính
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.value}>
-                  <SidebarMenuButton
-                    isActive={activeTab === item.value}
-                    onClick={() => setActiveTab(item.value)}
-                    tooltip={item.title}
-                    className="cursor-pointer"
-                  >
-                    <item.icon className="w-4 h-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+            <SidebarMenu className="space-y-1">
+              {menuItems.map((item) => {
+                const isActive = activeTab === item.value;
+                return (
+                  <SidebarMenuItem key={item.value}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      onClick={() => setActiveTab(item.value)}
+                      tooltip={item.title}
+                      className={`cursor-pointer transition-all duration-200 ${
+                        isActive 
+                          ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground" 
+                          : "hover:bg-muted/80"
+                      }`}
+                    >
+                      <item.icon className={`w-4 h-4 ${isActive ? "" : "text-muted-foreground"}`} />
+                      <span className={`font-medium ${isActive ? "" : "text-foreground/80"}`}>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* Footer */}
+      <div className={`mt-auto border-t border-border/50 p-3 ${collapsed ? "px-2" : ""}`}>
+        <Button
+          variant="ghost"
+          size={collapsed ? "icon" : "default"}
+          onClick={() => navigate("/dashboard")}
+          className={`w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/80 ${collapsed ? "justify-center" : ""}`}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          {!collapsed && <span className="text-sm">Về Dashboard</span>}
+        </Button>
+      </div>
     </Sidebar>
   );
 };
