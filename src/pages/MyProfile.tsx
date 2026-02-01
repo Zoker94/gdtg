@@ -309,7 +309,7 @@ const MyProfile = () => {
               <p className="text-3xl font-bold text-primary mb-4">
                 {formatCurrency(profile.balance)}
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-2 mb-2">
                 <Button onClick={() => navigate("/deposit")} className="flex-1 gap-2">
                   <ArrowDownLeft className="w-4 h-4" />
                   Nạp tiền
@@ -319,6 +319,13 @@ const MyProfile = () => {
                   Rút tiền
                 </Button>
               </div>
+              <Button 
+                onClick={() => navigate("/wallet-history")} 
+                variant="ghost" 
+                className="w-full text-muted-foreground hover:text-foreground"
+              >
+                Xem lịch sử nạp/rút tiền →
+              </Button>
             </CardContent>
           </Card>
 
