@@ -125,6 +125,16 @@ const Auth = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    // Require terms agreement for new signups (when in register mode)
+    if (!isLogin && !agreedToTerms) {
+      toast({
+        title: "Vui lòng đồng ý điều khoản",
+        description: "Bạn cần đồng ý với Điều khoản sử dụng để đăng ký.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsGoogleLoading(true);
     const { error } = await signInWithGoogle();
     setIsGoogleLoading(false);
@@ -172,6 +182,26 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Terms checkbox for Google sign-up (shown when in register mode) */}
+            {!isLogin && (
+              <div className="mb-4 flex items-start space-x-2 p-3 rounded-lg bg-muted/50">
+                <Checkbox
+                  id="google-terms"
+                  checked={agreedToTerms}
+                  onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                />
+                <label
+                  htmlFor="google-terms"
+                  className="text-sm leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Tôi đồng ý với{" "}
+                  <Link to="/terms" className="text-primary hover:underline" target="_blank">
+                    Điều khoản sử dụng
+                  </Link>
+                </label>
+              </div>
+            )}
+
             {/* Google Sign In Button */}
             <Button
               type="button"
@@ -202,7 +232,7 @@ const Auth = () => {
                   />
                 </svg>
               )}
-              Tiếp tục với Google
+              {isLogin ? "Đăng nhập với Google" : "Đăng ký với Google"}
             </Button>
 
             <div className="relative mb-4">
