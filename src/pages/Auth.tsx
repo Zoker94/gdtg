@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Shield, ArrowLeft, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 
 const loginSchema = z.object({
@@ -48,7 +49,8 @@ const Auth = () => {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
-  const [regErrors, setRegErrors] = useState<{ fullName?: string; email?: string; password?: string; confirmPassword?: string }>({});
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [regErrors, setRegErrors] = useState<{ fullName?: string; email?: string; password?: string; confirmPassword?: string; terms?: string }>({});
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +99,11 @@ const Auth = () => {
         errors[field] = err.message;
       });
       setRegErrors(errors);
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setRegErrors({ terms: "Bạn phải đồng ý với Điều khoản sử dụng" });
       return;
     }
     
@@ -292,6 +299,25 @@ const Auth = () => {
                     <p className="text-sm text-destructive">{regErrors.confirmPassword}</p>
                   )}
                 </div>
+                <div className="flex items-start space-x-2">
+                  <Checkbox
+                    id="terms"
+                    checked={agreedToTerms}
+                    onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                  />
+                  <label
+                    htmlFor="terms"
+                    className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Tôi đồng ý với{" "}
+                    <Link to="/terms" className="text-primary hover:underline" target="_blank">
+                      Điều khoản sử dụng
+                    </Link>
+                  </label>
+                </div>
+                {regErrors.terms && (
+                  <p className="text-sm text-destructive">{regErrors.terms}</p>
+                )}
                 <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
                   {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Đăng ký
@@ -311,16 +337,6 @@ const Auth = () => {
                 {isLogin ? "Đăng ký ngay" : "Đăng nhập"}
               </button>
             </div>
-
-            {!isLogin && (
-              <p className="mt-4 text-center text-xs text-muted-foreground">
-                Bằng việc đăng ký, bạn đồng ý với{" "}
-                <Link to="/terms" className="text-primary hover:underline">
-                  Điều khoản sử dụng
-                </Link>{" "}
-                của chúng tôi.
-              </p>
-            )}
           </CardContent>
         </Card>
       </motion.div>
