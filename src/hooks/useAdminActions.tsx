@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useLogAdminAction } from "@/hooks/useAdminActionLogs";
 
 export interface UserProfile {
   id: string;
@@ -37,6 +38,7 @@ export const useAllUsers = () => {
 // Ban user
 export const useBanUser = () => {
   const queryClient = useQueryClient();
+  const logAction = useLogAdminAction();
 
   return useMutation({
     mutationFn: async ({ userId, reason }: { userId: string; reason: string }) => {
@@ -49,9 +51,15 @@ export const useBanUser = () => {
         })
         .eq("user_id", userId);
       if (error) throw error;
+      return { userId, reason };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      logAction.mutate({
+        targetUserId: data.userId,
+        actionType: "ban",
+        details: { reason: data.reason },
+      });
       toast({ title: "Đã ban người dùng!" });
     },
     onError: (error: Error) => {
@@ -63,6 +71,7 @@ export const useBanUser = () => {
 // Unban user
 export const useUnbanUser = () => {
   const queryClient = useQueryClient();
+  const logAction = useLogAdminAction();
 
   return useMutation({
     mutationFn: async (userId: string) => {
@@ -75,9 +84,14 @@ export const useUnbanUser = () => {
         })
         .eq("user_id", userId);
       if (error) throw error;
+      return userId;
     },
-    onSuccess: () => {
+    onSuccess: (userId) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      logAction.mutate({
+        targetUserId: userId,
+        actionType: "unban",
+      });
       toast({ title: "Đã bỏ ban người dùng!" });
     },
     onError: (error: Error) => {
@@ -89,6 +103,7 @@ export const useUnbanUser = () => {
 // Set warning
 export const useSetWarning = () => {
   const queryClient = useQueryClient();
+  const logAction = useLogAdminAction();
 
   return useMutation({
     mutationFn: async ({ userId, warning }: { userId: string; warning: string | null }) => {
@@ -97,9 +112,17 @@ export const useSetWarning = () => {
         .update({ warning_message: warning })
         .eq("user_id", userId);
       if (error) throw error;
+      return { userId, warning };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      if (data.warning) {
+        logAction.mutate({
+          targetUserId: data.userId,
+          actionType: "warning",
+          details: { message: data.warning },
+        });
+      }
       toast({ title: "Đã cập nhật cảnh báo!" });
     },
     onError: (error: Error) => {
@@ -158,6 +181,7 @@ export const useDeleteDeposit = () => {
 // Freeze balance
 export const useFreezeBalance = () => {
   const queryClient = useQueryClient();
+  const logAction = useLogAdminAction();
 
   return useMutation({
     mutationFn: async ({ userId, freeze, reason }: { userId: string; freeze: boolean; reason?: string }) => {
@@ -167,11 +191,17 @@ export const useFreezeBalance = () => {
         p_reason: reason || null,
       });
       if (error) throw error;
+      return { userId, freeze, reason };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      logAction.mutate({
+        targetUserId: data.userId,
+        actionType: data.freeze ? "freeze" : "unfreeze",
+        details: data.reason ? { reason: data.reason } : undefined,
+      });
       toast({ 
-        title: variables.freeze ? "Đã đóng băng số dư!" : "Đã gỡ đóng băng số dư!" 
+        title: data.freeze ? "Đã đóng băng số dư!" : "Đã gỡ đóng băng số dư!" 
       });
     },
     onError: (error: Error) => {
