@@ -123,13 +123,18 @@ serve(async (req) => {
       // Still update but log the discrepancy
     }
 
+    // Build RPC params with explicit types
+    const rpcParams = {
+      p_deposit_id: String(depositId), // Ensure it's a string UUID
+      p_transfer_amount: Number(transferAmount),
+      p_reference: String(referenceCode || sepayTransactionId || ""),
+      p_sepay_tx_id: sepayTransactionId ? Number(sepayTransactionId) : null,
+    };
+
+    console.log("Calling RPC with params:", JSON.stringify(rpcParams));
+
     // Confirm deposit & add balance using new RPC (service_role)
-    const { error: confirmError } = await supabase.rpc("confirm_deposit_sepay", {
-      p_deposit_id: depositId,
-      p_transfer_amount: transferAmount,
-      p_reference: referenceCode || String(sepayTransactionId),
-      p_sepay_tx_id: sepayTransactionId || null,
-    });
+    const { error: confirmError } = await supabase.rpc("confirm_deposit_sepay", rpcParams);
 
     if (confirmError) {
       console.error("Error confirming deposit via RPC:", confirmError);
