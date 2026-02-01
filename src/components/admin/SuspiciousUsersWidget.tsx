@@ -20,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -31,11 +30,8 @@ import {
   Search,
   RefreshCw,
   CheckCircle,
-  Ban,
-  AlertCircle,
-  DollarSign,
-  MessageCircle,
 } from "lucide-react";
+import SimplePagination, { paginateData, getTotalPages } from "@/components/ui/simple-pagination";
 
 interface SuspiciousUser {
   id: string;
@@ -55,6 +51,7 @@ const SuspiciousUsersWidget = () => {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [clearSuspiciousId, setClearSuspiciousId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: suspiciousUsers, isLoading, refetch } = useQuery({
     queryKey: ["suspicious-users"],
@@ -137,70 +134,77 @@ const SuspiciousUsersWidget = () => {
               <p className="text-sm">Không có tài khoản nghi vấn</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Người dùng</TableHead>
-                    <TableHead className="text-xs">Số dư</TableHead>
-                    <TableHead className="text-xs">Lý do nghi vấn</TableHead>
-                    <TableHead className="text-xs">Thời gian</TableHead>
-                    <TableHead className="text-xs">Trạng thái</TableHead>
-                    <TableHead className="text-xs w-20"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers?.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="text-xs">
-                        <div>
-                          <p className="font-medium">{u.full_name || "Chưa đặt tên"}</p>
-                          <p className="text-muted-foreground font-mono text-xs">
-                            {u.user_id.slice(0, 8)}...
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs font-semibold">
-                        {formatCurrency(u.balance)}
-                      </TableCell>
-                      <TableCell className="text-xs max-w-[200px]">
-                        <p className="text-destructive line-clamp-2">{u.suspicious_reason}</p>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {u.suspicious_at
-                          ? format(new Date(u.suspicious_at), "dd/MM/yy HH:mm", { locale: vi })
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          {u.is_banned && (
-                            <Badge variant="destructive" className="text-xs">
-                              Bị ban
-                            </Badge>
-                          )}
-                          {u.warning_message && (
-                            <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">
-                              Cảnh báo
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs gap-1"
-                          onClick={() => setClearSuspiciousId(u.user_id)}
-                        >
-                          <CheckCircle className="w-3 h-3" />
-                          Bỏ dấu
-                        </Button>
-                      </TableCell>
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Người dùng</TableHead>
+                      <TableHead className="text-xs">Số dư</TableHead>
+                      <TableHead className="text-xs">Lý do nghi vấn</TableHead>
+                      <TableHead className="text-xs">Thời gian</TableHead>
+                      <TableHead className="text-xs">Trạng thái</TableHead>
+                      <TableHead className="text-xs w-20"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {paginateData(filteredUsers || [], currentPage).map((u) => (
+                      <TableRow key={u.id}>
+                        <TableCell className="text-xs">
+                          <div>
+                            <p className="font-medium">{u.full_name || "Chưa đặt tên"}</p>
+                            <p className="text-muted-foreground font-mono text-xs">
+                              {u.user_id.slice(0, 8)}...
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs font-semibold">
+                          {formatCurrency(u.balance)}
+                        </TableCell>
+                        <TableCell className="text-xs max-w-[200px]">
+                          <p className="text-destructive line-clamp-2">{u.suspicious_reason}</p>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {u.suspicious_at
+                            ? format(new Date(u.suspicious_at), "dd/MM/yy HH:mm", { locale: vi })
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            {u.is_banned && (
+                              <Badge variant="destructive" className="text-xs">
+                                Bị ban
+                              </Badge>
+                            )}
+                            {u.warning_message && (
+                              <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">
+                                Cảnh báo
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => setClearSuspiciousId(u.user_id)}
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            Bỏ dấu
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <SimplePagination
+                currentPage={currentPage}
+                totalPages={getTotalPages(filteredUsers?.length || 0)}
+                onPageChange={setCurrentPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>
