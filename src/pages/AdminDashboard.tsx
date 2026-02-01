@@ -102,6 +102,7 @@ import AdminBankSettingsWidget from "@/components/admin/AdminBankSettingsWidget"
 import KYCManagementWidget from "@/components/admin/KYCManagementWidget";
 import RiskAlertsWidget from "@/components/admin/RiskAlertsWidget";
 import SuspiciousUsersWidget from "@/components/admin/SuspiciousUsersWidget";
+import SimplePagination, { paginateData, getTotalPages } from "@/components/ui/simple-pagination";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -195,6 +196,12 @@ const AdminDashboard = () => {
   const [adjustBalanceAmount, setAdjustBalanceAmount] = useState("");
   const [adjustBalanceNote, setAdjustBalanceNote] = useState("");
   const [adjustBalanceUserName, setAdjustBalanceUserName] = useState("");
+
+  // Pagination states
+  const [transactionPage, setTransactionPage] = useState(1);
+  const [depositPage, setDepositPage] = useState(1);
+  const [userPage, setUserPage] = useState(1);
+  const [withdrawalPage, setWithdrawalPage] = useState(1);
 
   // Hooks
   const { data: deposits, isLoading: depositsLoading, refetch: refetchDeposits } = useQuery({
@@ -400,7 +407,7 @@ const AdminDashboard = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredTransactions?.slice(0, 10).map((t) => (
+                        {paginateData(filteredTransactions || [], transactionPage).map((t) => (
                           <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(`/transaction/${t.id}`)}>
                             <TableCell className="font-mono text-xs">{t.transaction_code}</TableCell>
                             <TableCell className="max-w-[150px] truncate text-xs">{t.product_name}</TableCell>
@@ -416,6 +423,11 @@ const AdminDashboard = () => {
                         ))}
                       </TableBody>
                     </Table>
+                    <SimplePagination
+                      currentPage={transactionPage}
+                      totalPages={getTotalPages(filteredTransactions?.length || 0)}
+                      onPageChange={setTransactionPage}
+                    />
                   </div>
                 )}
               </CardContent>
@@ -438,38 +450,48 @@ const AdminDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                {depositsLoading ? <Skeleton className="h-32 w-full" /> : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs">Mã</TableHead>
-                        <TableHead className="text-xs">Số tiền</TableHead>
-                        <TableHead className="text-xs">Trạng thái</TableHead>
-                        <TableHead className="text-xs">Ngày</TableHead>
-                        <TableHead className="text-xs w-16"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {deposits?.filter((d) => d.id.includes(depositSearchQuery) || d.payment_method.includes(depositSearchQuery)).slice(0, 10).map((d) => (
-                        <TableRow key={d.id}>
-                          <TableCell className="font-mono text-xs">NAP {d.id.slice(0, 8).toUpperCase()}</TableCell>
-                          <TableCell className="font-semibold text-xs">{formatCurrency(d.amount)}</TableCell>
-                          <TableCell>
-                            <Badge variant={d.status === "completed" ? "default" : d.status === "pending" ? "secondary" : "destructive"} className="text-xs">
-                              {d.status === "completed" ? "Đã xác nhận" : d.status === "pending" ? "Chờ" : "Hủy"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{format(new Date(d.created_at), "dd/MM/yy", { locale: vi })}</TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteDepositId(d.id)}>
-                              <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                {depositsLoading ? <Skeleton className="h-32 w-full" /> : (() => {
+                  const filteredDeposits = deposits?.filter((d) => d.id.includes(depositSearchQuery) || d.payment_method.includes(depositSearchQuery)) || [];
+                  return (
+                    <>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs">Mã</TableHead>
+                            <TableHead className="text-xs">Số tiền</TableHead>
+                            <TableHead className="text-xs">Trạng thái</TableHead>
+                            <TableHead className="text-xs">Ngày</TableHead>
+                            <TableHead className="text-xs w-16"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginateData(filteredDeposits, depositPage).map((d) => (
+                            <TableRow key={d.id}>
+                              <TableCell className="font-mono text-xs">NAP {d.id.slice(0, 8).toUpperCase()}</TableCell>
+                              <TableCell className="font-semibold text-xs">{formatCurrency(d.amount)}</TableCell>
+                              <TableCell>
+                                <Badge variant={d.status === "completed" ? "default" : d.status === "pending" ? "secondary" : "destructive"} className="text-xs">
+                                  {d.status === "completed" ? "Đã xác nhận" : d.status === "pending" ? "Chờ" : "Hủy"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{format(new Date(d.created_at), "dd/MM/yy", { locale: vi })}</TableCell>
+                              <TableCell>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteDepositId(d.id)}>
+                                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      <SimplePagination
+                        currentPage={depositPage}
+                        totalPages={getTotalPages(filteredDeposits.length)}
+                        onPageChange={setDepositPage}
+                      />
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
@@ -494,70 +516,77 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent className="pt-0">
               {usersLoading ? <Skeleton className="h-32 w-full" /> : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Tên</TableHead>
-                      <TableHead className="text-xs">Số dư</TableHead>
-                      <TableHead className="text-xs">GD</TableHead>
-                      <TableHead className="text-xs">Uy tín</TableHead>
-                      <TableHead className="text-xs">Trạng thái</TableHead>
-                      <TableHead className="text-xs w-24"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers?.map((u) => (
-                      <TableRow key={u.id}>
-                        <TableCell className="text-xs">
-                          <div>
-                            <p className="font-medium">{u.full_name || "Chưa đặt tên"}</p>
-                            <p className="text-muted-foreground font-mono text-xs">{u.user_id.slice(0, 8)}...</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs">{formatCurrency(u.balance)}</TableCell>
-                        <TableCell className="text-xs">{u.total_transactions}</TableCell>
-                        <TableCell className="text-xs">{u.reputation_score}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            {u.is_banned && <Badge variant="destructive" className="text-xs">Bị ban</Badge>}
-                            {u.warning_message && <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">Cảnh báo</Badge>}
-                            {!u.is_banned && !u.warning_message && <Badge variant="secondary" className="text-xs">Bình thường</Badge>}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-7 w-7" 
-                              onClick={() => { 
-                                setAdjustBalanceUserId(u.user_id); 
-                                setAdjustBalanceUserName(u.full_name || u.user_id.slice(0, 8));
-                                setAdjustBalanceAmount("");
-                                setAdjustBalanceNote("");
-                              }}
-                              title="Cộng/Trừ tiền"
-                            >
-                              <DollarSign className="w-3.5 h-3.5 text-green-500" />
-                            </Button>
-                            {u.is_banned ? (
-                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => unbanUser.mutate(u.user_id)}>
-                                <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-                              </Button>
-                            ) : (
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setBanUserId(u.user_id)}>
-                                <Ban className="w-3.5 h-3.5 text-destructive" />
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setWarningUserId(u.user_id); setWarningMessage(u.warning_message || ""); }}>
-                              <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Tên</TableHead>
+                        <TableHead className="text-xs">Số dư</TableHead>
+                        <TableHead className="text-xs">GD</TableHead>
+                        <TableHead className="text-xs">Uy tín</TableHead>
+                        <TableHead className="text-xs">Trạng thái</TableHead>
+                        <TableHead className="text-xs w-24"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {paginateData(filteredUsers || [], userPage).map((u) => (
+                        <TableRow key={u.id}>
+                          <TableCell className="text-xs">
+                            <div>
+                              <p className="font-medium">{u.full_name || "Chưa đặt tên"}</p>
+                              <p className="text-muted-foreground font-mono text-xs">{u.user_id.slice(0, 8)}...</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs">{formatCurrency(u.balance)}</TableCell>
+                          <TableCell className="text-xs">{u.total_transactions}</TableCell>
+                          <TableCell className="text-xs">{u.reputation_score}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              {u.is_banned && <Badge variant="destructive" className="text-xs">Bị ban</Badge>}
+                              {u.warning_message && <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">Cảnh báo</Badge>}
+                              {!u.is_banned && !u.warning_message && <Badge variant="secondary" className="text-xs">Bình thường</Badge>}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7" 
+                                onClick={() => { 
+                                  setAdjustBalanceUserId(u.user_id); 
+                                  setAdjustBalanceUserName(u.full_name || u.user_id.slice(0, 8));
+                                  setAdjustBalanceAmount("");
+                                  setAdjustBalanceNote("");
+                                }}
+                                title="Cộng/Trừ tiền"
+                              >
+                                <DollarSign className="w-3.5 h-3.5 text-green-500" />
+                              </Button>
+                              {u.is_banned ? (
+                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => unbanUser.mutate(u.user_id)}>
+                                  <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                                </Button>
+                              ) : (
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setBanUserId(u.user_id)}>
+                                  <Ban className="w-3.5 h-3.5 text-destructive" />
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setWarningUserId(u.user_id); setWarningMessage(u.warning_message || ""); }}>
+                                <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <SimplePagination
+                    currentPage={userPage}
+                    totalPages={getTotalPages(filteredUsers?.length || 0)}
+                    onPageChange={setUserPage}
+                  />
+                </>
               )}
             </CardContent>
           </Card>
@@ -582,51 +611,58 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent className="pt-0">
               {withdrawalsLoading ? <Skeleton className="h-32 w-full" /> : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Số tiền</TableHead>
-                      <TableHead className="text-xs">Ngân hàng</TableHead>
-                      <TableHead className="text-xs">Chủ TK</TableHead>
-                      <TableHead className="text-xs">Trạng thái</TableHead>
-                      <TableHead className="text-xs">Ngày</TableHead>
-                      <TableHead className="text-xs w-16"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {withdrawals?.map((w) => (
-                      <TableRow key={w.id}>
-                        <TableCell className="font-semibold text-xs">{formatCurrency(w.amount)}</TableCell>
-                        <TableCell className="text-xs">{w.bank_name}</TableCell>
-                        <TableCell className="text-xs">
-                          <div>
-                            <p>{w.bank_account_name}</p>
-                            <p className="text-muted-foreground">{w.bank_account_number}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={w.status === "completed" ? "default" : w.status === "rejected" ? "destructive" : "secondary"} 
-                            className="text-xs"
-                          >
-                            {w.status === "completed" ? "Đã chuyển" : w.status === "rejected" ? "Từ chối" : w.status === "on_hold" ? "Giữ lại" : "Chờ"}
-                          </Badge>
-                          {w.admin_note && w.status === "rejected" && (
-                            <p className="text-xs text-destructive mt-1">{w.admin_note}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {format(new Date(w.created_at), "dd/MM/yy", { locale: vi })}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteWithdrawalId(w.id)}>
-                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                          </Button>
-                        </TableCell>
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Số tiền</TableHead>
+                        <TableHead className="text-xs">Ngân hàng</TableHead>
+                        <TableHead className="text-xs">Chủ TK</TableHead>
+                        <TableHead className="text-xs">Trạng thái</TableHead>
+                        <TableHead className="text-xs">Ngày</TableHead>
+                        <TableHead className="text-xs w-16"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {paginateData(withdrawals || [], withdrawalPage).map((w) => (
+                        <TableRow key={w.id}>
+                          <TableCell className="font-semibold text-xs">{formatCurrency(w.amount)}</TableCell>
+                          <TableCell className="text-xs">{w.bank_name}</TableCell>
+                          <TableCell className="text-xs">
+                            <div>
+                              <p>{w.bank_account_name}</p>
+                              <p className="text-muted-foreground">{w.bank_account_number}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={w.status === "completed" ? "default" : w.status === "rejected" ? "destructive" : "secondary"} 
+                              className="text-xs"
+                            >
+                              {w.status === "completed" ? "Đã chuyển" : w.status === "rejected" ? "Từ chối" : w.status === "on_hold" ? "Giữ lại" : "Chờ"}
+                            </Badge>
+                            {w.admin_note && w.status === "rejected" && (
+                              <p className="text-xs text-destructive mt-1">{w.admin_note}</p>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {format(new Date(w.created_at), "dd/MM/yy", { locale: vi })}
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteWithdrawalId(w.id)}>
+                              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <SimplePagination
+                    currentPage={withdrawalPage}
+                    totalPages={getTotalPages(withdrawals?.length || 0)}
+                    onPageChange={setWithdrawalPage}
+                  />
+                </>
               )}
             </CardContent>
           </Card>
