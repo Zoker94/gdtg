@@ -9,7 +9,7 @@ export interface Withdrawal {
   bank_name: string;
   bank_account_number: string;
   bank_account_name: string;
-  status: "pending" | "completed" | "rejected";
+  status: "pending" | "completed" | "rejected" | "on_hold";
   admin_note: string | null;
   created_at: string;
   completed_at: string | null;

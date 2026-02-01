@@ -25,6 +25,7 @@ import KYCVerification from "./pages/KYCVerification";
 import TransactionHistory from "./pages/TransactionHistory";
 import WaitingLobby from "./pages/WaitingLobby";
 import Messages from "./pages/Messages";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="/moderators-full" element={<ModeratorsFullList />} />
               <Route path="/kyc" element={<ProtectedRoute><KYCVerification /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/terms" element={<TermsOfService />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
