@@ -426,11 +426,14 @@ export type Database = {
         Row: {
           avatar_url: string | null
           balance: number
+          balance_freeze_reason: string | null
+          balance_frozen_at: string | null
           ban_reason: string | null
           banned_at: string | null
           created_at: string
           full_name: string | null
           id: string
+          is_balance_frozen: boolean | null
           is_banned: boolean
           is_suspicious: boolean | null
           is_verified: boolean | null
@@ -449,11 +452,14 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           balance?: number
+          balance_freeze_reason?: string | null
+          balance_frozen_at?: string | null
           ban_reason?: string | null
           banned_at?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          is_balance_frozen?: boolean | null
           is_banned?: boolean
           is_suspicious?: boolean | null
           is_verified?: boolean | null
@@ -472,11 +478,14 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           balance?: number
+          balance_freeze_reason?: string | null
+          balance_frozen_at?: string | null
           ban_reason?: string | null
           banned_at?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          is_balance_frozen?: boolean | null
           is_banned?: boolean
           is_suspicious?: boolean | null
           is_verified?: boolean | null
@@ -743,6 +752,10 @@ export type Database = {
     Functions: {
       admin_adjust_balance: {
         Args: { p_amount: number; p_note?: string; p_user_id: string }
+        Returns: undefined
+      }
+      admin_freeze_balance: {
+        Args: { p_freeze: boolean; p_reason?: string; p_user_id: string }
         Returns: undefined
       }
       approve_kyc: { Args: { p_submission_id: string }; Returns: undefined }

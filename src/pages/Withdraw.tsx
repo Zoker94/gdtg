@@ -260,15 +260,15 @@ const Withdraw = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Quay lại Dashboard
           </Button>
-          <Card className="border-red-500/30 bg-red-500/5">
+          <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="py-8 text-center">
-              <ShieldAlert className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <p className="text-lg font-semibold mb-2 text-red-600">Tài khoản bị tạm khóa rút tiền</p>
+              <ShieldAlert className="w-12 h-12 text-destructive mx-auto mb-4" />
+              <p className="text-lg font-semibold mb-2 text-destructive">Tài khoản bị tạm khóa rút tiền</p>
               <p className="text-muted-foreground mb-2">
                 Hệ thống phát hiện hoạt động bất thường trên tài khoản của bạn.
               </p>
               {profile?.suspicious_reason && (
-                <p className="text-sm text-red-600 mb-4 p-3 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                <p className="text-sm text-destructive mb-4 p-3 bg-destructive/10 rounded-lg">
                   Lý do: {profile.suspicious_reason}
                 </p>
               )}
@@ -277,6 +277,56 @@ const Withdraw = () => {
               </p>
               {platformSettings?.admin_contact_link && (
                 <Button asChild>
+                  <a href={platformSettings.admin_contact_link} target="_blank" rel="noopener noreferrer">
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Liên hệ Admin
+                  </a>
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
+  // Show balance frozen warning
+  if (!profileLoading && profile?.is_balance_frozen) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-card sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              <span className="font-display font-bold text-base">GDTG</span>
+            </Link>
+          </div>
+        </header>
+        <AnnouncementBanner />
+        <main className="container mx-auto px-4 py-6 max-w-2xl">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Quay lại Dashboard
+          </Button>
+          <Card className="border-sky-500/30 bg-sky-500/5">
+            <CardContent className="py-8 text-center">
+              <div className="w-12 h-12 rounded-full bg-sky-500/20 flex items-center justify-center mx-auto mb-4">
+                <Wallet className="w-6 h-6 text-sky-500" />
+              </div>
+              <p className="text-lg font-semibold mb-2 text-sky-600">Số dư đang bị đóng băng</p>
+              <p className="text-muted-foreground mb-2">
+                Tài khoản của bạn vẫn hoạt động bình thường nhưng tạm thời không thể rút tiền.
+              </p>
+              {profile?.balance_freeze_reason && (
+                <p className="text-sm text-sky-600 mb-4 p-3 bg-sky-100 dark:bg-sky-900/20 rounded-lg">
+                  Lý do: {profile.balance_freeze_reason}
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground mb-4">
+                Vui lòng liên hệ Admin để được hỗ trợ giải quyết.
+              </p>
+              {platformSettings?.admin_contact_link && (
+                <Button asChild className="bg-sky-500 hover:bg-sky-600">
                   <a href={platformSettings.admin_contact_link} target="_blank" rel="noopener noreferrer">
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Liên hệ Admin

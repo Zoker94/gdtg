@@ -64,6 +64,7 @@ import {
   ShieldAlert,
   Menu,
   LayoutDashboard,
+  Snowflake,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -74,6 +75,7 @@ import {
   useSetWarning,
   useDeleteTransaction,
   useDeleteDeposit,
+  useFreezeBalance,
 } from "@/hooks/useAdminActions";
 import {
   useAllWithdrawals,
@@ -197,6 +199,10 @@ const AdminDashboard = () => {
   const [adjustBalanceNote, setAdjustBalanceNote] = useState("");
   const [adjustBalanceUserName, setAdjustBalanceUserName] = useState("");
 
+  // Freeze balance
+  const [freezeBalanceUserId, setFreezeBalanceUserId] = useState<string | null>(null);
+  const [freezeBalanceReason, setFreezeBalanceReason] = useState("");
+
   // Pagination states
   const [transactionPage, setTransactionPage] = useState(1);
   const [depositPage, setDepositPage] = useState(1);
@@ -249,6 +255,7 @@ const AdminDashboard = () => {
   const deleteWithdrawal = useDeleteWithdrawal();
   const holdWithdrawal = useHoldWithdrawal();
   const adjustBalance = useAdjustBalance();
+  const freezeBalance = useFreezeBalance();
 
   const isAdmin = roles?.isAdmin;
 
@@ -543,8 +550,9 @@ const AdminDashboard = () => {
                           <TableCell>
                             <div className="flex flex-col gap-1">
                               {u.is_banned && <Badge variant="destructive" className="text-xs">Bị ban</Badge>}
-                              {u.warning_message && <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">Cảnh báo</Badge>}
-                              {!u.is_banned && !u.warning_message && <Badge variant="secondary" className="text-xs">Bình thường</Badge>}
+                              {u.is_balance_frozen && <Badge className="text-xs bg-sky-500 text-white">Đóng băng</Badge>}
+                              {u.warning_message && <Badge variant="outline" className="text-xs border-amber-500 text-amber-500">Cảnh báo</Badge>}
+                              {!u.is_banned && !u.warning_message && !u.is_balance_frozen && <Badge variant="secondary" className="text-xs">Bình thường</Badge>}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -561,18 +569,39 @@ const AdminDashboard = () => {
                                 }}
                                 title="Cộng/Trừ tiền"
                               >
-                                <DollarSign className="w-3.5 h-3.5 text-green-500" />
+                                <DollarSign className="w-3.5 h-3.5 text-primary" />
                               </Button>
-                              {u.is_banned ? (
-                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => unbanUser.mutate(u.user_id)}>
-                                  <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                              {u.is_balance_frozen ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="icon" 
+                                  className="h-7 w-7" 
+                                  onClick={() => freezeBalance.mutate({ userId: u.user_id, freeze: false })}
+                                  title="Gỡ đóng băng số dư"
+                                >
+                                  <Snowflake className="w-3.5 h-3.5 text-sky-500" />
                                 </Button>
                               ) : (
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setBanUserId(u.user_id)}>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7" 
+                                  onClick={() => { setFreezeBalanceUserId(u.user_id); setFreezeBalanceReason(""); }}
+                                  title="Đóng băng số dư"
+                                >
+                                  <Snowflake className="w-3.5 h-3.5 text-muted-foreground" />
+                                </Button>
+                              )}
+                              {u.is_banned ? (
+                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => unbanUser.mutate(u.user_id)} title="Gỡ ban">
+                                  <CheckCircle className="w-3.5 h-3.5 text-primary" />
+                                </Button>
+                              ) : (
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setBanUserId(u.user_id)} title="Ban tài khoản">
                                   <Ban className="w-3.5 h-3.5 text-destructive" />
                                 </Button>
                               )}
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setWarningUserId(u.user_id); setWarningMessage(u.warning_message || ""); }}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setWarningUserId(u.user_id); setWarningMessage(u.warning_message || ""); }} title="Gắn cảnh báo">
                                 <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                               </Button>
                             </div>
@@ -878,6 +907,42 @@ const AdminDashboard = () => {
                   <Button variant="outline" onClick={() => setBanUserId(null)}>Hủy</Button>
                   <Button variant="destructive" onClick={handleBanUser} disabled={!banReason.trim()}>
                     Ban
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Dialog: Freeze Balance */}
+            <Dialog open={!!freezeBalanceUserId} onOpenChange={() => setFreezeBalanceUserId(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Snowflake className="w-5 h-5 text-sky-500" />
+                    Đóng băng số dư
+                  </DialogTitle>
+                  <DialogDescription>
+                    Người dùng sẽ không thể rút tiền nhưng vẫn có thể đăng nhập và tham gia giao dịch.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <Textarea 
+                    placeholder="Lý do đóng băng số dư..." 
+                    value={freezeBalanceReason} 
+                    onChange={(e) => setFreezeBalanceReason(e.target.value)} 
+                  />
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setFreezeBalanceUserId(null)}>Hủy</Button>
+                  <Button 
+                    onClick={() => { 
+                      freezeBalance.mutate({ userId: freezeBalanceUserId!, freeze: true, reason: freezeBalanceReason }); 
+                      setFreezeBalanceUserId(null); 
+                    }} 
+                    disabled={!freezeBalanceReason.trim()}
+                    className="bg-sky-500 hover:bg-sky-600"
+                  >
+                    <Snowflake className="w-4 h-4 mr-2" />
+                    Đóng băng
                   </Button>
                 </DialogFooter>
               </DialogContent>

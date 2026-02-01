@@ -13,6 +13,9 @@ export interface UserProfile {
   banned_at: string | null;
   ban_reason: string | null;
   warning_message: string | null;
+  is_balance_frozen: boolean;
+  balance_frozen_at: string | null;
+  balance_freeze_reason: string | null;
   created_at: string;
 }
 
@@ -145,6 +148,31 @@ export const useDeleteDeposit = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-deposits"] });
       toast({ title: "Đã xoá lịch sử nạp tiền!" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+    },
+  });
+};
+
+// Freeze balance
+export const useFreezeBalance = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, freeze, reason }: { userId: string; freeze: boolean; reason?: string }) => {
+      const { error } = await supabase.rpc("admin_freeze_balance", {
+        p_user_id: userId,
+        p_freeze: freeze,
+        p_reason: reason || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast({ 
+        title: variables.freeze ? "Đã đóng băng số dư!" : "Đã gỡ đóng băng số dư!" 
+      });
     },
     onError: (error: Error) => {
       toast({ title: "Lỗi", description: error.message, variant: "destructive" });
