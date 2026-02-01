@@ -183,26 +183,6 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Terms checkbox for Google sign-up (shown when in register mode) */}
-            {!isLogin && (
-              <div className="mb-4 flex items-start space-x-2 p-3 rounded-lg bg-muted/50">
-                <Checkbox
-                  id="google-terms"
-                  checked={agreedToTerms}
-                  onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
-                />
-                <label
-                  htmlFor="google-terms"
-                  className="text-sm leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Tôi đồng ý với{" "}
-                  <Link to="/terms" className="text-primary hover:underline" target="_blank">
-                    Điều khoản sử dụng
-                  </Link>
-                </label>
-              </div>
-            )}
-
             {/* Google Sign In Button */}
             <Button
               type="button"
