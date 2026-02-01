@@ -85,7 +85,7 @@ export interface UserRoleInfo {
 }
 
 export const useUserRole = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   return useQuery({
     queryKey: ["user-role", user?.id],
@@ -108,7 +108,8 @@ export const useUserRole = () => {
         isUser: roles.includes("user"),
       };
     },
-    enabled: !!user?.id,
+    // Only enable when auth is fully loaded and user exists
+    enabled: !authLoading && !!user?.id,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 };

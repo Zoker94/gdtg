@@ -37,13 +37,14 @@ const DashboardHeader = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
-  const { data: roles } = useUserRole();
+  const { data: roles, isLoading: rolesLoading } = useUserRole();
   const { data: unreadCount } = useUnreadMessagesCount();
 
   // Enable realtime updates for profile balance
   useProfileRealtime();
 
-  const isAdmin = roles?.isAdmin;
+  // Only show admin button after roles have fully loaded
+  const isAdmin = !rolesLoading && roles?.isAdmin;
 
   const handleSignOut = async () => {
     await signOut();
