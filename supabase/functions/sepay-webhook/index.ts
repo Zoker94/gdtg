@@ -101,10 +101,11 @@ serve(async (req) => {
 
     console.log("Processing deposit:", depositId, "Amount:", transferAmount);
 
-    // Find the pending deposit
+    // Find the pending deposit - only select required columns to avoid any
+    // potential issues with the transaction_ref column parsing elsewhere
     const { data: deposit, error: depositError } = await supabase
       .from("deposits")
-      .select("*")
+      .select("id, user_id, amount, status")
       .eq("id", depositId)
       .eq("status", "pending")
       .single();
