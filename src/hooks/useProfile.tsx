@@ -23,6 +23,9 @@ export interface Profile {
   is_suspicious: boolean;
   suspicious_reason: string | null;
   suspicious_at: string | null;
+  is_balance_frozen: boolean;
+  balance_frozen_at: string | null;
+  balance_freeze_reason: string | null;
   created_at: string;
   updated_at: string;
 }
