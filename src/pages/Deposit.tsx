@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, ArrowLeft, CreditCard, Building, Copy, Check, QrCode, CheckCircle } from "lucide-react";
+import { Shield, ArrowLeft, CreditCard, Building, Copy, Check, QrCode, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -46,7 +46,7 @@ const Deposit = () => {
   const [loading, setLoading] = useState(false);
   const [depositId, setDepositId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [hasConfirmedPayment, setHasConfirmedPayment] = useState(false);
+  const [isWaitingForPayment, setIsWaitingForPayment] = useState(false);
 
   // Use admin bank settings from platform_settings
   const bankInfo = {
@@ -61,6 +61,44 @@ const Deposit = () => {
     toast({ title: "Đã copy!" });
     setTimeout(() => setCopiedField(null), 2000);
   };
+
+  // Subscribe to deposit status changes for auto-redirect
+  useEffect(() => {
+    if (!depositId) return;
+
+    setIsWaitingForPayment(true);
+
+    const channel = supabase
+      .channel(`deposit-${depositId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'deposits',
+          filter: `id=eq.${depositId}`,
+        },
+        (payload) => {
+          const newStatus = payload.new?.status;
+          if (newStatus === 'completed') {
+            toast({ 
+              title: "🎉 Nạp tiền thành công!", 
+              description: `Số tiền ${Number(payload.new?.amount).toLocaleString()}đ đã được cộng vào tài khoản` 
+            });
+            setIsWaitingForPayment(false);
+            // Auto redirect after 2 seconds
+            setTimeout(() => {
+              navigate('/dashboard');
+            }, 2000);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [depositId, navigate]);
 
   const handleSubmit = async () => {
     const numAmount = parseFloat(amount);
@@ -96,27 +134,6 @@ const Deposit = () => {
 
     setDepositId(data.id);
     setStep("payment");
-    setLoading(false);
-  };
-
-  const handleConfirmPayment = async () => {
-    if (!depositId) return;
-
-    setLoading(true);
-
-    const { error } = await supabase
-      .from("deposits")
-      .update({ is_submitted: true })
-      .eq("id", depositId);
-
-    if (error) {
-      toast({ title: "Lỗi", description: "Không thể xác nhận", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
-
-    setHasConfirmedPayment(true);
-    toast({ title: "Đã gửi xác nhận!", description: "Admin sẽ kiểm tra và duyệt trong ít phút" });
     setLoading(false);
   };
 
@@ -278,32 +295,13 @@ const Deposit = () => {
                 </div>
               </div>
               
-              <p className="text-xs text-center text-muted-foreground">
-                ⚠️ Nội dung chuyển khoản đã được điền sẵn trong mã QR. Hệ thống sẽ tự động xác nhận sau khi nhận được tiền.
-              </p>
-
               <div className="pt-4 border-t border-border space-y-3">
-                <p className="text-sm text-center text-muted-foreground">
-                  Sau khi chuyển khoản thành công, bấm nút bên dưới để Admin xác nhận
-                </p>
-                
-                {!hasConfirmedPayment ? (
-                  <Button 
-                    className="w-full glow-primary" 
-                    onClick={handleConfirmPayment}
-                    disabled={loading}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    {loading ? "Đang xử lý..." : "Đã nạp tiền"}
-                  </Button>
-                ) : (
-                  <div className="text-center space-y-2">
-                    <div className="inline-flex items-center gap-2 text-green-600 font-medium">
-                      <CheckCircle className="w-5 h-5" />
-                      Đã gửi xác nhận
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Admin sẽ kiểm tra và cộng tiền trong 5-15 phút
+                {isWaitingForPayment && (
+                  <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <p className="text-sm font-medium text-center">Đang chờ xác nhận thanh toán...</p>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Hệ thống sẽ tự động cộng tiền và chuyển về Dashboard sau khi nhận được thanh toán
                     </p>
                   </div>
                 )}
