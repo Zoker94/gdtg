@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useLogAdminAction } from "@/hooks/useAdminActionLogs";
 
 export const useAdjustBalance = () => {
   const queryClient = useQueryClient();
+  const logAction = useLogAdminAction();
 
   return useMutation({
     mutationFn: async ({ userId, amount, note }: { userId: string; amount: number; note?: string }) => {
@@ -13,13 +15,20 @@ export const useAdjustBalance = () => {
         p_note: note || null,
       });
       if (error) throw error;
+      return { userId, amount, note };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
-      const action = variables.amount >= 0 ? "cộng" : "trừ";
+      logAction.mutate({
+        targetUserId: data.userId,
+        actionType: "adjust_balance",
+        details: { amount: data.amount },
+        note: data.note,
+      });
+      const action = data.amount >= 0 ? "cộng" : "trừ";
       toast({ 
-        title: `Đã ${action} ${Math.abs(variables.amount).toLocaleString("vi-VN")}đ thành công!` 
+        title: `Đã ${action} ${Math.abs(data.amount).toLocaleString("vi-VN")}đ thành công!` 
       });
     },
     onError: (error: Error) => {

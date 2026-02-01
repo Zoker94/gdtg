@@ -65,6 +65,7 @@ import {
   Menu,
   LayoutDashboard,
   Snowflake,
+  History,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -104,6 +105,7 @@ import AdminBankSettingsWidget from "@/components/admin/AdminBankSettingsWidget"
 import KYCManagementWidget from "@/components/admin/KYCManagementWidget";
 import RiskAlertsWidget from "@/components/admin/RiskAlertsWidget";
 import SuspiciousUsersWidget from "@/components/admin/SuspiciousUsersWidget";
+import AdminActionLogsWidget from "@/components/admin/AdminActionLogsWidget";
 import SimplePagination, { paginateData, getTotalPages } from "@/components/ui/simple-pagination";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -123,6 +125,7 @@ const menuItems = [
   { title: "KYC", value: "kyc", icon: IdCard },
   { title: "Rút tiền", value: "withdrawals", icon: ArrowDownToLine },
   { title: "Thông báo", value: "announcements", icon: Megaphone },
+  { title: "Lịch sử", value: "history", icon: History },
   { title: "Cài đặt", value: "settings", icon: Settings },
 ];
 
@@ -772,6 +775,13 @@ const AdminDashboard = () => {
               <RoleManagementWidget />
             </div>
             <ModeratorManagementWidget />
+          </div>
+        );
+
+      case "history":
+        return (
+          <div className="space-y-4">
+            <AdminActionLogsWidget />
           </div>
         );
 
