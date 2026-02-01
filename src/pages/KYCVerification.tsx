@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import KYCForm from "@/components/KYCForm";
+import Footer from "@/components/Footer";
 
 const KYCVerification = () => {
   const { user, loading } = useAuth();
@@ -44,6 +45,7 @@ const KYCVerification = () => {
       <main className="container mx-auto px-4 py-8 max-w-lg">
         <KYCForm />
       </main>
+      <Footer />
     </div>
   );
 };

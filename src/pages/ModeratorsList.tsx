@@ -1,5 +1,6 @@
 import { useNavigate, Link } from "react-router-dom";
 import { Shield, ArrowLeft, Phone, MessageCircle, ExternalLink } from "lucide-react";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -96,6 +97,7 @@ const ModeratorsListPage = () => {
           )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

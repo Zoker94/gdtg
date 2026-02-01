@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Shield, ArrowLeft, Search, ShoppingBag } from "lucide-react";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -197,6 +198,7 @@ const SearchRoom = () => {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 };

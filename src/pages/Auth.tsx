@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { Shield, ArrowLeft, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import Footer from "@/components/Footer";
 
 const loginSchema = z.object({
   email: z.string().email("Email không hợp lệ"),
@@ -370,6 +371,7 @@ const Auth = () => {
           </CardContent>
         </Card>
       </motion.div>
+      <Footer />
     </div>
   );
 };

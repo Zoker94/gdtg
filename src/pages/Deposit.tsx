@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { toast } from "@/hooks/use-toast";
+import Footer from "@/components/Footer";
 
 const predefinedAmounts = [10000, 50000, 100000, 200000, 500000, 1000000, 2000000];
 
@@ -315,6 +316,7 @@ const Deposit = () => {
           </Card>
         )}
       </main>
+      <Footer />
     </div>
   );
 };

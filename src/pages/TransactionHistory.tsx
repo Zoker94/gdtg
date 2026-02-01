@@ -7,6 +7,7 @@ import { TransactionCard } from "@/components/TransactionCard";
 import { useTransactions } from "@/hooks/useTransactions";
 import { ArrowLeft, Package } from "lucide-react";
 import DashboardHeader from "@/components/DashboardHeader";
+import Footer from "@/components/Footer";
 
 const TransactionHistory = () => {
   const navigate = useNavigate();
@@ -60,6 +61,7 @@ const TransactionHistory = () => {
           </motion.div>
         )}
       </main>
+      <Footer />
     </div>
   );
 };

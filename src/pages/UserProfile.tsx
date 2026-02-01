@@ -22,6 +22,7 @@ import {
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import PrivateMessageDialog from "@/components/messaging/PrivateMessageDialog";
+import Footer from "@/components/Footer";
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -275,6 +276,7 @@ const UserProfile = () => {
         otherUserName={profile.full_name || "Người dùng"}
         otherUserAvatar={profile.avatar_url}
       />
+      <Footer />
     </div>
   );
 };

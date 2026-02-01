@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Shield, ArrowLeft, LogIn, ShieldCheck, ShoppingBag, ShoppingCart } from "lucide-react";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -495,6 +496,7 @@ const JoinRoom = () => {
           />
         )}
       </main>
+      <Footer />
     </div>
   );
 };

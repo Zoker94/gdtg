@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Shield, Copy, Loader2, Users, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -257,6 +258,7 @@ const WaitingLobby = () => {
           </Card>
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 };

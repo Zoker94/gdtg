@@ -45,6 +45,7 @@ import {
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useState, useEffect, useRef } from "react";
+import Footer from "@/components/Footer";
 
 const CATEGORY_LABELS: Record<string, string> = {
   game_account: "Tài khoản game",
@@ -612,6 +613,7 @@ const TransactionDetail = () => {
           />
         </div>
       )}
+      <Footer />
     </div>
   );
 };

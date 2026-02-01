@@ -5,6 +5,7 @@ import DashboardContent from "@/components/dashboard/DashboardContent";
 import MarketplaceFeed from "@/components/marketplace/MarketplaceFeed";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Home, ShoppingBag } from "lucide-react";
+import Footer from "@/components/Footer";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("sanh");
@@ -36,6 +37,7 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+      <Footer />
     </div>
   );
 };

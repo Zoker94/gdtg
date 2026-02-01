@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, ArrowLeft, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import Footer from "@/components/Footer";
 import { useConversations } from "@/hooks/usePrivateMessages";
 import PrivateMessageDialog from "@/components/messaging/PrivateMessageDialog";
 import { cn } from "@/lib/utils";
@@ -170,6 +171,7 @@ const Messages = () => {
           otherUserAvatar={selectedConversation.otherUserAvatar}
         />
       )}
+      <Footer />
     </div>
   );
 };
