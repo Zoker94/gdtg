@@ -19,6 +19,7 @@ import {
   User,
   AlertTriangle,
 } from "lucide-react";
+import Footer from "@/components/Footer";
 
 const SearchProfile = () => {
   const navigate = useNavigate();
@@ -177,6 +178,7 @@ const SearchProfile = () => {
           ) : null}
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 };

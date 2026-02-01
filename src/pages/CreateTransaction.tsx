@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
+import Footer from "@/components/Footer";
 import { CreateTransactionForm } from "@/components/CreateTransactionForm";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -37,6 +38,7 @@ const CreateTransaction = () => {
           <CreateTransactionForm />
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 };

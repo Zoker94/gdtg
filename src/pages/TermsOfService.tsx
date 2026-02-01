@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Shield, ArrowLeft, AlertTriangle, Ban, FileWarning, Scale, Phone } from "lucide-react";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import Footer from "@/components/Footer";
 
 const TermsOfService = () => {
   const { data: platformSettings } = usePlatformSettings();
@@ -234,6 +235,7 @@ const TermsOfService = () => {
           </CardContent>
         </Card>
       </main>
+      <Footer />
     </div>
   );
 };

@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import Footer from "@/components/Footer";
 
 const MyProfile = () => {
   const navigate = useNavigate();
@@ -467,6 +468,7 @@ const MyProfile = () => {
           </Button>
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 };

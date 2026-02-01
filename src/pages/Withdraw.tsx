@@ -40,6 +40,7 @@ import { vi } from "date-fns/locale";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { useWithdrawalRealtime } from "@/hooks/useWithdrawalRealtime";
 import LinkedBankAccountsCard from "@/components/LinkedBankAccountsCard";
+import Footer from "@/components/Footer";
 
 const Withdraw = () => {
   const navigate = useNavigate();
@@ -504,6 +505,7 @@ const Withdraw = () => {
           </Card>
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 };

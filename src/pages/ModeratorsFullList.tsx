@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Shield, ArrowLeft, Phone, MessageCircle, ExternalLink, Search, Filter, User } from "lucide-react";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -188,6 +189,7 @@ const ModeratorsFullList = () => {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 };
