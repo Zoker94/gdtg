@@ -107,6 +107,7 @@ import RiskAlertsWidget from "@/components/admin/RiskAlertsWidget";
 import SuspiciousUsersWidget from "@/components/admin/SuspiciousUsersWidget";
 import AdminActionLogsWidget from "@/components/admin/AdminActionLogsWidget";
 import AdminApiKeysWidget from "@/components/admin/AdminApiKeysWidget";
+import ThemeSelectorWidget from "@/components/admin/ThemeSelectorWidget";
 import SimplePagination, { paginateData, getTotalPages } from "@/components/ui/simple-pagination";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -816,11 +817,12 @@ const AdminDashboard = () => {
       case "settings":
         return (
           <div className="space-y-4">
-            <AdminBankSettingsWidget />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <ThemeSelectorWidget />
               <PlatformSettingsWidget />
               <AdminApiKeysWidget />
             </div>
+            <AdminBankSettingsWidget />
             <RoleManagementWidget />
             <ModeratorManagementWidget />
           </div>
