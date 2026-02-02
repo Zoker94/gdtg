@@ -88,6 +88,21 @@ const TransactionDetail = () => {
   const isSeller = user?.id === transaction?.seller_id;
   const isStaff = roleInfo?.isAdmin || roleInfo?.isModerator;
 
+  // Redirect buyer to waiting lobby if seller hasn't joined yet
+  useEffect(() => {
+    if (!transaction || !user?.id) return;
+    
+    const currentIsBuyer = user.id === transaction.buyer_id;
+    const sellerHasJoined = transaction.seller_id && 
+                            transaction.amount > 0 && 
+                            transaction.product_name !== "Phòng người mua";
+    
+    // If current user is buyer and seller hasn't joined, redirect to waiting lobby
+    if (currentIsBuyer && !sellerHasJoined && transaction.status === "pending") {
+      navigate(`/waiting/${transaction.id}`, { replace: true });
+    }
+  }, [transaction, user?.id, navigate]);
+
   // Redirect to dashboard when transaction is completed, cancelled, or refunded
   useEffect(() => {
     if (!transaction) return;
