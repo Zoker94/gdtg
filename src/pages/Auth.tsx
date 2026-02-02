@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Shield, ArrowLeft, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 
@@ -137,15 +138,50 @@ const Auth = () => {
     }
     
     setIsGoogleLoading(true);
-    const { error } = await signInWithGoogle();
-    setIsGoogleLoading(false);
     
-    if (error) {
+    try {
+      // Detect if we're on a custom domain (not Lovable domains)
+      const isCustomDomain =
+        !window.location.hostname.includes("lovable.app") &&
+        !window.location.hostname.includes("lovableproject.com");
+
+      if (isCustomDomain) {
+        // Bypass auth-bridge by getting OAuth URL directly
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${window.location.origin}/dashboard`,
+            skipBrowserRedirect: true, // Critical: prevents automatic redirect through auth-bridge
+          },
+        });
+
+        if (error) throw error;
+
+        // Validate OAuth URL before redirect (security: prevent open redirect)
+        if (data?.url) {
+          const oauthUrl = new URL(data.url);
+          const allowedHosts = [
+            "accounts.google.com",
+            "ucfjjcccgoxnfjaqfmws.supabase.co",
+          ];
+          if (!allowedHosts.some((host) => oauthUrl.hostname.includes(host))) {
+            throw new Error("Invalid OAuth redirect URL");
+          }
+          window.location.href = data.url;
+        }
+      } else {
+        // For Lovable domains, use normal flow (auth-bridge handles it)
+        const { error } = await signInWithGoogle();
+        if (error) throw error;
+      }
+    } catch (error: any) {
       toast({
         title: "Đăng nhập Google thất bại",
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
