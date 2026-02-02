@@ -44,6 +44,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_secrets: {
+        Row: {
+          description: string | null
+          id: string
+          secret_key: string
+          secret_value: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          secret_key: string
+          secret_value?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          secret_key?: string
+          secret_value?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           content: string

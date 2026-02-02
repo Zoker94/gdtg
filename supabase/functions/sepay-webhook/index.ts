@@ -6,6 +6,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// deno-lint-ignore no-explicit-any
+async function getSecretFromDB(supabase: any, key: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("admin_secrets")
+    .select("secret_value")
+    .eq("secret_key", key)
+    .single();
+  
+  if (error || !data?.secret_value) {
+    console.log(`Secret ${key} not found in DB, falling back to env`);
+    return Deno.env.get(key) || null;
+  }
+  
+  return data.secret_value;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -16,6 +32,15 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get SePay credentials from DB (for future validation if needed)
+    const sepayMerchantId = await getSecretFromDB(supabase, "SEPAY_MERCHANT_ID");
+    const sepaySecretKey = await getSecretFromDB(supabase, "SEPAY_SECRET_KEY");
+    
+    console.log("SePay credentials loaded:", { 
+      hasMerchantId: !!sepayMerchantId, 
+      hasSecretKey: !!sepaySecretKey 
+    });
 
     // Parse webhook payload from SePay
     const payload = await req.json();

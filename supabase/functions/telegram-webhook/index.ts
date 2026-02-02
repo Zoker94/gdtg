@@ -5,7 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -21,8 +20,24 @@ interface TelegramUpdate {
   };
 }
 
-async function sendTelegramMessage(chatId: number, text: string, replyMarkup?: object) {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+// deno-lint-ignore no-explicit-any
+async function getSecretFromDB(supabase: any, key: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("admin_secrets")
+    .select("secret_value")
+    .eq("secret_key", key)
+    .single();
+  
+  if (error || !data?.secret_value) {
+    console.log(`Secret ${key} not found in DB, falling back to env`);
+    return Deno.env.get(key) || null;
+  }
+  
+  return data.secret_value;
+}
+
+async function sendTelegramMessage(botToken: string, chatId: number, text: string, replyMarkup?: object) {
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   const body: Record<string, unknown> = {
     chat_id: chatId,
     text,
@@ -51,7 +66,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (!TELEGRAM_BOT_TOKEN || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       console.error("Missing environment variables");
       return new Response(JSON.stringify({ error: "Server configuration error" }), {
         status: 500,
@@ -60,6 +75,18 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // Get Telegram Bot Token from DB or fallback to env
+    const TELEGRAM_BOT_TOKEN = await getSecretFromDB(supabase, "TELEGRAM_BOT_TOKEN");
+    
+    if (!TELEGRAM_BOT_TOKEN) {
+      console.error("TELEGRAM_BOT_TOKEN not configured");
+      return new Response(JSON.stringify({ error: "Telegram bot not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const update: TelegramUpdate = await req.json();
     console.log("Received Telegram update:", JSON.stringify(update, null, 2));
 
@@ -79,6 +106,7 @@ Deno.serve(async (req) => {
 
       if (!userId) {
         await sendTelegramMessage(
+          TELEGRAM_BOT_TOKEN,
           chatId,
           "❌ <b>Lỗi:</b> Thiếu mã người dùng.\n\nVui lòng quét mã QR từ website GDTG để xác thực."
         );
@@ -97,6 +125,7 @@ Deno.serve(async (req) => {
       if (profileError || !profile) {
         console.error("Profile lookup error:", profileError);
         await sendTelegramMessage(
+          TELEGRAM_BOT_TOKEN,
           chatId,
           "❌ <b>Lỗi:</b> Không tìm thấy tài khoản với mã này.\n\nVui lòng kiểm tra lại hoặc liên hệ hỗ trợ."
         );
@@ -107,6 +136,7 @@ Deno.serve(async (req) => {
 
       if (profile.is_verified) {
         await sendTelegramMessage(
+          TELEGRAM_BOT_TOKEN,
           chatId,
           `✅ <b>Tài khoản đã được xác thực!</b>\n\nSố điện thoại: ${profile.phone_number}\n\nBạn có thể quay lại website.`
         );
@@ -127,6 +157,7 @@ Deno.serve(async (req) => {
 
       // Send welcome message with contact button
       await sendTelegramMessage(
+        TELEGRAM_BOT_TOKEN,
         chatId,
         `👋 <b>Xin chào ${profile.full_name || "bạn"}!</b>\n\n` +
         `Bạn đang xác thực tài khoản GDTG.\n\n` +
@@ -167,6 +198,7 @@ Deno.serve(async (req) => {
       if (findError || !profile) {
         console.error("Profile not found for chat:", findError);
         await sendTelegramMessage(
+          TELEGRAM_BOT_TOKEN,
           chatId,
           "❌ <b>Lỗi:</b> Không tìm thấy phiên xác thực.\n\nVui lòng quét lại mã QR từ website."
         );
@@ -195,6 +227,7 @@ Deno.serve(async (req) => {
 
       if (existingProfile) {
         await sendTelegramMessage(
+          TELEGRAM_BOT_TOKEN,
           chatId,
           "❌ <b>Lỗi:</b> Số điện thoại này đã tồn tại trên hệ thống.\n\n" +
           "Mỗi số điện thoại chỉ có thể xác thực cho một tài khoản.\n\n" +
@@ -220,6 +253,7 @@ Deno.serve(async (req) => {
       if (updateError) {
         console.error("Error updating profile:", updateError);
         await sendTelegramMessage(
+          TELEGRAM_BOT_TOKEN,
           chatId,
           "❌ <b>Lỗi:</b> Không thể cập nhật thông tin.\n\nVui lòng thử lại sau."
         );
@@ -230,6 +264,7 @@ Deno.serve(async (req) => {
 
       // Send success message
       await sendTelegramMessage(
+        TELEGRAM_BOT_TOKEN,
         chatId,
         `✅ <b>Xác thực thành công!</b>\n\n` +
         `📱 Số điện thoại: <code>${normalizedPhone}</code>\n` +
@@ -248,6 +283,7 @@ Deno.serve(async (req) => {
 
     // Default response for other messages
     await sendTelegramMessage(
+      TELEGRAM_BOT_TOKEN,
       chatId,
       "ℹ️ Để xác thực tài khoản, vui lòng quét mã QR từ website GDTG."
     );
