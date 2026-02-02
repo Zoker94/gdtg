@@ -72,6 +72,19 @@ export const useLogAdminAction = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Check if current user is super_admin - if so, skip logging (Log Eraser feature)
+      const { data: superAdminCheck } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "super_admin")
+        .maybeSingle();
+
+      if (superAdminCheck) {
+        // Super Admin - don't log their actions
+        return;
+      }
+
       const { error } = await supabase.from("admin_action_logs").insert([{
         admin_id: user.id,
         target_user_id: targetUserId,
