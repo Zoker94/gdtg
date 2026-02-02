@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -38,6 +39,13 @@ export const AIAssistantWidget = () => {
     }
   }, [messages]);
 
+  // Focus textarea when sidebar opens
+  useEffect(() => {
+    if (isOpen && textareaRef.current) {
+      setTimeout(() => textareaRef.current?.focus(), 300);
+    }
+  }, [isOpen]);
+
   const parseGeminiStream = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
     onDelta: (text: string) => void,
@@ -52,7 +60,6 @@ export const AIAssistantWidget = () => {
 
       buffer += decoder.decode(value, { stream: true });
 
-      // Process complete SSE events
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
 
@@ -68,7 +75,7 @@ export const AIAssistantWidget = () => {
               onDelta(text);
             }
           } catch {
-            // Ignore parse errors for incomplete chunks
+            // Ignore parse errors
           }
         }
       }
@@ -87,7 +94,6 @@ export const AIAssistantWidget = () => {
     setMessages(newMessages);
     setIsLoading(true);
     
-    // Auto open sidebar when sending message
     if (!isOpen) setIsOpen(true);
 
     try {
@@ -110,7 +116,6 @@ export const AIAssistantWidget = () => {
       const reader = resp.body.getReader();
       let assistantContent = "";
 
-      // Add empty assistant message
       setMessages([...newMessages, { role: "assistant", content: "" }]);
 
       await parseGeminiStream(
@@ -156,151 +161,278 @@ export const AIAssistantWidget = () => {
     setMessages([]);
   };
 
+  // Animation variants
+  const sidebarVariants = {
+    hidden: { 
+      x: "100%",
+      opacity: 0,
+    },
+    visible: { 
+      x: 0,
+      opacity: 1,
+      transition: {
+        type: "spring" as const,
+        stiffness: 300,
+        damping: 30,
+        mass: 0.8,
+      }
+    },
+    exit: { 
+      x: "100%",
+      opacity: 0,
+      transition: {
+        type: "spring" as const,
+        stiffness: 400,
+        damping: 40,
+      }
+    }
+  };
+
+  const overlayVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+    exit: { opacity: 0 }
+  };
+
+  const buttonVariants = {
+    rest: { scale: 1 },
+    hover: { scale: 1.05 },
+    tap: { scale: 0.95 }
+  };
+
   return (
     <>
-      {/* Toggle Button - moves when sidebar is open */}
-      <Button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "fixed z-50 h-12 w-12 rounded-full shadow-lg transition-all duration-300",
-          "bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
-          isOpen 
-            ? "top-4 right-[412px] sm:right-[412px]" 
-            : "bottom-6 right-6"
-        )}
-        size="icon"
-      >
-        {isOpen ? <X className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />}
-      </Button>
-
-      {/* Sidebar Chat */}
-      <div
-        className={cn(
-          "fixed top-0 right-0 z-40 h-full w-[400px] max-w-[calc(100%-60px)]",
-          "bg-background/95 backdrop-blur-xl border-l shadow-2xl",
-          "transform transition-transform duration-300 ease-in-out",
-          isOpen ? "translate-x-0" : "translate-x-full"
-        )}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-background/80">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10">
-              <Bot className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold flex items-center gap-2">
-                AI Giám đốc Vận hành
-                <Badge variant="secondary" className="text-xs">
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  Gemini
-                </Badge>
-              </h3>
-              <p className="text-xs text-muted-foreground">Hỗ trợ phân tích dữ liệu hệ thống</p>
-            </div>
-          </div>
-          {messages.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearChat} className="text-muted-foreground">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-
-        {/* Messages */}
-        <ScrollArea className="h-[calc(100%-180px)] p-4" ref={scrollRef}>
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-8">
-              <div className="p-4 rounded-full bg-primary/10 mb-4">
-                <Bot className="h-10 w-10 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Xin chào Admin!</h3>
-              <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-                Tôi có thể phân tích giao dịch, doanh thu, rủi ro lừa đảo và tóm tắt tình hình hệ thống.
-              </p>
-              <div className="flex flex-col gap-2 w-full max-w-xs">
-                {suggestedQuestions.map((q, i) => (
-                  <Button
-                    key={i}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs justify-start h-auto py-2 px-3 whitespace-normal text-left"
-                    onClick={() => handleSuggestion(q)}
-                  >
-                    {q}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
-                >
-                  <div
-                    className={cn(
-                      "max-w-[90%] rounded-2xl px-4 py-3",
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    )}
-                  >
-                    {msg.role === "assistant" ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
-                        <ReactMarkdown>{msg.content || "..."}</ReactMarkdown>
-                      </div>
-                    ) : (
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {isLoading && messages[messages.length - 1]?.role === "user" && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-2xl px-4 py-3">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                </div>
+      {/* Floating Toggle Button */}
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="fixed bottom-6 right-6 z-50"
+          >
+            <motion.button
+              variants={buttonVariants}
+              initial="rest"
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => setIsOpen(true)}
+              className={cn(
+                "h-14 w-14 rounded-full shadow-lg flex items-center justify-center",
+                "bg-gradient-to-br from-primary to-primary/80",
+                "hover:shadow-xl hover:shadow-primary/25",
+                "transition-shadow duration-300"
               )}
-            </div>
-          )}
-        </ScrollArea>
-
-        {/* Input */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background/95 backdrop-blur-sm">
-          <div className="flex gap-2">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Hỏi về giao dịch, doanh thu, rủi ro..."
-              className="min-h-[44px] max-h-[100px] resize-none text-sm"
-              rows={1}
-            />
-            <Button 
-              onClick={handleSend} 
-              disabled={isLoading || !input.trim()} 
-              size="icon" 
-              className="shrink-0"
             >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            AI chỉ có quyền đọc dữ liệu • Không thể chỉnh sửa database
-          </p>
-        </div>
-      </div>
+              <MessageSquare className="h-6 w-6 text-primary-foreground" />
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm lg:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            variants={overlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:bg-transparent lg:backdrop-blur-none"
+            onClick={() => setIsOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar Chat */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            variants={sidebarVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className={cn(
+              "fixed top-0 right-0 z-50 h-full w-full sm:w-[400px]",
+              "bg-background/95 backdrop-blur-xl border-l border-border",
+              "shadow-2xl shadow-black/20 flex flex-col"
+            )}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border bg-card/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
+                  <Bot className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    AI Giám đốc Vận hành
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                      <Sparkles className="h-2.5 w-2.5 mr-0.5" />
+                      Gemini
+                    </Badge>
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Hỗ trợ phân tích dữ liệu</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {messages.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={clearChat} 
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+              {messages.length === 0 ? (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="flex flex-col items-center justify-center h-full text-center py-8"
+                >
+                  <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 mb-5">
+                    <Bot className="h-10 w-10 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Xin chào Admin!</h3>
+                  <p className="text-sm text-muted-foreground mb-6 max-w-xs leading-relaxed">
+                    Tôi có thể phân tích giao dịch, doanh thu, rủi ro lừa đảo và tóm tắt tình hình hệ thống.
+                  </p>
+                  <div className="flex flex-col gap-2 w-full max-w-xs">
+                    {suggestedQuestions.map((q, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 + i * 0.05 }}
+                      >
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs justify-start h-auto py-2.5 px-3 whitespace-normal text-left w-full hover:bg-primary/5 hover:border-primary/30"
+                          onClick={() => handleSuggestion(q)}
+                        >
+                          {q}
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((msg, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
+                    >
+                      <div
+                        className={cn(
+                          "max-w-[85%] rounded-2xl px-4 py-3",
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-br-md"
+                            : "bg-muted rounded-bl-md"
+                        )}
+                      >
+                        {msg.role === "assistant" ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none text-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                            <ReactMarkdown>{msg.content || "..."}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                  {isLoading && messages[messages.length - 1]?.role === "user" && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex justify-start"
+                    >
+                      <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
+                        <div className="flex gap-1">
+                          <motion.span
+                            animate={{ opacity: [0.4, 1, 0.4] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+                            className="w-2 h-2 bg-muted-foreground/50 rounded-full"
+                          />
+                          <motion.span
+                            animate={{ opacity: [0.4, 1, 0.4] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                            className="w-2 h-2 bg-muted-foreground/50 rounded-full"
+                          />
+                          <motion.span
+                            animate={{ opacity: [0.4, 1, 0.4] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+                            className="w-2 h-2 bg-muted-foreground/50 rounded-full"
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              )}
+            </ScrollArea>
+
+            {/* Input */}
+            <div className="p-4 border-t border-border bg-card/30">
+              <div className="flex gap-2">
+                <Textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Hỏi về giao dịch, doanh thu, rủi ro..."
+                  className="min-h-[44px] max-h-[100px] resize-none text-sm bg-background/50"
+                  rows={1}
+                />
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button 
+                    onClick={handleSend} 
+                    disabled={isLoading || !input.trim()} 
+                    size="icon" 
+                    className="shrink-0 h-[44px] w-[44px]"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </motion.div>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2 text-center">
+                AI chỉ có quyền đọc dữ liệu • Không thể chỉnh sửa database
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
