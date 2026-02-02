@@ -1,10 +1,33 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Trophy, Circle, CircleDot } from "lucide-react";
+import { RefreshCw, Trophy, Circle, CircleDot, RotateCcw, Smartphone } from "lucide-react";
 import { useGameSound } from "@/hooks/useGameSound";
 import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
+import { useIsMobile } from "@/hooks/use-mobile";
 import LeaderboardDisplay from "./LeaderboardDisplay";
+
+// Hook to detect orientation
+const useOrientation = () => {
+  const [isPortrait, setIsPortrait] = useState(false);
+
+  useEffect(() => {
+    const checkOrientation = () => {
+      setIsPortrait(window.innerHeight > window.innerWidth);
+    };
+
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
+    };
+  }, []);
+
+  return isPortrait;
+};
 
 interface Ball {
   x: number;
@@ -73,6 +96,8 @@ const Pool8Ball = () => {
 
   const { playSound } = useGameSound();
   const { leaderboard, addScore } = useGameLeaderboard("pool");
+  const isMobile = useIsMobile();
+  const isPortrait = useOrientation();
 
   const tableWidth = 380;
   const tableHeight = 210;
@@ -656,6 +681,37 @@ const Pool8Ball = () => {
   // Count remaining balls
   const solidRemaining = balls.filter(b => b.number >= 1 && b.number <= 7 && !b.isPocketed).length;
   const stripeRemaining = balls.filter(b => b.number >= 9 && b.number <= 15 && !b.isPocketed).length;
+
+  // Show rotate screen overlay on mobile portrait
+  if (isMobile && isPortrait) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center gap-4 py-8 px-4 text-center"
+      >
+        <motion.div
+          animate={{ rotate: [0, -90, -90, 0] }}
+          transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+          className="relative"
+        >
+          <Smartphone className="w-16 h-16 text-primary" />
+          <RotateCcw className="w-6 h-6 text-muted-foreground absolute -right-2 -bottom-1" />
+        </motion.div>
+        <div className="space-y-2">
+          <p className="font-semibold text-foreground">Xoay ngang điện thoại</p>
+          <p className="text-xs text-muted-foreground max-w-[200px]">
+            Để chơi Bida tốt hơn, vui lòng xoay ngang điện thoại của bạn
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+          <div className="w-8 h-5 border-2 border-dashed border-muted-foreground/50 rounded" />
+          <span>→</span>
+          <div className="w-5 h-8 border-2 border-primary rounded" />
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-2">
