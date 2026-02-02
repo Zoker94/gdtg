@@ -67,6 +67,7 @@ import {
   Snowflake,
   History,
   Paintbrush,
+  Bot,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -109,6 +110,7 @@ import SuspiciousUsersWidget from "@/components/admin/SuspiciousUsersWidget";
 import AdminActionLogsWidget from "@/components/admin/AdminActionLogsWidget";
 import AdminApiKeysWidget from "@/components/admin/AdminApiKeysWidget";
 import ThemeSelectorWidget from "@/components/admin/ThemeSelectorWidget";
+import { AIAssistantWidget } from "@/components/admin/AIAssistantWidget";
 import SimplePagination, { paginateData, getTotalPages } from "@/components/ui/simple-pagination";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -123,6 +125,7 @@ const statusConfig: Record<TransactionStatus, { label: string; variant: "default
 
 const menuItems = [
   { title: "Tổng quan", value: "overview", icon: LayoutDashboard },
+  { title: "AI Hỗ trợ", value: "ai-support", icon: Bot },
   { title: "Người dùng", value: "users", icon: Users },
   { title: "Nghi vấn", value: "suspicious", icon: ShieldAlert },
   { title: "KYC", value: "kyc", icon: IdCard },
@@ -818,6 +821,9 @@ const AdminDashboard = () => {
 
       case "appearance":
         return <ThemeSelectorWidget />;
+
+      case "ai-support":
+        return <AIAssistantWidget />;
 
       case "settings":
         return (
