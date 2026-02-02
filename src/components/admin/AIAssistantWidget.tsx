@@ -86,6 +86,9 @@ export const AIAssistantWidget = () => {
     const newMessages: Message[] = [...messages, { role: "user", content: userMessage }];
     setMessages(newMessages);
     setIsLoading(true);
+    
+    // Auto open sidebar when sending message
+    if (!isOpen) setIsOpen(true);
 
     try {
       const resp = await fetch(CHAT_URL, {
@@ -155,23 +158,25 @@ export const AIAssistantWidget = () => {
 
   return (
     <>
-      {/* Toggle Button */}
+      {/* Toggle Button - moves when sidebar is open */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg",
+          "fixed z-50 h-12 w-12 rounded-full shadow-lg transition-all duration-300",
           "bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
-          isOpen && "rotate-90"
+          isOpen 
+            ? "top-4 right-[412px] sm:right-[412px]" 
+            : "bottom-6 right-6"
         )}
         size="icon"
       >
-        {isOpen ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
+        {isOpen ? <X className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />}
       </Button>
 
       {/* Sidebar Chat */}
       <div
         className={cn(
-          "fixed top-0 right-0 z-40 h-full w-[400px] max-w-full",
+          "fixed top-0 right-0 z-40 h-full w-[400px] max-w-[calc(100%-60px)]",
           "bg-background/95 backdrop-blur-xl border-l shadow-2xl",
           "transform transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "translate-x-full"
