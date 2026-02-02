@@ -1154,6 +1154,8 @@ const AdminDashboard = () => {
           </main>
         </div>
       </div>
+      {/* Floating AI Assistant - always visible */}
+      <AIAssistantWidget />
     </SidebarProvider>
   );
 };
