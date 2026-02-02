@@ -306,6 +306,7 @@ const AdminDashboard = () => {
   const freezeBalance = useFreezeBalance();
 
   const isAdmin = roles?.isAdmin;
+  const isSuperAdmin = roles?.isSuperAdmin;
 
   const handleSignOut = async () => {
     try {
@@ -826,6 +827,9 @@ const AdminDashboard = () => {
       case "settings":
         return (
           <div className="space-y-4">
+            {/* Super Admin Widget - only visible to super_admin */}
+            {isSuperAdmin && <SuperAdminWidget />}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <PlatformSettingsWidget />
               <AdminApiKeysWidget />
