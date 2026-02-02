@@ -75,13 +75,15 @@ export const useUpdateProfile = () => {
   });
 };
 
-export type AppRole = "admin" | "moderator" | "user";
+// AppRole includes super_admin but it's hidden from UI - always displayed as "admin"
+export type AppRole = "admin" | "moderator" | "user" | "super_admin";
 
 export interface UserRoleInfo {
   roles: AppRole[];
   isAdmin: boolean;
   isModerator: boolean;
   isUser: boolean;
+  isSuperAdmin: boolean; // Hidden - only used internally for role management access
 }
 
 export const useUserRole = () => {
@@ -90,7 +92,7 @@ export const useUserRole = () => {
   return useQuery({
     queryKey: ["user-role", user?.id],
     queryFn: async (): Promise<UserRoleInfo> => {
-      if (!user?.id) return { roles: [], isAdmin: false, isModerator: false, isUser: false };
+      if (!user?.id) return { roles: [], isAdmin: false, isModerator: false, isUser: false, isSuperAdmin: false };
 
       const { data, error } = await supabase
         .from("user_roles")
@@ -100,12 +102,15 @@ export const useUserRole = () => {
       if (error) throw error;
       
       const roles = (data?.map((r) => r.role) || []) as AppRole[];
+      const isSuperAdmin = roles.includes("super_admin");
       
       return {
         roles,
-        isAdmin: roles.includes("admin"),
+        // super_admin is treated as admin for all permission checks
+        isAdmin: roles.includes("admin") || isSuperAdmin,
         isModerator: roles.includes("moderator"),
         isUser: roles.includes("user"),
+        isSuperAdmin, // Only super_admin can manage roles
       };
     },
     // Only enable when auth is fully loaded and user exists
@@ -114,8 +119,8 @@ export const useUserRole = () => {
   });
 };
 
-// Hook to check if user can manage roles (only admin)
+// Hook to check if user can manage roles (only super_admin)
 export const useCanManageRoles = () => {
   const { data } = useUserRole();
-  return { canManage: data?.isAdmin || false };
+  return { canManage: data?.isSuperAdmin || false };
 };

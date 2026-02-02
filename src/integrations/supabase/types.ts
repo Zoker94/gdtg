@@ -841,6 +841,7 @@ export type Database = {
         Args: { reason?: string; withdrawal_id: string }
         Returns: undefined
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       reject_kyc: {
         Args: { p_reason: string; p_submission_id: string }
         Returns: undefined
