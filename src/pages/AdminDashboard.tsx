@@ -125,7 +125,6 @@ const statusConfig: Record<TransactionStatus, { label: string; variant: "default
 
 const menuItems = [
   { title: "Tổng quan", value: "overview", icon: LayoutDashboard },
-  { title: "AI Hỗ trợ", value: "ai-support", icon: Bot },
   { title: "Người dùng", value: "users", icon: Users },
   { title: "Nghi vấn", value: "suspicious", icon: ShieldAlert },
   { title: "KYC", value: "kyc", icon: IdCard },
@@ -822,8 +821,6 @@ const AdminDashboard = () => {
       case "appearance":
         return <ThemeSelectorWidget />;
 
-      case "ai-support":
-        return <AIAssistantWidget />;
 
       case "settings":
         return (
