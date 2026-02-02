@@ -2,18 +2,20 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Gamepad2, Grid3X3, Brain, Bug, Target, ChevronLeft, ChevronRight, Crown } from "lucide-react";
+import { Gamepad2, Grid3X3, Brain, Bug, Target, ChevronLeft, ChevronRight, Crown, Circle } from "lucide-react";
 import CaroGame from "./CaroGame";
 import MemoryCard from "./MemoryCard";
 import SnakeGame from "./SnakeGame";
 import WhackAMole from "./WhackAMole";
 import ChineseChess from "./ChineseChess";
+import Pool8Ball from "./Pool8Ball";
 
-type GameType = "caro" | "memory" | "snake" | "whack" | "chess";
+type GameType = "caro" | "memory" | "snake" | "whack" | "chess" | "pool";
 
 const GAMES: { id: GameType; name: string; icon: React.ElementType; component: React.ComponentType }[] = [
   { id: "caro", name: "Cờ Caro", icon: Grid3X3, component: CaroGame },
   { id: "chess", name: "Cờ Tướng", icon: Crown, component: ChineseChess },
+  { id: "pool", name: "Bida 8 bóng", icon: Circle, component: Pool8Ball },
   { id: "memory", name: "Lật thẻ", icon: Brain, component: MemoryCard },
   { id: "snake", name: "Rắn săn mồi", icon: Bug, component: SnakeGame },
   { id: "whack", name: "Đập chuột", icon: Target, component: WhackAMole },

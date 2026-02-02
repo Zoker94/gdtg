@@ -70,7 +70,7 @@ import {
   Bot,
   Gamepad2,
 } from "lucide-react";
-import ChineseChess from "@/components/games/ChineseChess";
+import GameSelector from "@/components/games/GameSelector";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
@@ -875,9 +875,9 @@ const AdminDashboard = () => {
                 Khu vực bí mật - chỉ Super Admin mới thấy được mục này
               </p>
             </CardHeader>
-            <CardContent className="flex justify-center py-8">
-              <div className="w-full max-w-sm bg-card p-4 rounded-xl shadow-inner border">
-                <ChineseChess />
+            <CardContent className="py-6">
+              <div className="w-full max-w-md mx-auto">
+                <GameSelector />
               </div>
             </CardContent>
           </Card>
