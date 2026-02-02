@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import GameSelector from "@/components/games/GameSelector";
 
 interface TransactionData {
   id: string;
@@ -225,6 +226,13 @@ const WaitingLobby = () => {
                     Đang chờ người bán...
                   </span>
                   <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+
+              {/* Mini Games */}
+              {!sellerJoined && (
+                <div className="flex justify-center">
+                  <GameSelector />
                 </div>
               )}
 
