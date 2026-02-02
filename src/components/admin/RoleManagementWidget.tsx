@@ -214,7 +214,7 @@ const RoleManagementWidget = () => {
                     <div className="flex gap-1 mt-1">
                       {/* For super_admin users: only show Admin badge, hide all other roles to protect identity */}
                       {user.roles.includes("super_admin") ? (
-                        <Badge variant="superAdmin" className="text-xs gap-1">
+                        <Badge variant="destructive" className="text-xs gap-1">
                           <Shield className="w-3 h-3" />
                           Admin
                         </Badge>
