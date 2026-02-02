@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Trophy } from "lucide-react";
+import { useGameSound } from "@/hooks/useGameSound";
+import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
+import LeaderboardDisplay from "./LeaderboardDisplay";
 
 const EMOJIS = ["🎮", "🎯", "🎲", "🎪", "🎨", "🎭", "🎱", "🎸"];
 
@@ -17,6 +20,10 @@ const MemoryCard = () => {
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  
+  const { playSound } = useGameSound();
+  const { leaderboard, addScore } = useGameLeaderboard("memory");
 
   const initGame = () => {
     const shuffled = [...EMOJIS, ...EMOJIS]
@@ -43,6 +50,7 @@ const MemoryCard = () => {
       
       if (cards[first].emoji === cards[second].emoji) {
         // Match found
+        playSound("match");
         setTimeout(() => {
           setCards(prev => prev.map((card, i) => 
             i === first || i === second ? { ...card, isMatched: true } : card
@@ -60,13 +68,15 @@ const MemoryCard = () => {
       }
       setMoves(m => m + 1);
     }
-  }, [flippedCards, cards]);
+  }, [flippedCards, cards, playSound]);
 
   useEffect(() => {
     if (cards.length > 0 && cards.every(c => c.isMatched)) {
+      playSound("win");
       setIsComplete(true);
+      addScore(moves);
     }
-  }, [cards]);
+  }, [cards, moves, playSound, addScore]);
 
   const handleCardClick = (index: number) => {
     if (
@@ -75,6 +85,7 @@ const MemoryCard = () => {
       cards[index].isMatched
     ) return;
 
+    playSound("click");
     setCards(prev => prev.map((card, i) => 
       i === index ? { ...card, isFlipped: true } : card
     ));
@@ -83,12 +94,22 @@ const MemoryCard = () => {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="text-center">
-        {isComplete ? (
-          <p className="text-sm font-medium">🎉 Hoàn thành với {moves} lượt!</p>
-        ) : (
-          <p className="text-xs text-muted-foreground">Lượt: {moves}</p>
-        )}
+      <div className="flex items-center justify-between w-full px-1">
+        <div className="text-center">
+          {isComplete ? (
+            <p className="text-sm font-medium">🎉 Hoàn thành với {moves} lượt!</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">Lượt: {moves}</p>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => setShowLeaderboard(true)}
+        >
+          <Trophy className="w-3 h-3" />
+        </Button>
       </div>
 
       <div className="grid grid-cols-4 gap-1.5">
@@ -113,6 +134,15 @@ const MemoryCard = () => {
         <RefreshCw className="w-3 h-3" />
         Chơi lại
       </Button>
+
+      <LeaderboardDisplay
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        leaderboard={leaderboard}
+        title="Bảng xếp hạng Lật thẻ"
+        scoreLabel="Lượt"
+        lowerIsBetter
+      />
     </div>
   );
 };
