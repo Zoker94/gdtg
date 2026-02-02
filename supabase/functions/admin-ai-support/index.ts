@@ -68,34 +68,83 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check if user is asking about a specific transaction
+    // ALWAYS fetch recent transactions for context
+    const { data: allTransactions, error: txError } = await serviceClient
+      .from("transactions")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
     let transactionContext = "";
-    const transactionMatch = userMessage.match(/(?:giao dịch|transaction|GD|id|ID|#)\s*[#:]?\s*([a-zA-Z0-9-]+)/i);
     
-    if (transactionMatch) {
-      const transactionId = transactionMatch[1];
+    if (txError) {
+      console.error("Error fetching transactions:", txError);
+      transactionContext = "Lỗi khi truy vấn dữ liệu giao dịch.";
+    } else if (!allTransactions || allTransactions.length === 0) {
+      transactionContext = "THÔNG BÁO: Hiện tại chưa có giao dịch nào trong hệ thống.";
+    } else {
+      // Build summary of all transactions
+      const statusCounts: Record<string, number> = {};
+      let totalAmount = 0;
       
-      // Try to find by ID or transaction_code
-      const { data: transaction } = await serviceClient
-        .from("transactions")
-        .select("*")
-        .or(`id.eq.${transactionId},transaction_code.ilike.%${transactionId}%,room_id.eq.${transactionId}`)
-        .limit(1)
-        .single();
+      allTransactions.forEach(tx => {
+        statusCounts[tx.status] = (statusCounts[tx.status] || 0) + 1;
+        totalAmount += tx.amount || 0;
+      });
 
-      if (transaction) {
-        // Get buyer and seller profiles
-        const [buyerResult, sellerResult] = await Promise.all([
-          transaction.buyer_id 
-            ? serviceClient.from("profiles").select("full_name, reputation_score, is_banned, is_suspicious, kyc_status").eq("user_id", transaction.buyer_id).single()
-            : null,
-          transaction.seller_id
-            ? serviceClient.from("profiles").select("full_name, reputation_score, is_banned, is_suspicious, kyc_status").eq("user_id", transaction.seller_id).single()
-            : null,
-        ]);
+      transactionContext = `
+TỔNG QUAN GIAO DỊCH TRONG HỆ THỐNG (${allTransactions.length} giao dịch gần nhất):
+- Tổng số tiền: ${totalAmount.toLocaleString('vi-VN')} VNĐ
+- Phân bổ trạng thái: ${Object.entries(statusCounts).map(([s, c]) => `${s}: ${c}`).join(', ')}
 
-        transactionContext = `
-THÔNG TIN GIAO DỊCH TÌM THẤY:
+DANH SÁCH GIAO DỊCH CHI TIẾT:
+${allTransactions.map((tx, i) => `
+${i + 1}. [${tx.transaction_code}] - ${tx.status.toUpperCase()}
+   - ID: ${tx.id}
+   - Room ID: ${tx.room_id || 'N/A'}
+   - Số tiền: ${tx.amount?.toLocaleString('vi-VN')} VNĐ
+   - Sản phẩm: ${tx.product_name}
+   - Danh mục: ${tx.category || 'N/A'}
+   - Phí: ${tx.platform_fee_amount?.toLocaleString('vi-VN')} VNĐ (${tx.platform_fee_percent}%)
+   - Seller nhận: ${tx.seller_receives?.toLocaleString('vi-VN')} VNĐ
+   - Buyer ID: ${tx.buyer_id || 'Chưa có'}
+   - Seller ID: ${tx.seller_id || 'Chưa có'}
+   - Buyer xác nhận: ${tx.buyer_confirmed ? 'Có' : 'Chưa'}
+   - Seller xác nhận: ${tx.seller_confirmed ? 'Có' : 'Chưa'}
+   - Lý do khiếu nại: ${tx.dispute_reason || 'Không'}
+   - Tạo lúc: ${tx.created_at}
+   - Cập nhật: ${tx.updated_at}
+`).join('')}
+`;
+
+      // If user asks about a specific transaction, add more detail
+      const transactionMatch = userMessage.match(/(?:giao dịch|transaction|GD|id|ID|#)\s*[#:]?\s*([a-zA-Z0-9-]+)/i);
+      
+      if (transactionMatch) {
+        const transactionId = transactionMatch[1];
+        
+        // Try to find by ID or transaction_code
+        const { data: transaction } = await serviceClient
+          .from("transactions")
+          .select("*")
+          .or(`id.eq.${transactionId},transaction_code.ilike.%${transactionId}%,room_id.eq.${transactionId}`)
+          .limit(1)
+          .maybeSingle();
+
+        if (transaction) {
+          // Get buyer and seller profiles
+          const [buyerResult, sellerResult] = await Promise.all([
+            transaction.buyer_id 
+              ? serviceClient.from("profiles").select("full_name, reputation_score, is_banned, is_suspicious, kyc_status").eq("user_id", transaction.buyer_id).maybeSingle()
+              : null,
+            transaction.seller_id
+              ? serviceClient.from("profiles").select("full_name, reputation_score, is_banned, is_suspicious, kyc_status").eq("user_id", transaction.seller_id).maybeSingle()
+              : null,
+          ]);
+
+          transactionContext += `
+
+=== CHI TIẾT GIAO DỊCH ĐƯỢC HỎI: ${transactionId} ===
 - ID: ${transaction.id}
 - Mã giao dịch: ${transaction.transaction_code}
 - Room ID: ${transaction.room_id}
@@ -136,8 +185,9 @@ ${sellerResult?.data ? `
 - KYC: ${sellerResult.data.kyc_status}
 ` : 'Chưa có seller tham gia'}
 `;
-      } else {
-        transactionContext = `Không tìm thấy giao dịch với ID/mã "${transactionId}".`;
+        } else {
+          transactionContext += `\n\nKhông tìm thấy giao dịch cụ thể với ID/mã "${transactionId}" trong hệ thống.`;
+        }
       }
     }
 
@@ -191,8 +241,11 @@ ${i + 1}. ${t.transaction_code} - ${t.status.toUpperCase()}
     }
 
     const systemPrompt = `Bạn là AI hỗ trợ quản trị viên của nền tảng giao dịch trung gian GDTG. 
+
+QUAN TRỌNG: Bạn PHẢI trả lời dựa trên dữ liệu thực tế được cung cấp bên dưới. KHÔNG ĐƯỢC bịa đặt hoặc đoán thông tin về giao dịch. Nếu không có dữ liệu, hãy nói rõ là chưa có giao dịch hoặc không tìm thấy.
+
 Vai trò của bạn:
-- Phân tích giao dịch và phát hiện bất thường
+- Phân tích giao dịch và phát hiện bất thường DỰA TRÊN DỮ LIỆU THỰC
 - Tóm tắt lý do khóa tài khoản hoặc hủy giao dịch
 - Hỗ trợ admin đưa ra quyết định
 - Trả lời các câu hỏi về hoạt động của hệ thống
@@ -208,6 +261,7 @@ Khi phân tích giao dịch, hãy chú ý:
 
 Trả lời bằng tiếng Việt, ngắn gọn và rõ ràng. Khi có dữ liệu, hãy phân tích chi tiết.
 
+=== DỮ LIỆU THỰC TẾ TỪ HỆ THỐNG ===
 ${transactionContext}
 ${userContext}
 ${cancelContext}
