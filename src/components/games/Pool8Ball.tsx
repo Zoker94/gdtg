@@ -7,6 +7,10 @@ import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import LeaderboardDisplay from "./LeaderboardDisplay";
 
+const CANVAS_BASE_WIDTH = 400;
+const CANVAS_BASE_HEIGHT = 240;
+const CANVAS_ASPECT = CANVAS_BASE_WIDTH / CANVAS_BASE_HEIGHT;
+
 // Hook to detect orientation
 const useOrientation = () => {
   const [isPortrait, setIsPortrait] = useState(false);
@@ -94,6 +98,11 @@ const BALL_COLORS: { [key: number]: { color: string; striped: boolean } } = {
 const Pool8Ball = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [canvasCssSize, setCanvasCssSize] = useState<{ width: number; height: number }>(() => ({
+    width: CANVAS_BASE_WIDTH,
+    height: CANVAS_BASE_HEIGHT,
+  }));
   const [balls, setBalls] = useState<Ball[]>([]);
   const [pockets, setPockets] = useState<Pocket[]>([]);
   const [isAiming, setIsAiming] = useState(false);
@@ -127,6 +136,46 @@ const Pool8Ball = () => {
   const tableWidth = 360;
   const tableHeight = 200;
   const padding = 20;
+
+  // Keep the canvas visually correct (no stretching) by fitting it into the available stage.
+  // We only change the CSS size; the internal drawing resolution stays stable.
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+
+    const compute = (rect: { width: number; height: number }) => {
+      const w0 = Math.max(0, rect.width);
+      const h0 = Math.max(0, rect.height);
+      if (!w0 || !h0) return;
+
+      let width = w0;
+      let height = width / CANVAS_ASPECT;
+
+      if (height > h0) {
+        height = h0;
+        width = height * CANVAS_ASPECT;
+      }
+
+      // avoid thrash
+      setCanvasCssSize(prev => {
+        const dw = Math.abs(prev.width - width);
+        const dh = Math.abs(prev.height - height);
+        if (dw < 0.5 && dh < 0.5) return prev;
+        return { width, height };
+      });
+    };
+
+    const ro = new ResizeObserver(entries => {
+      const entry = entries[0];
+      if (!entry) return;
+      compute(entry.contentRect);
+    });
+
+    ro.observe(el);
+    compute(el.getBoundingClientRect());
+
+    return () => ro.disconnect();
+  }, [isFullscreen, isHandheld, isPortrait]);
 
   // Check if player has cleared all their balls
   const hasPlayerClearedBalls = useCallback((type: PlayerType, currentBalls: Ball[]) => {
@@ -854,20 +903,15 @@ const Pool8Ball = () => {
           </div>
 
           {/* Game canvas - full width */}
-          <div className="flex-1 min-h-0 flex items-center justify-center p-2 overflow-hidden">
+          <div ref={stageRef} className="flex-1 min-h-0 flex items-center justify-center p-2 overflow-hidden">
             <motion.canvas
               ref={canvasRef}
-              width={400}
-              height={240}
+              width={CANVAS_BASE_WIDTH}
+              height={CANVAS_BASE_HEIGHT}
               className="rounded-lg border border-border cursor-crosshair touch-none"
               style={{
-                // Use dynamic viewport units to avoid browser UI bars cutting the game.
-                // The wrapper is flexed with min-h-0, so 100% height here stays within visible area.
-                width: "100%",
-                height: "100%",
-                maxWidth: "100%",
-                maxHeight: "100%",
-                aspectRatio: "400 / 240",
+                width: `${canvasCssSize.width}px`,
+                height: `${canvasCssSize.height}px`,
               }}
               onMouseDown={handleStart}
               onMouseMove={handleMove}
