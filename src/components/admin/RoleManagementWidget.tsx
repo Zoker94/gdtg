@@ -22,7 +22,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { Users, Shield, UserCog, Plus, Trash2 } from "lucide-react";
-import type { AppRole } from "@/hooks/useProfile";
+import { useCanManageRoles, type AppRole } from "@/hooks/useProfile";
+
+// Display roles - super_admin is hidden, shown as "admin"
+type DisplayRole = "admin" | "moderator" | "user";
 
 interface UserWithRoles {
   user_id: string;
@@ -32,11 +35,12 @@ interface UserWithRoles {
 
 const RoleManagementWidget = () => {
   const queryClient = useQueryClient();
+  const { canManage } = useCanManageRoles();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
-  const [roleToAdd, setRoleToAdd] = useState<AppRole>("moderator");
+  const [roleToAdd, setRoleToAdd] = useState<DisplayRole>("moderator");
 
-  // Fetch all users with their roles
+  // Fetch all users with their roles - only if user can manage
   const { data: usersWithRoles, isLoading } = useQuery({
     queryKey: ["users-with-roles"],
     queryFn: async () => {
@@ -124,6 +128,7 @@ const RoleManagementWidget = () => {
   const getRoleBadgeVariant = (role: AppRole) => {
     switch (role) {
       case "admin":
+      case "super_admin": // Display same as admin
         return "destructive";
       case "moderator":
         return "default";
@@ -135,6 +140,7 @@ const RoleManagementWidget = () => {
   const getRoleLabel = (role: AppRole) => {
     switch (role) {
       case "admin":
+      case "super_admin": // Always display as "Admin" - hide super_admin existence
         return "Admin";
       case "moderator":
         return "Quản lý";
@@ -143,10 +149,15 @@ const RoleManagementWidget = () => {
     }
   };
 
-  // Filter to show only users with special roles or for adding roles
+  // Filter to show users with special roles - super_admin shown as admin
   const specialUsers = usersWithRoles?.filter(
-    (u) => u.roles.includes("admin") || u.roles.includes("moderator")
+    (u) => u.roles.includes("admin") || u.roles.includes("moderator") || u.roles.includes("super_admin")
   ) || [];
+
+  // If user can't manage roles, don't show the widget at all
+  if (!canManage) {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -200,20 +211,30 @@ const RoleManagementWidget = () => {
                     {user.full_name || "Chưa đặt tên"}
                   </p>
                   <div className="flex gap-1 mt-1">
-                    {user.roles.map((role) => (
-                      <Badge
-                        key={role}
-                        variant={getRoleBadgeVariant(role)}
-                        className="text-xs gap-1"
-                      >
-                        {role === "admin" && <Shield className="w-3 h-3" />}
-                        {role === "moderator" && <Users className="w-3 h-3" />}
-                        {getRoleLabel(role)}
-                        {role !== "user" && role !== "admin" && (
-                          <button
-                            onClick={() => removeRole.mutate({ userId: user.user_id, role })}
-                            className="ml-1 hover:text-destructive-foreground"
-                            disabled={removeRole.isPending}
+                      {/* Show "Admin" badge for super_admin users (hidden identity) */}
+                      {user.roles.includes("super_admin") && (
+                        <Badge variant="destructive" className="text-xs gap-1">
+                          <Shield className="w-3 h-3" />
+                          Admin
+                        </Badge>
+                      )}
+                      {user.roles
+                        // Filter out super_admin from display
+                        .filter((role) => role !== "super_admin")
+                        .map((role) => (
+                        <Badge
+                          key={role}
+                          variant={getRoleBadgeVariant(role)}
+                          className="text-xs gap-1"
+                        >
+                          {role === "admin" && <Shield className="w-3 h-3" />}
+                          {role === "moderator" && <Users className="w-3 h-3" />}
+                          {getRoleLabel(role)}
+                          {role !== "user" && role !== "admin" && (
+                            <button
+                              onClick={() => removeRole.mutate({ userId: user.user_id, role })}
+                              className="ml-1 hover:text-destructive-foreground"
+                              disabled={removeRole.isPending}
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -266,7 +287,7 @@ const RoleManagementWidget = () => {
               <label className="text-sm font-medium">Quyền</label>
               <Select
                 value={roleToAdd}
-                onValueChange={(value) => setRoleToAdd(value as AppRole)}
+                onValueChange={(value) => setRoleToAdd(value as DisplayRole)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -277,7 +298,7 @@ const RoleManagementWidget = () => {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Chỉ Admin mới có thể thêm quyền. Admin có toàn quyền hệ thống.
+                Admin có toàn quyền hệ thống.
               </p>
             </div>
           </div>
