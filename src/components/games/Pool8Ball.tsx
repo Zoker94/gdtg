@@ -24,11 +24,11 @@ interface Pocket {
   radius: number;
 }
 
-const BALL_RADIUS = 8;
+const BALL_RADIUS = 10;
 const FRICTION = 0.985;
-const POCKET_RADIUS = 12;
+const POCKET_RADIUS = 15;
 const MIN_VELOCITY = 0.1;
-const MAX_POWER = 15;
+const MAX_POWER = 18;
 
 const BALL_COLORS: { [key: number]: { color: string; striped: boolean } } = {
   0: { color: "#FFFFFF", striped: false }, // Cue ball
@@ -65,9 +65,9 @@ const Pool8Ball = () => {
   const { playSound } = useGameSound();
   const { leaderboard, addScore } = useGameLeaderboard("pool");
 
-  const tableWidth = 320;
-  const tableHeight = 180;
-  const padding = 20;
+  const tableWidth = 380;
+  const tableHeight = 210;
+  const padding = 25;
 
   const initGame = useCallback(() => {
     const newBalls: Ball[] = [];
@@ -559,9 +559,9 @@ const Pool8Ball = () => {
 
       <motion.canvas
         ref={canvasRef}
-        width={360}
-        height={220}
-        className="rounded-lg border border-border cursor-crosshair touch-none"
+        width={430}
+        height={260}
+        className="rounded-lg border border-border cursor-crosshair touch-none w-full max-w-full"
         onMouseDown={handleStart}
         onMouseMove={handleMove}
         onMouseUp={handleEnd}
