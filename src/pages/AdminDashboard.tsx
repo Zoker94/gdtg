@@ -106,6 +106,7 @@ import KYCManagementWidget from "@/components/admin/KYCManagementWidget";
 import RiskAlertsWidget from "@/components/admin/RiskAlertsWidget";
 import SuspiciousUsersWidget from "@/components/admin/SuspiciousUsersWidget";
 import AdminActionLogsWidget from "@/components/admin/AdminActionLogsWidget";
+import AdminApiKeysWidget from "@/components/admin/AdminApiKeysWidget";
 import SimplePagination, { paginateData, getTotalPages } from "@/components/ui/simple-pagination";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -818,8 +819,9 @@ const AdminDashboard = () => {
             <AdminBankSettingsWidget />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <PlatformSettingsWidget />
-              <RoleManagementWidget />
+              <AdminApiKeysWidget />
             </div>
+            <RoleManagementWidget />
             <ModeratorManagementWidget />
           </div>
         );
