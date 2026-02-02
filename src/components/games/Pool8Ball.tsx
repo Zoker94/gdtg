@@ -24,11 +24,11 @@ interface Pocket {
   radius: number;
 }
 
-const BALL_RADIUS = 12;
+const BALL_RADIUS = 8;
 const FRICTION = 0.985;
-const POCKET_RADIUS = 18;
+const POCKET_RADIUS = 12;
 const MIN_VELOCITY = 0.1;
-const MAX_POWER = 20;
+const MAX_POWER = 15;
 
 const BALL_COLORS: { [key: number]: { color: string; striped: boolean } } = {
   0: { color: "#FFFFFF", striped: false }, // Cue ball
@@ -306,16 +306,10 @@ const Pool8Ball = () => {
     const cueBall = balls.find(b => b.number === 0);
     if (!cueBall) return;
 
-    // Check if clicking near cue ball
-    const dx = coords.x - cueBall.x;
-    const dy = coords.y - cueBall.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist < 50) {
-      setIsAiming(true);
-      setAimStart({ x: cueBall.x, y: cueBall.y });
-      setAimEnd(coords);
-    }
+    // Allow clicking anywhere to start aiming from cue ball
+    setIsAiming(true);
+    setAimStart({ x: cueBall.x, y: cueBall.y });
+    setAimEnd(coords);
   };
 
   const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
@@ -377,38 +371,112 @@ const Pool8Ball = () => {
       ctx.fill();
     });
 
-    // Draw aiming line
-    if (isAiming) {
-      const cueBall = balls.find(b => b.number === 0);
-      if (cueBall) {
-        ctx.beginPath();
-        ctx.moveTo(cueBall.x, cueBall.y);
-        ctx.lineTo(cueBall.x + (cueBall.x - aimEnd.x), cueBall.y + (cueBall.y - aimEnd.y));
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Draw cue stick
+    // Always draw cue stick when balls are not moving
+    const cueBall = balls.find(b => b.number === 0 && !b.isPocketed);
+    const ballsMoving = balls.some(ball => !ball.isPocketed && (Math.abs(ball.vx) > MIN_VELOCITY || Math.abs(ball.vy) > MIN_VELOCITY));
+    
+    if (cueBall && !ballsMoving) {
+      // Calculate aim direction
+      let aimAngle: number;
+      let pullDistance: number;
+      
+      if (isAiming) {
         const dx = aimEnd.x - cueBall.x;
         const dy = aimEnd.y - cueBall.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const angle = Math.atan2(dy, dx);
-        
-        const cueLength = 100;
-        const cueStartX = cueBall.x + Math.cos(angle) * (BALL_RADIUS + Math.min(dist, 50));
-        const cueStartY = cueBall.y + Math.sin(angle) * (BALL_RADIUS + Math.min(dist, 50));
-        const cueEndX = cueStartX + Math.cos(angle) * cueLength;
-        const cueEndY = cueStartY + Math.sin(angle) * cueLength;
-
+        aimAngle = Math.atan2(dy, dx);
+        pullDistance = Math.min(Math.sqrt(dx * dx + dy * dy), 80);
+      } else {
+        // Default position - cue stick to the left of cue ball
+        aimAngle = Math.PI;
+        pullDistance = 15;
+      }
+      
+      // Draw aiming line (dotted line showing where ball will go)
+      if (isAiming && pullDistance > 10) {
         ctx.beginPath();
-        ctx.moveTo(cueStartX, cueStartY);
-        ctx.lineTo(cueEndX, cueEndY);
-        ctx.strokeStyle = "#c4a76c";
-        ctx.lineWidth = 4;
-        ctx.lineCap = "round";
+        ctx.moveTo(cueBall.x, cueBall.y);
+        const lineLength = 150;
+        ctx.lineTo(
+          cueBall.x - Math.cos(aimAngle) * lineLength,
+          cueBall.y - Math.sin(aimAngle) * lineLength
+        );
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
         ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Draw cue stick
+      const cueLength = 120;
+      const cueGap = BALL_RADIUS + 3 + (isAiming ? pullDistance * 0.5 : 0);
+      const cueStartX = cueBall.x + Math.cos(aimAngle) * cueGap;
+      const cueStartY = cueBall.y + Math.sin(aimAngle) * cueGap;
+      const cueEndX = cueStartX + Math.cos(aimAngle) * cueLength;
+      const cueEndY = cueStartY + Math.sin(aimAngle) * cueLength;
+
+      // Cue stick shadow
+      ctx.beginPath();
+      ctx.moveTo(cueStartX + 1, cueStartY + 1);
+      ctx.lineTo(cueEndX + 1, cueEndY + 1);
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      ctx.stroke();
+
+      // Cue stick body (gradient from tip to end)
+      ctx.beginPath();
+      ctx.moveTo(cueStartX, cueStartY);
+      ctx.lineTo(cueEndX, cueEndY);
+      
+      const gradient = ctx.createLinearGradient(cueStartX, cueStartY, cueEndX, cueEndY);
+      gradient.addColorStop(0, "#f5e6c8"); // Light tip
+      gradient.addColorStop(0.1, "#c4a76c"); // Body
+      gradient.addColorStop(0.8, "#8b6914"); // Darker end
+      gradient.addColorStop(1, "#5c4a1f");
+      
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.stroke();
+
+      // Cue tip (white/blue)
+      ctx.beginPath();
+      ctx.arc(cueStartX, cueStartY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = "#4a90d9";
+      ctx.fill();
+
+      // Power indicator when aiming
+      if (isAiming && pullDistance > 10) {
+        const power = pullDistance / 80;
+        const indicatorWidth = 60;
+        const indicatorHeight = 6;
+        const indicatorX = 10;
+        const indicatorY = canvas.height - 16;
+
+        // Background
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.fillRect(indicatorX - 2, indicatorY - 2, indicatorWidth + 4, indicatorHeight + 4);
+        
+        // Power bar
+        const powerGradient = ctx.createLinearGradient(indicatorX, 0, indicatorX + indicatorWidth, 0);
+        powerGradient.addColorStop(0, "#00ff00");
+        powerGradient.addColorStop(0.5, "#ffff00");
+        powerGradient.addColorStop(1, "#ff0000");
+        
+        ctx.fillStyle = powerGradient;
+        ctx.fillRect(indicatorX, indicatorY, indicatorWidth * power, indicatorHeight);
+        
+        // Border
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(indicatorX, indicatorY, indicatorWidth, indicatorHeight);
+        
+        // Text
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 8px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(`${Math.round(power * 100)}%`, indicatorX + indicatorWidth + 5, indicatorY + 6);
       }
     }
 
@@ -466,24 +534,6 @@ const Pool8Ball = () => {
       }
     });
 
-    // Power indicator when aiming
-    if (isAiming) {
-      const dx = aimStart.x - aimEnd.x;
-      const dy = aimStart.y - aimEnd.y;
-      const power = Math.min(Math.sqrt(dx * dx + dy * dy) / 10, MAX_POWER);
-      const powerPercent = (power / MAX_POWER) * 100;
-
-      ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-      ctx.fillRect(10, canvas.height - 20, 80, 10);
-      
-      const gradient = ctx.createLinearGradient(10, 0, 90, 0);
-      gradient.addColorStop(0, "#00ff00");
-      gradient.addColorStop(0.5, "#ffff00");
-      gradient.addColorStop(1, "#ff0000");
-      
-      ctx.fillStyle = gradient;
-      ctx.fillRect(10, canvas.height - 20, (powerPercent / 100) * 80, 10);
-    }
   }, [balls, pockets, isAiming, aimStart, aimEnd]);
 
   return (
@@ -552,7 +602,7 @@ const Pool8Ball = () => {
       )}
 
       <p className="text-[10px] text-muted-foreground text-center">
-        Kéo từ bi trắng để ngắm, thả để đánh
+        Chạm và kéo để ngắm → Thả để đánh
       </p>
 
       <Button
