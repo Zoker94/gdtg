@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { useAllTransactions, useUpdateTransactionStatus, TransactionStatus } from "@/hooks/useTransactions";
-import { useUserRole } from "@/hooks/useProfile";
+import { useUserRole, useCanManageRoles } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,6 +110,7 @@ import SuspiciousUsersWidget from "@/components/admin/SuspiciousUsersWidget";
 import AdminActionLogsWidget from "@/components/admin/AdminActionLogsWidget";
 import AdminApiKeysWidget from "@/components/admin/AdminApiKeysWidget";
 import ThemeSelectorWidget from "@/components/admin/ThemeSelectorWidget";
+import SuperAdminWidget from "@/components/admin/SuperAdminWidget";
 import { AIAssistantWidget } from "@/components/admin/AIAssistantWidget";
 import SimplePagination, { paginateData, getTotalPages } from "@/components/ui/simple-pagination";
 

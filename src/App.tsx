@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ColorThemeProvider } from "@/hooks/useColorTheme";
+import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -29,6 +30,7 @@ import WaitingLobby from "./pages/WaitingLobby";
 import Messages from "./pages/Messages";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
+import Maintenance from "./pages/Maintenance";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,46 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const MaintenanceWrapper = ({ children }: { children: React.ReactNode }) => {
+  const { shouldShowMaintenance, isLoading } = useMaintenanceMode();
+  
+  if (isLoading) return <div className="min-h-screen bg-background" />;
+  if (shouldShowMaintenance) return <Maintenance />;
+  
+  return <>{children}</>;
+};
+
+const AppRoutes = () => (
+  <MaintenanceWrapper>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/join" element={<ProtectedRoute><JoinRoom /></ProtectedRoute>} />
+      <Route path="/join/:roomId" element={<ProtectedRoute><JoinRoom /></ProtectedRoute>} />
+      <Route path="/search-room" element={<SearchRoom />} />
+      <Route path="/deposit" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
+      <Route path="/withdraw" element={<ProtectedRoute><Withdraw /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/transaction-history" element={<ProtectedRoute><TransactionHistory /></ProtectedRoute>} />
+      <Route path="/wallet-history" element={<ProtectedRoute><TransactionWallet /></ProtectedRoute>} />
+      <Route path="/create-transaction" element={<ProtectedRoute><CreateTransaction /></ProtectedRoute>} />
+      <Route path="/transaction/:id" element={<ProtectedRoute><TransactionDetail /></ProtectedRoute>} />
+      <Route path="/waiting/:transactionId" element={<ProtectedRoute><WaitingLobby /></ProtectedRoute>} />
+      <Route path="/user/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+      <Route path="/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
+      <Route path="/search-profile" element={<ProtectedRoute><SearchProfile /></ProtectedRoute>} />
+      <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+      <Route path="/moderator/:moderatorId" element={<ModeratorProfile />} />
+      <Route path="/moderators" element={<ModeratorsListPage />} />
+      <Route path="/moderators-full" element={<ModeratorsFullList />} />
+      <Route path="/kyc" element={<ProtectedRoute><KYCVerification /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  </MaintenanceWrapper>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
@@ -48,32 +90,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/join" element={<ProtectedRoute><JoinRoom /></ProtectedRoute>} />
-                <Route path="/join/:roomId" element={<ProtectedRoute><JoinRoom /></ProtectedRoute>} />
-                <Route path="/search-room" element={<SearchRoom />} />
-                <Route path="/deposit" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
-                <Route path="/withdraw" element={<ProtectedRoute><Withdraw /></ProtectedRoute>} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/transaction-history" element={<ProtectedRoute><TransactionHistory /></ProtectedRoute>} />
-                <Route path="/wallet-history" element={<ProtectedRoute><TransactionWallet /></ProtectedRoute>} />
-                <Route path="/create-transaction" element={<ProtectedRoute><CreateTransaction /></ProtectedRoute>} />
-                <Route path="/transaction/:id" element={<ProtectedRoute><TransactionDetail /></ProtectedRoute>} />
-                <Route path="/waiting/:transactionId" element={<ProtectedRoute><WaitingLobby /></ProtectedRoute>} />
-                <Route path="/user/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-                <Route path="/my-profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
-                <Route path="/search-profile" element={<ProtectedRoute><SearchProfile /></ProtectedRoute>} />
-                <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-                <Route path="/moderator/:moderatorId" element={<ModeratorProfile />} />
-                <Route path="/moderators" element={<ModeratorsListPage />} />
-                <Route path="/moderators-full" element={<ModeratorsFullList />} />
-                <Route path="/kyc" element={<ProtectedRoute><KYCVerification /></ProtectedRoute>} />
-                <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-                <Route path="/terms" element={<TermsOfService />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <AppRoutes />
             </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>
