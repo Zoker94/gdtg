@@ -767,6 +767,8 @@ const Pool8Ball = () => {
 
   const solidRemaining = balls.filter(b => b.number >= 1 && b.number <= 7 && !b.isPocketed).length;
   const stripeRemaining = balls.filter(b => b.number >= 9 && b.number <= 15 && !b.isPocketed).length;
+  // Auto-enable fullscreen when mobile is in landscape mode
+  const shouldAutoFullscreen = isMobile && !isPortrait;
 
   // Show rotate screen overlay on mobile portrait
   if (isMobile && isPortrait) {
@@ -794,8 +796,8 @@ const Pool8Ball = () => {
     );
   }
 
-  // Fullscreen mode
-  if (isFullscreen) {
+  // Fullscreen mode (auto for mobile landscape, manual toggle for desktop)
+  if (isFullscreen || shouldAutoFullscreen) {
     return (
       <AnimatePresence>
         <motion.div
