@@ -68,7 +68,9 @@ import {
   History,
   Paintbrush,
   Bot,
+  Gamepad2,
 } from "lucide-react";
+import ChineseChess from "@/components/games/ChineseChess";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
@@ -136,10 +138,19 @@ const menuItems = [
   { title: "Cài đặt", value: "settings", icon: Settings },
 ];
 
-const AdminSidebar = ({ activeTab, setActiveTab }: { activeTab: string; setActiveTab: (tab: string) => void }) => {
+const superAdminMenuItems = [
+  { title: "Giải trí", value: "games", icon: Gamepad2 },
+];
+
+const AdminSidebar = ({ activeTab, setActiveTab, isSuperAdmin }: { activeTab: string; setActiveTab: (tab: string) => void; isSuperAdmin?: boolean }) => {
   const { state } = useSidebar();
   const navigate = useNavigate();
   const collapsed = state === "collapsed";
+  
+  // Combine menu items - add secret games menu only for super_admin
+  const displayMenuItems = isSuperAdmin 
+    ? [...menuItems, ...superAdminMenuItems] 
+    : menuItems;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar/95 backdrop-blur-sm">
@@ -165,8 +176,9 @@ const AdminSidebar = ({ activeTab, setActiveTab }: { activeTab: string; setActiv
           )}
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {menuItems.map((item) => {
+              {displayMenuItems.map((item) => {
                 const isActive = activeTab === item.value;
+                const isSecret = item.value === "games";
                 return (
                   <SidebarMenuItem key={item.value}>
                     <SidebarMenuButton
@@ -176,7 +188,9 @@ const AdminSidebar = ({ activeTab, setActiveTab }: { activeTab: string; setActiv
                       className={`cursor-pointer transition-all duration-200 ${
                         isActive 
                           ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground" 
-                          : "hover:bg-muted/80"
+                          : isSecret
+                            ? "hover:bg-muted/80 opacity-60"
+                            : "hover:bg-muted/80"
                       }`}
                     >
                       <item.icon className={`w-4 h-4 ${isActive ? "" : "text-muted-foreground"}`} />
@@ -847,6 +861,28 @@ const AdminDashboard = () => {
           </div>
         );
 
+      case "games":
+        // Secret game section - only super_admin can access
+        if (!isSuperAdmin) return null;
+        return (
+          <Card className="border-primary/20 shadow-md">
+            <CardHeader className="border-b bg-muted/30">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Gamepad2 className="w-5 h-5 text-primary" />
+                Giải trí Super Admin
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Khu vực bí mật - chỉ Super Admin mới thấy được mục này
+              </p>
+            </CardHeader>
+            <CardContent className="flex justify-center py-8">
+              <div className="w-full max-w-sm bg-card p-4 rounded-xl shadow-inner border">
+                <ChineseChess />
+              </div>
+            </CardContent>
+          </Card>
+        );
+
       default:
         return null;
     }
@@ -855,7 +891,7 @@ const AdminDashboard = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-background flex w-full">
-        <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} isSuperAdmin={isSuperAdmin} />
         
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
