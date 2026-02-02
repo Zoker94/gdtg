@@ -35,7 +35,7 @@ interface UserWithRoles {
 
 const RoleManagementWidget = () => {
   const queryClient = useQueryClient();
-  const { canManage } = useCanManageRoles();
+  const { canManage, isSuperAdmin } = useCanManageRoles();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
   const [roleToAdd, setRoleToAdd] = useState<DisplayRole>("moderator");
@@ -127,8 +127,9 @@ const RoleManagementWidget = () => {
 
   const getRoleBadgeVariant = (role: AppRole) => {
     switch (role) {
+      case "super_admin":
+        return "superAdmin"; // Custom purple variant
       case "admin":
-      case "super_admin": // Display same as admin
         return "destructive";
       case "moderator":
         return "default";
@@ -210,10 +211,10 @@ const RoleManagementWidget = () => {
                   <p className="font-medium text-sm">
                     {user.full_name || "Chưa đặt tên"}
                   </p>
-                  <div className="flex gap-1 mt-1">
-                      {/* Show "Admin" badge for super_admin users (hidden identity) */}
+                    <div className="flex gap-1 mt-1">
+                      {/* Show "Admin" badge for super_admin users with purple color */}
                       {user.roles.includes("super_admin") && (
-                        <Badge variant="destructive" className="text-xs gap-1">
+                        <Badge variant="superAdmin" className="text-xs gap-1">
                           <Shield className="w-3 h-3" />
                           Admin
                         </Badge>
@@ -230,15 +231,18 @@ const RoleManagementWidget = () => {
                           {role === "admin" && <Shield className="w-3 h-3" />}
                           {role === "moderator" && <Users className="w-3 h-3" />}
                           {getRoleLabel(role)}
-                          {role !== "user" && role !== "admin" && (
+                          {/* Super admin can delete admin roles, admins can only delete moderator roles */}
+                          {role !== "user" && (
+                            (isSuperAdmin && role === "admin") || role === "moderator"
+                          ) && (
                             <button
                               onClick={() => removeRole.mutate({ userId: user.user_id, role })}
                               className="ml-1 hover:text-destructive-foreground"
                               disabled={removeRole.isPending}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
                       </Badge>
                     ))}
                   </div>
@@ -293,12 +297,17 @@ const RoleManagementWidget = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin (Toàn quyền)</SelectItem>
+                  {/* Only super admin can assign admin role */}
+                  {isSuperAdmin && (
+                    <SelectItem value="admin">Admin (Toàn quyền)</SelectItem>
+                  )}
                   <SelectItem value="moderator">Quản lý (Moderator)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Admin có toàn quyền hệ thống.
+                {isSuperAdmin 
+                  ? "Admin có toàn quyền hệ thống." 
+                  : "Bạn chỉ có thể phân quyền Moderator."}
               </p>
             </div>
           </div>

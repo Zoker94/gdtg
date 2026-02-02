@@ -119,8 +119,11 @@ export const useUserRole = () => {
   });
 };
 
-// Hook to check if user can manage roles (only super_admin)
+// Hook to check if user can manage roles (admins and super_admins)
 export const useCanManageRoles = () => {
   const { data } = useUserRole();
-  return { canManage: data?.isSuperAdmin || false };
+  return { 
+    canManage: data?.isAdmin || false,
+    isSuperAdmin: data?.isSuperAdmin || false 
+  };
 };
