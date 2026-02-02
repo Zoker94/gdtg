@@ -39,14 +39,8 @@ export const AIAssistantWidget = () => {
     }
   }, [messages]);
 
-  // Focus textarea when sidebar opens
-  useEffect(() => {
-    if (isOpen && textareaRef.current) {
-      setTimeout(() => textareaRef.current?.focus(), 300);
-    }
-  }, [isOpen]);
-
-  const parseGeminiStream = async (
+  // Parse OpenAI-compatible SSE stream (Lovable AI Gateway format)
+  const parseStream = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
     onDelta: (text: string) => void,
     onDone: () => void
@@ -60,23 +54,31 @@ export const AIAssistantWidget = () => {
 
       buffer += decoder.decode(value, { stream: true });
 
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
+      // Process line by line
+      let newlineIndex: number;
+      while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+        let line = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
 
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (line.startsWith(":") || line.trim() === "") continue;
+        if (!line.startsWith("data: ")) continue;
 
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              onDelta(text);
-            }
-          } catch {
-            // Ignore parse errors
-          }
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === "[DONE]") {
+          onDone();
+          return;
+        }
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          // OpenAI format: choices[0].delta.content
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onDelta(content);
+        } catch {
+          // Incomplete JSON, put it back
+          buffer = line + "\n" + buffer;
+          break;
         }
       }
     }
@@ -118,7 +120,7 @@ export const AIAssistantWidget = () => {
 
       setMessages([...newMessages, { role: "assistant", content: "" }]);
 
-      await parseGeminiStream(
+      await parseStream(
         reader,
         (text) => {
           assistantContent += text;
