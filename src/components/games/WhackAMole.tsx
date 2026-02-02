@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Play } from "lucide-react";
+import { RefreshCw, Play, Trophy } from "lucide-react";
+import { useGameSound } from "@/hooks/useGameSound";
+import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
+import LeaderboardDisplay from "./LeaderboardDisplay";
 
 const GAME_DURATION = 30; // seconds
 const MOLE_DURATION = 800; // ms
@@ -12,6 +15,10 @@ const WhackAMole = () => {
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  
+  const { playSound } = useGameSound();
+  const { leaderboard, addScore } = useGameLeaderboard("whack");
 
   const showRandomMole = useCallback(() => {
     const randomIndex = Math.floor(Math.random() * 9);
@@ -24,6 +31,7 @@ const WhackAMole = () => {
     setTimeLeft(GAME_DURATION);
     setIsPlaying(true);
     setIsGameOver(false);
+    playSound("click");
   };
 
   // Timer countdown
@@ -35,14 +43,23 @@ const WhackAMole = () => {
         if (prev <= 1) {
           setIsPlaying(false);
           setIsGameOver(true);
+          playSound("lose");
           return 0;
         }
+        if (prev <= 5) playSound("tick");
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isPlaying]);
+  }, [isPlaying, playSound]);
+
+  // Save score when game ends
+  useEffect(() => {
+    if (isGameOver && score > 0) {
+      addScore(score);
+    }
+  }, [isGameOver, score, addScore]);
 
   // Show moles randomly
   useEffect(() => {
@@ -57,6 +74,7 @@ const WhackAMole = () => {
 
   const handleWhack = (index: number) => {
     if (index === activeMole) {
+      playSound("whack");
       setScore(s => s + 10);
       setActiveMole(null);
     }
@@ -64,11 +82,21 @@ const WhackAMole = () => {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="text-center flex items-center gap-4">
-        <p className="text-xs text-muted-foreground">Điểm: <span className="font-bold text-foreground">{score}</span></p>
-        {isPlaying && (
-          <p className="text-xs text-muted-foreground">Thời gian: <span className="font-bold text-foreground">{timeLeft}s</span></p>
-        )}
+      <div className="flex items-center justify-between w-full px-1">
+        <div className="flex items-center gap-4">
+          <p className="text-xs text-muted-foreground">Điểm: <span className="font-bold text-foreground">{score}</span></p>
+          {isPlaying && (
+            <p className="text-xs text-muted-foreground">Thời gian: <span className="font-bold text-foreground">{timeLeft}s</span></p>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => setShowLeaderboard(true)}
+        >
+          <Trophy className="w-3 h-3" />
+        </Button>
       </div>
 
       <div className="grid grid-cols-3 gap-2 bg-muted rounded-lg p-2">
@@ -122,6 +150,14 @@ const WhackAMole = () => {
           </>
         )}
       </Button>
+
+      <LeaderboardDisplay
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        leaderboard={leaderboard}
+        title="Bảng xếp hạng Đập chuột"
+        scoreLabel="Điểm"
+      />
     </div>
   );
 };

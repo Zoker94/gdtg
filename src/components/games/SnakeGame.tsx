@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
+import { RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Trophy } from "lucide-react";
+import { useGameSound } from "@/hooks/useGameSound";
+import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
+import LeaderboardDisplay from "./LeaderboardDisplay";
 
 const GRID_SIZE = 10;
 const CELL_SIZE = 18;
@@ -17,6 +20,10 @@ const SnakeGame = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  
+  const { playSound } = useGameSound();
+  const { leaderboard, addScore } = useGameLeaderboard("snake");
 
   const generateFood = useCallback(() => {
     const newFood = {
@@ -35,6 +42,13 @@ const SnakeGame = () => {
     setScore(0);
   };
 
+  // Save score when game ends
+  useEffect(() => {
+    if (gameOver && score > 0) {
+      addScore(score);
+    }
+  }, [gameOver, score, addScore]);
+
   const moveSnake = useCallback(() => {
     if (!isRunning || gameOver) return;
 
@@ -50,6 +64,7 @@ const SnakeGame = () => {
 
       // Check wall collision
       if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+        playSound("lose");
         setGameOver(true);
         setIsRunning(false);
         return prevSnake;
@@ -57,6 +72,7 @@ const SnakeGame = () => {
 
       // Check self collision
       if (prevSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
+        playSound("lose");
         setGameOver(true);
         setIsRunning(false);
         return prevSnake;
@@ -66,6 +82,7 @@ const SnakeGame = () => {
 
       // Check food collision
       if (head.x === food.x && head.y === food.y) {
+        playSound("eat");
         setFood(generateFood());
         setScore(s => s + 10);
       } else {
@@ -74,7 +91,7 @@ const SnakeGame = () => {
 
       return newSnake;
     });
-  }, [direction, food, generateFood, isRunning, gameOver]);
+  }, [direction, food, generateFood, isRunning, gameOver, playSound]);
 
   useEffect(() => {
     const interval = setInterval(moveSnake, INITIAL_SPEED);
@@ -86,6 +103,7 @@ const SnakeGame = () => {
       UP: "DOWN", DOWN: "UP", LEFT: "RIGHT", RIGHT: "LEFT"
     };
     if (opposites[newDir] !== direction) {
+      playSound("click");
       setDirection(newDir);
       if (!isRunning && !gameOver) setIsRunning(true);
     }
@@ -109,12 +127,22 @@ const SnakeGame = () => {
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="text-center">
-        {gameOver ? (
-          <p className="text-sm font-medium">💀 Game Over! Điểm: {score}</p>
-        ) : (
-          <p className="text-xs text-muted-foreground">Điểm: {score}</p>
-        )}
+      <div className="flex items-center justify-between w-full px-1">
+        <div className="text-center">
+          {gameOver ? (
+            <p className="text-sm font-medium">💀 Game Over! Điểm: {score}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">Điểm: {score}</p>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => setShowLeaderboard(true)}
+        >
+          <Trophy className="w-3 h-3" />
+        </Button>
       </div>
 
       <div
@@ -180,6 +208,14 @@ const SnakeGame = () => {
         <RefreshCw className="w-3 h-3" />
         Chơi lại
       </Button>
+
+      <LeaderboardDisplay
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        leaderboard={leaderboard}
+        title="Bảng xếp hạng Rắn săn mồi"
+        scoreLabel="Điểm"
+      />
     </div>
   );
 };
