@@ -212,40 +212,39 @@ const RoleManagementWidget = () => {
                     {user.full_name || "Chưa đặt tên"}
                   </p>
                     <div className="flex gap-1 mt-1">
-                      {/* Show "Admin" badge for super_admin users with purple color */}
-                      {user.roles.includes("super_admin") && (
+                      {/* For super_admin users: only show Admin badge, hide all other roles to protect identity */}
+                      {user.roles.includes("super_admin") ? (
                         <Badge variant="superAdmin" className="text-xs gap-1">
                           <Shield className="w-3 h-3" />
                           Admin
                         </Badge>
-                      )}
-                      {user.roles
-                        // Filter out super_admin from display
-                        .filter((role) => role !== "super_admin")
-                        .map((role) => (
-                        <Badge
-                          key={role}
-                          variant={getRoleBadgeVariant(role)}
-                          className="text-xs gap-1"
-                        >
-                          {role === "admin" && <Shield className="w-3 h-3" />}
-                          {role === "moderator" && <Users className="w-3 h-3" />}
-                          {getRoleLabel(role)}
-                          {/* Super admin can delete admin roles, admins can only delete moderator roles */}
-                          {role !== "user" && (
-                            (isSuperAdmin && role === "admin") || role === "moderator"
-                          ) && (
-                            <button
-                              onClick={() => removeRole.mutate({ userId: user.user_id, role })}
-                              className="ml-1 hover:text-destructive-foreground"
-                              disabled={removeRole.isPending}
+                      ) : (
+                        /* For non-super_admin users: show all roles except 'user' (default role) */
+                        user.roles
+                          .filter((role) => role !== "user")
+                          .map((role) => (
+                            <Badge
+                              key={role}
+                              variant={getRoleBadgeVariant(role)}
+                              className="text-xs gap-1"
                             >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                      </Badge>
-                    ))}
-                  </div>
+                              {role === "admin" && <Shield className="w-3 h-3" />}
+                              {role === "moderator" && <Users className="w-3 h-3" />}
+                              {getRoleLabel(role)}
+                              {/* Super admin can delete admin roles, admins can only delete moderator roles */}
+                              {((isSuperAdmin && role === "admin") || role === "moderator") && (
+                                <button
+                                  onClick={() => removeRole.mutate({ userId: user.user_id, role })}
+                                  className="ml-1 hover:text-destructive-foreground"
+                                  disabled={removeRole.isPending}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </Badge>
+                          ))
+                      )}
+                    </div>
                 </div>
               </div>
             ))
