@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Trophy } from "lucide-react";
+import { RefreshCw, Trophy, Circle, CircleDot } from "lucide-react";
 import { useGameSound } from "@/hooks/useGameSound";
 import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
 import LeaderboardDisplay from "./LeaderboardDisplay";
@@ -23,6 +23,8 @@ interface Pocket {
   y: number;
   radius: number;
 }
+
+type PlayerType = "solid" | "stripe" | null;
 
 const BALL_RADIUS = 10;
 const FRICTION = 0.985;
@@ -61,6 +63,13 @@ const Pool8Ball = () => {
   const [pocketedBalls, setPocketedBalls] = useState<number[]>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [message, setMessage] = useState("");
+  
+  // Game rules state
+  const [playerType, setPlayerType] = useState<PlayerType>(null);
+  const [foulMessage, setFoulMessage] = useState("");
+  const [shotInProgress, setShotInProgress] = useState(false);
+  const [firstHitBall, setFirstHitBall] = useState<number | null>(null);
+  const [gameWon, setGameWon] = useState(false);
 
   const { playSound } = useGameSound();
   const { leaderboard, addScore } = useGameLeaderboard("pool");
@@ -69,12 +78,22 @@ const Pool8Ball = () => {
   const tableHeight = 210;
   const padding = 25;
 
+  // Check if player has cleared all their balls
+  const hasPlayerClearedBalls = useCallback((type: PlayerType, currentBalls: Ball[]) => {
+    if (!type) return false;
+    const playerBalls = currentBalls.filter(b => {
+      if (type === "solid") return b.number >= 1 && b.number <= 7;
+      return b.number >= 9 && b.number <= 15;
+    });
+    return playerBalls.every(b => b.isPocketed);
+  }, []);
+
   const initGame = useCallback(() => {
     const newBalls: Ball[] = [];
     
     // Cue ball
     newBalls.push({
-      x: padding + 60,
+      x: padding + 70,
       y: tableHeight / 2 + padding,
       vx: 0,
       vy: 0,
@@ -86,11 +105,11 @@ const Pool8Ball = () => {
     });
 
     // Rack position
-    const rackX = padding + tableWidth - 80;
+    const rackX = padding + tableWidth - 100;
     const rackY = tableHeight / 2 + padding;
     const spacing = BALL_RADIUS * 2.1;
 
-    // Triangle rack formation (1-5 rows)
+    // Triangle rack formation (1-5 rows) - 8 ball in center
     const rackOrder = [1, 9, 2, 10, 8, 11, 3, 12, 4, 13, 5, 14, 6, 15, 7];
     let ballIndex = 0;
     
@@ -131,7 +150,12 @@ const Pool8Ball = () => {
     setScore(0);
     setPocketedBalls([]);
     setGameOver(false);
+    setGameWon(false);
     setMessage("");
+    setPlayerType(null);
+    setFoulMessage("");
+    setShotInProgress(false);
+    setFirstHitBall(null);
     playSound("click");
   }, [playSound]);
 
@@ -142,6 +166,49 @@ const Pool8Ball = () => {
   const areBallsMoving = useCallback(() => {
     return balls.some(ball => !ball.isPocketed && (Math.abs(ball.vx) > MIN_VELOCITY || Math.abs(ball.vy) > MIN_VELOCITY));
   }, [balls]);
+
+  // Check foul when shot ends
+  useEffect(() => {
+    if (!shotInProgress) return;
+    
+    const moving = areBallsMoving();
+    if (!moving && shotInProgress) {
+      // Shot ended - check for fouls
+      setShotInProgress(false);
+      
+      if (firstHitBall !== null && playerType !== null) {
+        const hitBallNum = firstHitBall;
+        let isFoul = false;
+        
+        // Check if hit wrong ball first
+        if (playerType === "solid") {
+          // Should hit 1-7 first (or 8 if cleared)
+          const clearedSolids = hasPlayerClearedBalls("solid", balls);
+          if (clearedSolids) {
+            if (hitBallNum !== 8) isFoul = true;
+          } else {
+            if (hitBallNum === 8 || hitBallNum > 8) isFoul = true;
+          }
+        } else if (playerType === "stripe") {
+          // Should hit 9-15 first (or 8 if cleared)
+          const clearedStripes = hasPlayerClearedBalls("stripe", balls);
+          if (clearedStripes) {
+            if (hitBallNum !== 8) isFoul = true;
+          } else {
+            if (hitBallNum <= 8) isFoul = true;
+          }
+        }
+        
+        if (isFoul) {
+          setFoulMessage("⚠️ Phạm lỗi! Đánh sai bi");
+          playSound("lose");
+          setScore(s => Math.max(0, s - 5));
+        }
+      }
+      
+      setFirstHitBall(null);
+    }
+  }, [balls, shotInProgress, areBallsMoving, firstHitBall, playerType, hasPlayerClearedBalls, playSound]);
 
   // Physics update
   useEffect(() => {
@@ -196,6 +263,13 @@ const Pool8Ball = () => {
             if (dist < b1.radius + b2.radius && dist > 0) {
               playSound("click");
               
+              // Track first ball hit by cue ball
+              if (b1.number === 0 && firstHitBall === null) {
+                setFirstHitBall(b2.number);
+              } else if (b2.number === 0 && firstHitBall === null) {
+                setFirstHitBall(b1.number);
+              }
+              
               // Normalize collision vector
               const nx = dx / dist;
               const ny = dy / dist;
@@ -236,23 +310,56 @@ const Pool8Ball = () => {
               newPocketed.push(ball.number);
               
               if (ball.number === 0) {
-                // Cue ball pocketed - reset position
+                // Cue ball pocketed - FOUL!
                 playSound("lose");
+                setFoulMessage("⚠️ Phạm lỗi! Bi trắng vào lỗ");
+                setScore(s => Math.max(0, s - 5));
                 return {
                   ...ball,
-                  x: padding + 60,
+                  x: padding + 70,
                   y: tableHeight / 2 + padding,
                   vx: 0,
                   vy: 0,
                 };
               } else if (ball.number === 8) {
-                // 8-ball pocketed
-                playSound("win");
-                setGameOver(true);
-                setMessage("🎱 Trận đấu kết thúc!");
+                // 8-ball pocketed - check if player cleared their balls first
+                const playerCleared = hasPlayerClearedBalls(playerType, newBalls);
+                
+                if (playerCleared) {
+                  // WIN!
+                  playSound("win");
+                  setGameOver(true);
+                  setGameWon(true);
+                  setMessage("🏆 Chiến thắng! Bạn đã thắng ván này!");
+                  setScore(s => s + 100);
+                } else {
+                  // LOSE - pocketed 8-ball too early
+                  playSound("lose");
+                  setGameOver(true);
+                  setGameWon(false);
+                  setMessage("💀 Thua cuộc! Đánh bi 8 khi chưa xong");
+                }
               } else {
                 playSound("match");
-                setScore(s => s + (ball.number === 8 ? 50 : 10));
+                
+                // Assign player type on first pocket
+                if (playerType === null) {
+                  const newType: PlayerType = ball.number >= 1 && ball.number <= 7 ? "solid" : "stripe";
+                  setPlayerType(newType);
+                  setMessage(newType === "solid" ? "🔵 Bạn là bi ĐẶC (1-7)" : "🔴 Bạn là bi SỌC (9-15)");
+                }
+                
+                // Score based on correct ball
+                const isCorrectBall = playerType === null || 
+                  (playerType === "solid" && ball.number >= 1 && ball.number <= 7) ||
+                  (playerType === "stripe" && ball.number >= 9 && ball.number <= 15);
+                
+                if (isCorrectBall) {
+                  setScore(s => s + 15);
+                  setFoulMessage("");
+                } else {
+                  setScore(s => s + 5); // Less points for opponent's ball
+                }
               }
               
               return { ...ball, isPocketed: true, vx: 0, vy: 0 };
@@ -270,7 +377,7 @@ const Pool8Ball = () => {
     }, 16);
 
     return () => clearInterval(interval);
-  }, [pockets, gameOver, playSound]);
+  }, [pockets, gameOver, playSound, playerType, hasPlayerClearedBalls, firstHitBall]);
 
   // Save score when game ends
   useEffect(() => {
@@ -278,6 +385,22 @@ const Pool8Ball = () => {
       addScore(score);
     }
   }, [gameOver, score, addScore]);
+
+  // Clear foul message after delay
+  useEffect(() => {
+    if (foulMessage) {
+      const timer = setTimeout(() => setFoulMessage(""), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [foulMessage]);
+
+  // Clear assignment message after delay
+  useEffect(() => {
+    if (message && !gameOver) {
+      const timer = setTimeout(() => setMessage(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message, gameOver]);
 
   const getCanvasCoords = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
@@ -306,7 +429,7 @@ const Pool8Ball = () => {
     const cueBall = balls.find(b => b.number === 0);
     if (!cueBall) return;
 
-    // Allow clicking anywhere to start aiming from cue ball
+    setFoulMessage("");
     setIsAiming(true);
     setAimStart({ x: cueBall.x, y: cueBall.y });
     setAimEnd(coords);
@@ -331,6 +454,9 @@ const Pool8Ball = () => {
     if (power > 1) {
       const angle = Math.atan2(dy, dx);
       playSound("whack");
+      
+      setShotInProgress(true);
+      setFirstHitBall(null);
       
       setBalls(prev => prev.map(ball => 
         ball.number === 0 
@@ -375,8 +501,7 @@ const Pool8Ball = () => {
     const cueBall = balls.find(b => b.number === 0 && !b.isPocketed);
     const ballsMoving = balls.some(ball => !ball.isPocketed && (Math.abs(ball.vx) > MIN_VELOCITY || Math.abs(ball.vy) > MIN_VELOCITY));
     
-    if (cueBall && !ballsMoving) {
-      // Calculate aim direction
+    if (cueBall && !ballsMoving && !gameOver) {
       let aimAngle: number;
       let pullDistance: number;
       
@@ -386,12 +511,11 @@ const Pool8Ball = () => {
         aimAngle = Math.atan2(dy, dx);
         pullDistance = Math.min(Math.sqrt(dx * dx + dy * dy), 80);
       } else {
-        // Default position - cue stick to the left of cue ball
         aimAngle = Math.PI;
         pullDistance = 15;
       }
       
-      // Draw aiming line (dotted line showing where ball will go)
+      // Draw aiming line
       if (isAiming && pullDistance > 10) {
         ctx.beginPath();
         ctx.moveTo(cueBall.x, cueBall.y);
@@ -424,15 +548,15 @@ const Pool8Ball = () => {
       ctx.lineCap = "round";
       ctx.stroke();
 
-      // Cue stick body (gradient from tip to end)
+      // Cue stick body
       ctx.beginPath();
       ctx.moveTo(cueStartX, cueStartY);
       ctx.lineTo(cueEndX, cueEndY);
       
       const gradient = ctx.createLinearGradient(cueStartX, cueStartY, cueEndX, cueEndY);
-      gradient.addColorStop(0, "#f5e6c8"); // Light tip
-      gradient.addColorStop(0.1, "#c4a76c"); // Body
-      gradient.addColorStop(0.8, "#8b6914"); // Darker end
+      gradient.addColorStop(0, "#f5e6c8");
+      gradient.addColorStop(0.1, "#c4a76c");
+      gradient.addColorStop(0.8, "#8b6914");
       gradient.addColorStop(1, "#5c4a1f");
       
       ctx.strokeStyle = gradient;
@@ -440,13 +564,13 @@ const Pool8Ball = () => {
       ctx.lineCap = "round";
       ctx.stroke();
 
-      // Cue tip (white/blue)
+      // Cue tip
       ctx.beginPath();
       ctx.arc(cueStartX, cueStartY, 3, 0, Math.PI * 2);
       ctx.fillStyle = "#4a90d9";
       ctx.fill();
 
-      // Power indicator when aiming
+      // Power indicator
       if (isAiming && pullDistance > 10) {
         const power = pullDistance / 80;
         const indicatorWidth = 60;
@@ -454,11 +578,9 @@ const Pool8Ball = () => {
         const indicatorX = 10;
         const indicatorY = canvas.height - 16;
 
-        // Background
         ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
         ctx.fillRect(indicatorX - 2, indicatorY - 2, indicatorWidth + 4, indicatorHeight + 4);
         
-        // Power bar
         const powerGradient = ctx.createLinearGradient(indicatorX, 0, indicatorX + indicatorWidth, 0);
         powerGradient.addColorStop(0, "#00ff00");
         powerGradient.addColorStop(0.5, "#ffff00");
@@ -467,12 +589,10 @@ const Pool8Ball = () => {
         ctx.fillStyle = powerGradient;
         ctx.fillRect(indicatorX, indicatorY, indicatorWidth * power, indicatorHeight);
         
-        // Border
         ctx.strokeStyle = "#fff";
         ctx.lineWidth = 1;
         ctx.strokeRect(indicatorX, indicatorY, indicatorWidth, indicatorHeight);
         
-        // Text
         ctx.fillStyle = "#fff";
         ctx.font = "bold 8px Arial";
         ctx.textAlign = "left";
@@ -492,14 +612,12 @@ const Pool8Ball = () => {
 
       // Ball body
       if (ball.isStriped && ball.number !== 0) {
-        // Striped ball - white base with colored stripe
         ctx.save();
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
         ctx.fillStyle = "#FFFFFF";
         ctx.fill();
         
-        // Draw colored stripe in the middle
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
         ctx.clip();
@@ -519,7 +637,7 @@ const Pool8Ball = () => {
       ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
       ctx.fill();
 
-      // Ball number (white circle with number)
+      // Ball number
       if (ball.number > 0) {
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, ball.radius * 0.45, 0, Math.PI * 2);
@@ -533,19 +651,35 @@ const Pool8Ball = () => {
         ctx.fillText(ball.number.toString(), ball.x, ball.y + 1);
       }
     });
+  }, [balls, pockets, isAiming, aimStart, aimEnd, gameOver]);
 
-  }, [balls, pockets, isAiming, aimStart, aimEnd]);
+  // Count remaining balls
+  const solidRemaining = balls.filter(b => b.number >= 1 && b.number <= 7 && !b.isPocketed).length;
+  const stripeRemaining = balls.filter(b => b.number >= 9 && b.number <= 15 && !b.isPocketed).length;
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-2">
+      {/* Score and type indicator */}
       <div className="flex items-center justify-between w-full px-1">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <p className="text-xs text-muted-foreground">
             Điểm: <span className="font-bold text-foreground">{score}</span>
           </p>
-          <p className="text-xs text-muted-foreground">
-            Bóng: <span className="font-bold text-foreground">{pocketedBalls.length}/15</span>
-          </p>
+          {playerType && (
+            <div className="flex items-center gap-1 text-xs">
+              {playerType === "solid" ? (
+                <>
+                  <Circle className="w-3 h-3 text-primary fill-primary" />
+                  <span className="text-muted-foreground">Đặc: <span className="font-bold text-foreground">{7 - solidRemaining}/7</span></span>
+                </>
+              ) : (
+                <>
+                  <CircleDot className="w-3 h-3 text-primary" />
+                  <span className="text-muted-foreground">Sọc: <span className="font-bold text-foreground">{7 - stripeRemaining}/7</span></span>
+                </>
+              )}
+            </div>
+          )}
         </div>
         <Button
           variant="ghost"
@@ -556,6 +690,17 @@ const Pool8Ball = () => {
           <Trophy className="w-3 h-3" />
         </Button>
       </div>
+
+      {/* Player type badge */}
+      {playerType && !gameOver && (
+        <div className={`text-[10px] px-2 py-0.5 rounded-full ${
+          playerType === "solid" 
+            ? "bg-blue-500/20 text-blue-400" 
+            : "bg-orange-500/20 text-orange-400"
+        }`}>
+          {playerType === "solid" ? "🔵 Bi ĐẶC (1-7)" : "🟠 Bi SỌC (9-15)"} → Sau đó đánh bi 8
+        </div>
+      )}
 
       <motion.canvas
         ref={canvasRef}
@@ -573,13 +718,16 @@ const Pool8Ball = () => {
         animate={{ opacity: 1 }}
       />
 
-      {message && (
+      {/* Messages */}
+      {(message || foulMessage) && (
         <motion.p
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="text-sm font-medium text-primary"
+          className={`text-xs font-medium ${
+            foulMessage ? "text-destructive" : gameWon ? "text-green-500" : "text-primary"
+          }`}
         >
-          {message}
+          {foulMessage || message}
         </motion.p>
       )}
 
@@ -589,7 +737,13 @@ const Pool8Ball = () => {
           {pocketedBalls.map((num, i) => (
             <div
               key={i}
-              className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+              className={`w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold border ${
+                num >= 1 && num <= 7 
+                  ? "border-blue-400" 
+                  : num >= 9 
+                    ? "border-orange-400" 
+                    : "border-gray-400"
+              }`}
               style={{
                 backgroundColor: BALL_COLORS[num]?.color || "#888",
                 color: num === 8 ? "#fff" : "#000",
