@@ -1,9 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Shield, Copy, Loader2, Users, Clock, CheckCircle } from "lucide-react";
+import { Shield, Copy, Loader2, Users, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +26,7 @@ interface TransactionData {
   room_id: string;
   room_password: string;
   seller_id: string | null;
+  buyer_id: string | null;
   product_name: string;
   amount: number;
   status: string;
@@ -27,6 +39,7 @@ const WaitingLobby = () => {
   const [transaction, setTransaction] = useState<TransactionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [sellerJoined, setSellerJoined] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Fetch initial transaction data
   useEffect(() => {
@@ -35,7 +48,7 @@ const WaitingLobby = () => {
 
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, room_id, room_password, seller_id, product_name, amount, status")
+        .select("id, room_id, room_password, seller_id, buyer_id, product_name, amount, status")
         .eq("id", transactionId)
         .maybeSingle();
 
@@ -109,6 +122,36 @@ const WaitingLobby = () => {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Đã sao chép", description: `${label} đã được sao chép` });
+  };
+
+  const handleCancelRoom = async () => {
+    if (!transactionId || !user?.id) return;
+    
+    setIsCancelling(true);
+    try {
+      const { error } = await supabase
+        .from("transactions")
+        .update({ status: "cancelled" })
+        .eq("id", transactionId)
+        .eq("buyer_id", user.id)
+        .eq("status", "pending");
+
+      if (error) throw error;
+
+      toast({
+        title: "Đã hủy phòng",
+        description: "Phòng giao dịch đã được hủy thành công",
+      });
+      navigate("/dashboard");
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể hủy phòng. Vui lòng thử lại.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   if (loading) {
@@ -261,6 +304,39 @@ const WaitingLobby = () => {
               >
                 {sellerJoined ? "Đang chuyển hướng..." : "Vào phòng thủ công"}
               </Button>
+
+              {/* Cancel room button */}
+              {!sellerJoined && transaction.buyer_id === user?.id && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                      disabled={isCancelling}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      {isCancelling ? "Đang hủy..." : "Hủy phòng chờ"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Xác nhận hủy phòng?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Bạn có chắc muốn hủy phòng giao dịch này? Hành động này không thể hoàn tác.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Không, tiếp tục chờ</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleCancelRoom}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Có, hủy phòng
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
 
             </CardContent>
           </Card>
