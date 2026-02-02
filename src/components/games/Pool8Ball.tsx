@@ -824,6 +824,10 @@ const Pool8Ball = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] bg-background flex flex-col"
+          style={{
+            paddingTop: "env(safe-area-inset-top)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+          }}
         >
           {/* Fullscreen header */}
           <div className="flex items-center justify-between px-3 py-2 bg-card border-b">
@@ -850,13 +854,21 @@ const Pool8Ball = () => {
           </div>
 
           {/* Game canvas - full width */}
-          <div className="flex-1 flex items-center justify-center p-2 overflow-hidden">
+          <div className="flex-1 min-h-0 flex items-center justify-center p-2 overflow-hidden">
             <motion.canvas
               ref={canvasRef}
               width={400}
               height={240}
-              className="rounded-lg border border-border cursor-crosshair touch-none max-w-full max-h-full"
-              style={{ width: "100%", height: "auto", maxHeight: "calc(100vh - 120px)" }}
+              className="rounded-lg border border-border cursor-crosshair touch-none"
+              style={{
+                // Use dynamic viewport units to avoid browser UI bars cutting the game.
+                // The wrapper is flexed with min-h-0, so 100% height here stays within visible area.
+                width: "100%",
+                height: "100%",
+                maxWidth: "100%",
+                maxHeight: "100%",
+                aspectRatio: "400 / 240",
+              }}
               onMouseDown={handleStart}
               onMouseMove={handleMove}
               onMouseUp={handleEnd}
