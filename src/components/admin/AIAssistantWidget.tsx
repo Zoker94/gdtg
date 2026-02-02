@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, Loader2, Sparkles, AlertTriangle, Trash2 } from "lucide-react";
+import { Bot, Send, Loader2, Sparkles, X, MessageSquare, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { cn } from "@/lib/utils";
 
 interface Message {
   role: "user" | "assistant";
@@ -17,10 +17,10 @@ interface Message {
 const CHAT_URL = `https://ucfjjcccgoxnfjaqfmws.supabase.co/functions/v1/admin-ai-support`;
 
 const suggestedQuestions = [
-  "Giao dịch gần đây có gì bất thường không?",
-  "Tóm tắt các user bị khóa và lý do",
-  "Liệt kê giao dịch bị hủy/khiếu nại gần đây",
-  "Phân tích rủi ro của hệ thống hôm nay",
+  "Tóm tắt tình hình giao dịch hôm nay",
+  "Có rủi ro lừa đảo nào cần lưu ý không?",
+  "Liệt kê các khiếu nại đang xử lý",
+  "Phân tích doanh thu và phí thu được",
 ];
 
 export const AIAssistantWidget = () => {
@@ -28,6 +28,7 @@ export const AIAssistantWidget = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -36,6 +37,45 @@ export const AIAssistantWidget = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const parseGeminiStream = async (
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    onDelta: (text: string) => void,
+    onDone: () => void
+  ) => {
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process complete SSE events
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              onDelta(text);
+            }
+          } catch {
+            // Ignore parse errors for incomplete chunks
+          }
+        }
+      }
+    }
+
+    onDone();
+  };
 
   const streamChat = async (userMessage: string) => {
     if (!session?.access_token) {
@@ -65,54 +105,27 @@ export const AIAssistantWidget = () => {
       if (!resp.body) throw new Error("No response body");
 
       const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
       let assistantContent = "";
 
       // Add empty assistant message
       setMessages([...newMessages, { role: "assistant", content: "" }]);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        textBuffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              assistantContent += content;
-              setMessages((prev) => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { role: "assistant", content: assistantContent };
-                return updated;
-              });
-            }
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
-        }
-      }
+      await parseGeminiStream(
+        reader,
+        (text) => {
+          assistantContent += text;
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: "assistant", content: assistantContent };
+            return updated;
+          });
+        },
+        () => setIsLoading(false)
+      );
     } catch (error) {
       console.error("AI chat error:", error);
       toast.error(error instanceof Error ? error.message : "Lỗi kết nối AI");
-      // Remove the failed message
       setMessages(messages);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -141,46 +154,71 @@ export const AIAssistantWidget = () => {
   };
 
   return (
-    <Card className="h-[calc(100vh-200px)] flex flex-col">
-      <CardHeader className="pb-3 border-b">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+    <>
+      {/* Toggle Button */}
+      <Button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg",
+          "bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
+          isOpen && "rotate-90"
+        )}
+        size="icon"
+      >
+        {isOpen ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
+      </Button>
+
+      {/* Sidebar Chat */}
+      <div
+        className={cn(
+          "fixed top-0 right-0 z-40 h-full w-[400px] max-w-full",
+          "bg-background/95 backdrop-blur-xl border-l shadow-2xl",
+          "transform transition-transform duration-300 ease-in-out",
+          isOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-background/80">
+          <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10">
               <Bot className="h-5 w-5 text-primary" />
             </div>
-            AI Hỗ Trợ Quản Trị
-            <Badge variant="secondary" className="ml-2">
-              <Sparkles className="h-3 w-3 mr-1" />
-              Gemini
-            </Badge>
-          </CardTitle>
+            <div>
+              <h3 className="font-semibold flex items-center gap-2">
+                AI Giám đốc Vận hành
+                <Badge variant="secondary" className="text-xs">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Gemini
+                </Badge>
+              </h3>
+              <p className="text-xs text-muted-foreground">Hỗ trợ phân tích dữ liệu hệ thống</p>
+            </div>
+          </div>
           {messages.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearChat}>
-              <Trash2 className="h-4 w-4 mr-1" />
-              Xóa chat
+            <Button variant="ghost" size="sm" onClick={clearChat} className="text-muted-foreground">
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
-      </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        {/* Messages */}
+        <ScrollArea className="h-[calc(100%-180px)] p-4" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center py-8">
               <div className="p-4 rounded-full bg-primary/10 mb-4">
-                <Bot className="h-12 w-12 text-primary" />
+                <Bot className="h-10 w-10 text-primary" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Xin chào Admin!</h3>
-              <p className="text-muted-foreground mb-6 max-w-md">
-                Tôi có thể giúp bạn phân tích giao dịch, kiểm tra user nghi vấn, hoặc tóm tắt các hoạt động bất thường.
+              <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+                Tôi có thể phân tích giao dịch, doanh thu, rủi ro lừa đảo và tóm tắt tình hình hệ thống.
               </p>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-col gap-2 w-full max-w-xs">
                 {suggestedQuestions.map((q, i) => (
                   <Button
                     key={i}
                     variant="outline"
                     size="sm"
-                    className="text-xs"
+                    className="text-xs justify-start h-auto py-2 px-3 whitespace-normal text-left"
                     onClick={() => handleSuggestion(q)}
                   >
                     {q}
@@ -193,17 +231,18 @@ export const AIAssistantWidget = () => {
               {messages.map((msg, i) => (
                 <div
                   key={i}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                    className={cn(
+                      "max-w-[90%] rounded-2xl px-4 py-3",
                       msg.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted"
-                    }`}
+                    )}
                   >
                     {msg.role === "assistant" ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
                         <ReactMarkdown>{msg.content || "..."}</ReactMarkdown>
                       </div>
                     ) : (
@@ -223,27 +262,40 @@ export const AIAssistantWidget = () => {
           )}
         </ScrollArea>
 
-        <div className="p-4 border-t bg-background">
+        {/* Input */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background/95 backdrop-blur-sm">
           <div className="flex gap-2">
             <Textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Hỏi về giao dịch, user, hoặc chat tự do..."
-              className="min-h-[44px] max-h-[120px] resize-none"
+              placeholder="Hỏi về giao dịch, doanh thu, rủi ro..."
+              className="min-h-[44px] max-h-[100px] resize-none text-sm"
               rows={1}
             />
-            <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon" className="shrink-0">
+            <Button 
+              onClick={handleSend} 
+              disabled={isLoading || !input.trim()} 
+              size="icon" 
+              className="shrink-0"
+            >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            AI có thể đưa ra thông tin không chính xác. Luôn kiểm tra lại dữ liệu quan trọng.
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            AI chỉ có quyền đọc dữ liệu • Không thể chỉnh sửa database
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </>
   );
 };

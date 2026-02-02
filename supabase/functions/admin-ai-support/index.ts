@@ -7,8 +7,50 @@ const corsHeaders = {
 };
 
 interface ChatMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
+  role: "user" | "model";
+  parts: { text: string }[];
+}
+
+// Filter sensitive columns - only return non-sensitive data
+function sanitizeTransaction(tx: any) {
+  return {
+    id: tx.id,
+    transaction_code: tx.transaction_code,
+    room_id: tx.room_id,
+    status: tx.status,
+    amount: tx.amount,
+    product_name: tx.product_name,
+    category: tx.category,
+    platform_fee_percent: tx.platform_fee_percent,
+    platform_fee_amount: tx.platform_fee_amount,
+    seller_receives: tx.seller_receives,
+    fee_bearer: tx.fee_bearer,
+    buyer_confirmed: tx.buyer_confirmed,
+    seller_confirmed: tx.seller_confirmed,
+    dispute_reason: tx.dispute_reason,
+    dispute_time_hours: tx.dispute_time_hours,
+    created_at: tx.created_at,
+    updated_at: tx.updated_at,
+    deposited_at: tx.deposited_at,
+    shipped_at: tx.shipped_at,
+    completed_at: tx.completed_at,
+    dispute_at: tx.dispute_at,
+  };
+}
+
+function sanitizeProfile(profile: any) {
+  return {
+    user_id: profile.user_id,
+    full_name: profile.full_name,
+    reputation_score: profile.reputation_score,
+    total_transactions: profile.total_transactions,
+    balance: profile.balance,
+    kyc_status: profile.kyc_status,
+    is_banned: profile.is_banned,
+    is_suspicious: profile.is_suspicious,
+    is_balance_frozen: profile.is_balance_frozen,
+    created_at: profile.created_at,
+  };
 }
 
 serve(async (req) => {
@@ -59,251 +101,208 @@ serve(async (req) => {
       });
     }
 
-    const { messages, query } = await req.json();
-    const userMessage = messages[messages.length - 1]?.content || "";
+    const { messages } = await req.json();
 
-    // Use service role client to query data
+    // Use service role client to query data (READ ONLY)
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // ALWAYS fetch recent transactions for context
-    const { data: allTransactions, error: txError } = await serviceClient
+    // ============ FETCH DATA FOR RAG CONTEXT ============
+    
+    // 1. Fetch recent transactions (sanitized)
+    const { data: rawTransactions } = await serviceClient
       .from("transactions")
       .select("*")
       .order("created_at", { ascending: false })
+      .limit(100);
+
+    const transactions = (rawTransactions || []).map(sanitizeTransaction);
+
+    // 2. Fetch profiles/users (sanitized)
+    const { data: rawProfiles } = await serviceClient
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    const profiles = (rawProfiles || []).map(sanitizeProfile);
+
+    // 3. Fetch disputed transactions (as "Disputes")
+    const { data: rawDisputes } = await serviceClient
+      .from("transactions")
+      .select("*")
+      .eq("status", "disputed")
+      .order("dispute_at", { ascending: false })
       .limit(50);
 
-    let transactionContext = "";
-    
-    if (txError) {
-      console.error("Error fetching transactions:", txError);
-      transactionContext = "Lỗi khi truy vấn dữ liệu giao dịch.";
-    } else if (!allTransactions || allTransactions.length === 0) {
-      transactionContext = "THÔNG BÁO: Hiện tại chưa có giao dịch nào trong hệ thống.";
-    } else {
-      // Build summary of all transactions
-      const statusCounts: Record<string, number> = {};
-      let totalAmount = 0;
-      
-      allTransactions.forEach(tx => {
-        statusCounts[tx.status] = (statusCounts[tx.status] || 0) + 1;
-        totalAmount += tx.amount || 0;
-      });
+    const disputes = (rawDisputes || []).map(sanitizeTransaction);
 
-      transactionContext = `
-TỔNG QUAN GIAO DỊCH TRONG HỆ THỐNG (${allTransactions.length} giao dịch gần nhất):
-- Tổng số tiền: ${totalAmount.toLocaleString('vi-VN')} VNĐ
-- Phân bổ trạng thái: ${Object.entries(statusCounts).map(([s, c]) => `${s}: ${c}`).join(', ')}
+    // 4. Today's statistics
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayTransactions } = await serviceClient
+      .from("transactions")
+      .select("*")
+      .gte("created_at", today);
 
-DANH SÁCH GIAO DỊCH CHI TIẾT:
-${allTransactions.map((tx, i) => `
+    const todayStats = {
+      total_count: todayTransactions?.length || 0,
+      total_amount: todayTransactions?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0,
+      completed_count: todayTransactions?.filter(tx => tx.status === 'completed').length || 0,
+      disputed_count: todayTransactions?.filter(tx => tx.status === 'disputed').length || 0,
+      pending_count: todayTransactions?.filter(tx => tx.status === 'pending').length || 0,
+      total_fee: todayTransactions?.reduce((sum, tx) => sum + (tx.platform_fee_amount || 0), 0) || 0,
+    };
+
+    // 5. Risk alerts
+    const { data: riskAlerts } = await serviceClient
+      .from("risk_alerts")
+      .select("*")
+      .eq("is_resolved", false)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    // 6. Suspicious users
+    const { data: suspiciousUsers } = await serviceClient
+      .from("profiles")
+      .select("user_id, full_name, suspicious_reason, suspicious_at, is_banned, ban_reason")
+      .or("is_suspicious.eq.true,is_banned.eq.true")
+      .limit(20);
+
+    // ============ BUILD CONTEXT ============
+    const dataContext = `
+=== DỮ LIỆU HỆ THỐNG (CHỈ ĐỌC - KHÔNG ĐƯỢC CHỈNH SỬA) ===
+
+📊 THỐNG KÊ HÔM NAY (${today}):
+- Tổng giao dịch: ${todayStats.total_count}
+- Tổng giá trị: ${todayStats.total_amount.toLocaleString('vi-VN')} VNĐ
+- Hoàn thành: ${todayStats.completed_count}
+- Khiếu nại: ${todayStats.disputed_count}
+- Đang chờ: ${todayStats.pending_count}
+- Phí platform thu được: ${todayStats.total_fee.toLocaleString('vi-VN')} VNĐ
+
+📋 GIAO DỊCH GẦN ĐÂY (${transactions.length} giao dịch):
+${transactions.length === 0 ? "Chưa có giao dịch nào trong hệ thống." : 
+  transactions.slice(0, 30).map((tx, i) => `
 ${i + 1}. [${tx.transaction_code}] - ${tx.status.toUpperCase()}
-   - ID: ${tx.id}
-   - Room ID: ${tx.room_id || 'N/A'}
    - Số tiền: ${tx.amount?.toLocaleString('vi-VN')} VNĐ
    - Sản phẩm: ${tx.product_name}
-   - Danh mục: ${tx.category || 'N/A'}
-   - Phí: ${tx.platform_fee_amount?.toLocaleString('vi-VN')} VNĐ (${tx.platform_fee_percent}%)
-   - Seller nhận: ${tx.seller_receives?.toLocaleString('vi-VN')} VNĐ
-   - Buyer ID: ${tx.buyer_id || 'Chưa có'}
-   - Seller ID: ${tx.seller_id || 'Chưa có'}
-   - Buyer xác nhận: ${tx.buyer_confirmed ? 'Có' : 'Chưa'}
-   - Seller xác nhận: ${tx.seller_confirmed ? 'Có' : 'Chưa'}
-   - Lý do khiếu nại: ${tx.dispute_reason || 'Không'}
-   - Tạo lúc: ${tx.created_at}
-   - Cập nhật: ${tx.updated_at}
+   - Danh mục: ${tx.category || 'Khác'}
+   - Phí: ${tx.platform_fee_amount?.toLocaleString('vi-VN')} VNĐ
+   - Tạo: ${tx.created_at}
 `).join('')}
-`;
 
-      // If user asks about a specific transaction, add more detail
-      const transactionMatch = userMessage.match(/(?:giao dịch|transaction|GD|id|ID|#)\s*[#:]?\s*([a-zA-Z0-9-]+)/i);
-      
-      if (transactionMatch) {
-        const transactionId = transactionMatch[1];
-        
-        // Try to find by ID or transaction_code
-        const { data: transaction } = await serviceClient
-          .from("transactions")
-          .select("*")
-          .or(`id.eq.${transactionId},transaction_code.ilike.%${transactionId}%,room_id.eq.${transactionId}`)
-          .limit(1)
-          .maybeSingle();
+⚠️ KHIẾU NẠI ĐANG XỬ LÝ (${disputes.length} vụ):
+${disputes.length === 0 ? "Không có khiếu nại nào đang xử lý." :
+  disputes.map((d, i) => `
+${i + 1}. [${d.transaction_code}] - ${d.amount?.toLocaleString('vi-VN')} VNĐ
+   - Lý do: ${d.dispute_reason || 'Chưa rõ'}
+   - Khiếu nại lúc: ${d.dispute_at}
+`).join('')}
 
-        if (transaction) {
-          // Get buyer and seller profiles
-          const [buyerResult, sellerResult] = await Promise.all([
-            transaction.buyer_id 
-              ? serviceClient.from("profiles").select("full_name, reputation_score, is_banned, is_suspicious, kyc_status").eq("user_id", transaction.buyer_id).maybeSingle()
-              : null,
-            transaction.seller_id
-              ? serviceClient.from("profiles").select("full_name, reputation_score, is_banned, is_suspicious, kyc_status").eq("user_id", transaction.seller_id).maybeSingle()
-              : null,
-          ]);
+👥 NGƯỜI DÙNG (${profiles.length} tài khoản):
+- Tổng số dư hệ thống: ${profiles.reduce((sum, p) => sum + (p.balance || 0), 0).toLocaleString('vi-VN')} VNĐ
+- Đã KYC: ${profiles.filter(p => p.kyc_status === 'approved').length}
+- Chờ KYC: ${profiles.filter(p => p.kyc_status === 'pending').length}
 
-          transactionContext += `
+🚨 CẢNH BÁO RỦI RO (${riskAlerts?.length || 0} cảnh báo chưa xử lý):
+${!riskAlerts || riskAlerts.length === 0 ? "Không có cảnh báo rủi ro nào." :
+  riskAlerts.slice(0, 10).map((alert, i) => `
+${i + 1}. [${alert.alert_type}] - ${alert.description}
+   - Tạo: ${alert.created_at}
+`).join('')}
 
-=== CHI TIẾT GIAO DỊCH ĐƯỢC HỎI: ${transactionId} ===
-- ID: ${transaction.id}
-- Mã giao dịch: ${transaction.transaction_code}
-- Room ID: ${transaction.room_id}
-- Trạng thái: ${transaction.status}
-- Số tiền: ${transaction.amount?.toLocaleString('vi-VN')} VNĐ
-- Phí platform: ${transaction.platform_fee_amount?.toLocaleString('vi-VN')} VNĐ (${transaction.platform_fee_percent}%)
-- Seller nhận: ${transaction.seller_receives?.toLocaleString('vi-VN')} VNĐ
-- Sản phẩm: ${transaction.product_name}
-- Mô tả: ${transaction.product_description || 'Không có'}
-- Danh mục: ${transaction.category}
-- Người chịu phí: ${transaction.fee_bearer}
-- Thời gian khiếu nại: ${transaction.dispute_time_hours}h
-- Lý do khiếu nại: ${transaction.dispute_reason || 'Không có'}
-- Buyer đã xác nhận: ${transaction.buyer_confirmed ? 'Có' : 'Chưa'}
-- Seller đã xác nhận: ${transaction.seller_confirmed ? 'Có' : 'Chưa'}
-- Tạo lúc: ${transaction.created_at}
-- Cập nhật: ${transaction.updated_at}
-- Hoàn thành: ${transaction.completed_at || 'Chưa'}
-- Đã cọc: ${transaction.deposited_at || 'Chưa'}
-- Đang giao: ${transaction.shipped_at || 'Chưa'}
-- Khiếu nại lúc: ${transaction.dispute_at || 'Không'}
-
-THÔNG TIN NGƯỜI MUA:
-${buyerResult?.data ? `
-- Tên: ${buyerResult.data.full_name || 'Chưa cập nhật'}
-- Điểm uy tín: ${buyerResult.data.reputation_score}
-- Bị ban: ${buyerResult.data.is_banned ? 'Có' : 'Không'}
-- Nghi vấn: ${buyerResult.data.is_suspicious ? 'Có' : 'Không'}
-- KYC: ${buyerResult.data.kyc_status}
-` : 'Chưa có buyer tham gia'}
-
-THÔNG TIN NGƯỜI BÁN:
-${sellerResult?.data ? `
-- Tên: ${sellerResult.data.full_name || 'Chưa cập nhật'}
-- Điểm uy tín: ${sellerResult.data.reputation_score}
-- Bị ban: ${sellerResult.data.is_banned ? 'Có' : 'Không'}
-- Nghi vấn: ${sellerResult.data.is_suspicious ? 'Có' : 'Không'}
-- KYC: ${sellerResult.data.kyc_status}
-` : 'Chưa có seller tham gia'}
-`;
-        } else {
-          transactionContext += `\n\nKhông tìm thấy giao dịch cụ thể với ID/mã "${transactionId}" trong hệ thống.`;
-        }
-      }
-    }
-
-    // Check if asking about banned/suspicious users
-    let userContext = "";
-    if (userMessage.match(/(?:khóa|ban|cấm|nghi vấn|suspicious)/i)) {
-      const { data: bannedUsers } = await serviceClient
-        .from("profiles")
-        .select("user_id, full_name, is_banned, ban_reason, banned_at, is_suspicious, suspicious_reason, suspicious_at")
-        .or("is_banned.eq.true,is_suspicious.eq.true")
-        .limit(10);
-
-      if (bannedUsers && bannedUsers.length > 0) {
-        userContext = `
-DANH SÁCH USER BỊ KHÓA/NGHI VẤN GẦN ĐÂY:
-${bannedUsers.map((u, i) => `
+🔴 TÀI KHOẢN NGHI VẤN/BỊ KHÓA (${suspiciousUsers?.length || 0}):
+${!suspiciousUsers || suspiciousUsers.length === 0 ? "Không có tài khoản nghi vấn." :
+  suspiciousUsers.map((u, i) => `
 ${i + 1}. ${u.full_name || 'Chưa có tên'} (ID: ${u.user_id})
-   - Bị ban: ${u.is_banned ? `Có - Lý do: ${u.ban_reason || 'Không rõ'} - Lúc: ${u.banned_at}` : 'Không'}
-   - Nghi vấn: ${u.is_suspicious ? `Có - Lý do: ${u.suspicious_reason || 'Không rõ'} - Lúc: ${u.suspicious_at}` : 'Không'}
+   - Bị ban: ${u.is_banned ? `Có - ${u.ban_reason}` : 'Không'}
+   - Nghi vấn: ${u.suspicious_reason || 'Không'}
 `).join('')}
 `;
-      }
-    }
 
-    // Check for cancelled/disputed transactions
-    let cancelContext = "";
-    if (userMessage.match(/(?:hủy|cancel|dispute|khiếu nại|refund|hoàn)/i)) {
-      const { data: cancelledTx } = await serviceClient
-        .from("transactions")
-        .select("id, transaction_code, status, dispute_reason, updated_at, amount")
-        .in("status", ["cancelled", "disputed", "refunded"])
-        .order("updated_at", { ascending: false })
-        .limit(5);
+    // ============ SYSTEM INSTRUCTION ============
+    const systemInstruction = `Bạn là **Giám đốc Vận hành** của hệ thống Giao dịch Trung gian (GDTG).
 
-      if (cancelledTx && cancelledTx.length > 0) {
-        cancelContext = `
-GIAO DỊCH HỦY/KHIẾU NẠI GẦN ĐÂY:
-${cancelledTx.map((t, i) => `
-${i + 1}. ${t.transaction_code} - ${t.status.toUpperCase()}
-   - Số tiền: ${t.amount?.toLocaleString('vi-VN')} VNĐ
-   - Lý do: ${t.dispute_reason || 'Không có lý do'}
-   - Cập nhật: ${t.updated_at}
-`).join('')}
-`;
-      }
-    }
+## VAI TRÒ VÀ TRÁCH NHIỆM:
+- Phân tích dữ liệu giao dịch, phát hiện rủi ro lừa đảo
+- Tóm tắt tình hình kinh doanh, doanh thu, xu hướng
+- Đánh giá người dùng nghi vấn và đề xuất hành động
+- Trả lời các câu hỏi của Admin về hoạt động hệ thống
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+## NGUYÊN TẮC BẮT BUỘC:
+1. **CHỈ ĐỌC**: Bạn KHÔNG có quyền chỉnh sửa database. Chỉ phân tích và tư vấn.
+2. **DỰA TRÊN DỮ LIỆU**: Mọi câu trả lời PHẢI dựa trên dữ liệu thực được cung cấp bên dưới. KHÔNG ĐƯỢC bịa đặt.
+3. **NẾU KHÔNG CÓ DỮ LIỆU**: Báo rõ "Không có dữ liệu" hoặc "Chưa có giao dịch".
+4. **BẢO MẬT**: Không tiết lộ thông tin nhạy cảm (mật khẩu, token, số tài khoản đầy đủ).
 
-    const systemPrompt = `Bạn là AI hỗ trợ quản trị viên của nền tảng giao dịch trung gian GDTG. 
+## CÁCH PHÂN TÍCH:
+- Điểm uy tín < 30: Đáng ngờ, cần theo dõi
+- Nhiều khiếu nại từ 1 user: Có thể là scammer hoặc khách hàng khó tính
+- Giao dịch giá trị lớn (>10tr): Cần kiểm tra kỹ KYC
+- Nạp-rút nhanh không giao dịch: Dấu hiệu rửa tiền
+- Nhiều tài khoản dùng chung ngân hàng: Multi-account
 
-QUAN TRỌNG: Bạn PHẢI trả lời dựa trên dữ liệu thực tế được cung cấp bên dưới. KHÔNG ĐƯỢC bịa đặt hoặc đoán thông tin về giao dịch. Nếu không có dữ liệu, hãy nói rõ là chưa có giao dịch hoặc không tìm thấy.
+## ĐỊNH DẠNG TRẢ LỜI:
+- Sử dụng Markdown để định dạng rõ ràng
+- Có thể dùng bảng khi so sánh số liệu
+- Bullet points cho danh sách
+- Bold cho thông tin quan trọng
 
-Vai trò của bạn:
-- Phân tích giao dịch và phát hiện bất thường DỰA TRÊN DỮ LIỆU THỰC
-- Tóm tắt lý do khóa tài khoản hoặc hủy giao dịch
-- Hỗ trợ admin đưa ra quyết định
-- Trả lời các câu hỏi về hoạt động của hệ thống
-- Có thể nói chuyện thân thiện khi admin cần
+${dataContext}`;
 
-Khi phân tích giao dịch, hãy chú ý:
-- Điểm uy tín thấp (<30) là đáng ngờ
-- User bị ban hoặc nghi vấn cần cảnh báo
-- KYC chưa xác thực có thể là rủi ro
-- Giao dịch số tiền lớn cần kiểm tra kỹ
-- Thời gian giao dịch bất thường (quá nhanh hoặc quá chậm)
-- Khiếu nại liên tục từ cùng một user
-
-Trả lời bằng tiếng Việt, ngắn gọn và rõ ràng. Khi có dữ liệu, hãy phân tích chi tiết.
-
-=== DỮ LIỆU THỰC TẾ TỪ HỆ THỐNG ===
-${transactionContext}
-${userContext}
-${cancelContext}
-`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        stream: true,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required, please add funds." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+    // ============ CALL GEMINI API ============
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY is not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Convert messages to Gemini format
+    const geminiMessages: ChatMessage[] = messages.map((msg: any) => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }],
+    }));
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          contents: geminiMessages,
+          generationConfig: {
+            temperature: 0.7,
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: 8192,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Gemini API error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      return new Response(JSON.stringify({ error: "Gemini API error" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Stream the response
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
