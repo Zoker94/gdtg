@@ -423,22 +423,24 @@ const Pool8Ball = () => {
       ctx.fill();
 
       // Ball body
-      ctx.beginPath();
-      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-      
       if (ball.isStriped && ball.number !== 0) {
         // Striped ball - white base with colored stripe
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
         ctx.fillStyle = "#FFFFFF";
         ctx.fill();
         
+        // Draw colored stripe in the middle
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
         ctx.clip();
         ctx.fillStyle = ball.color;
-        ctx.fillRect(ball.x - ball.radius, ball.y - ball.radius / 2, ball.radius * 2, ball.radius);
+        ctx.fillRect(ball.x - ball.radius, ball.y - ball.radius * 0.4, ball.radius * 2, ball.radius * 0.8);
         ctx.restore();
-        ctx.save();
       } else {
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
         ctx.fillStyle = ball.color;
         ctx.fill();
       }
@@ -449,18 +451,18 @@ const Pool8Ball = () => {
       ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
       ctx.fill();
 
-      // Ball number
+      // Ball number (white circle with number)
       if (ball.number > 0) {
         ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius / 2, 0, Math.PI * 2);
+        ctx.arc(ball.x, ball.y, ball.radius * 0.45, 0, Math.PI * 2);
         ctx.fillStyle = "#FFFFFF";
         ctx.fill();
         
         ctx.fillStyle = "#000";
-        ctx.font = "bold 8px Arial";
+        ctx.font = `bold ${Math.floor(ball.radius * 0.7)}px Arial`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(ball.number.toString(), ball.x, ball.y);
+        ctx.fillText(ball.number.toString(), ball.x, ball.y + 1);
       }
     });
 
