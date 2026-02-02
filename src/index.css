@@ -43,6 +43,7 @@
     --warning: 38 92% 50%;
     --gradient-start: 24 100% 50%;
     --gradient-end: 32 100% 55%;
+    --shadow-card: 0 2px 8px -2px hsl(var(--foreground) / 0.08);
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 20% 10%;
@@ -90,6 +91,7 @@
     --warning: 38 92% 50%;
     --gradient-start: 24 100% 50%;
     --gradient-end: 32 100% 55%;
+    --shadow-card: 0 2px 8px -2px hsl(var(--foreground) / 0.08);
 
     --sidebar-background: 220 20% 10%;
     --sidebar-foreground: 0 0% 95%;
@@ -146,4 +148,23 @@
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Card style variants */
+:root.card-flat .card-themed,
+.card-flat .card-themed {
+  box-shadow: none;
+  border: none;
+}
+
+:root.card-bordered .card-themed,
+.card-bordered .card-themed {
+  box-shadow: none;
+  border: 1px solid hsl(var(--border));
+}
+
+:root.card-elevated .card-themed,
+.card-elevated .card-themed {
+  box-shadow: var(--shadow-card);
+  border: none;
 }

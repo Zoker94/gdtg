@@ -66,6 +66,7 @@ import {
   LayoutDashboard,
   Snowflake,
   History,
+  Paintbrush,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -127,6 +128,7 @@ const menuItems = [
   { title: "KYC", value: "kyc", icon: IdCard },
   { title: "Rút tiền", value: "withdrawals", icon: ArrowDownToLine },
   { title: "Thông báo", value: "announcements", icon: Megaphone },
+  { title: "Giao diện", value: "appearance", icon: Paintbrush },
   { title: "Lịch sử", value: "history", icon: History },
   { title: "Cài đặt", value: "settings", icon: Settings },
 ];
@@ -814,11 +816,13 @@ const AdminDashboard = () => {
           </div>
         );
 
+      case "appearance":
+        return <ThemeSelectorWidget />;
+
       case "settings":
         return (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <ThemeSelectorWidget />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <PlatformSettingsWidget />
               <AdminApiKeysWidget />
             </div>
