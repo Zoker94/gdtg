@@ -29,6 +29,22 @@ const useOrientation = () => {
   return isPortrait;
 };
 
+// Some phones in landscape exceed 768px CSS width, so `useIsMobile()` becomes false.
+// Detect handheld devices by coarse pointer (touch) as a fallback.
+const useIsCoarsePointer = () => {
+  const [isCoarse, setIsCoarse] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(pointer: coarse)");
+    const onChange = () => setIsCoarse(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  return isCoarse;
+};
+
 interface Ball {
   x: number;
   y: number;
@@ -104,7 +120,9 @@ const Pool8Ball = () => {
   const { playSound } = useGameSound();
   const { leaderboard, addScore } = useGameLeaderboard("pool");
   const isMobile = useIsMobile();
+  const isCoarsePointer = useIsCoarsePointer();
   const isPortrait = useOrientation();
+  const isHandheld = isMobile || isCoarsePointer;
 
   const tableWidth = 360;
   const tableHeight = 200;
@@ -767,11 +785,11 @@ const Pool8Ball = () => {
 
   const solidRemaining = balls.filter(b => b.number >= 1 && b.number <= 7 && !b.isPocketed).length;
   const stripeRemaining = balls.filter(b => b.number >= 9 && b.number <= 15 && !b.isPocketed).length;
-  // Auto-enable fullscreen when mobile is in landscape mode
-  const shouldAutoFullscreen = isMobile && !isPortrait;
+  // Auto-enable fullscreen when handheld device is in landscape mode
+  const shouldAutoFullscreen = isHandheld && !isPortrait;
 
-  // Show rotate screen overlay on mobile portrait
-  if (isMobile && isPortrait) {
+  // Show rotate screen overlay on handheld portrait
+  if (isHandheld && isPortrait) {
     return (
       <motion.div 
         initial={{ opacity: 0 }}
@@ -890,7 +908,7 @@ const Pool8Ball = () => {
           <span className="text-xs font-bold text-foreground">{score}đ</span>
         </div>
         <div className="flex items-center gap-1">
-          {isMobile && (
+          {isHandheld && (
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={toggleFullscreen}>
               <Maximize2 className="w-3 h-3" />
             </Button>
