@@ -18,10 +18,12 @@ interface Message {
 const CHAT_URL = `https://ucfjjcccgoxnfjaqfmws.supabase.co/functions/v1/admin-ai-support`;
 
 const suggestedQuestions = [
-  "Tóm tắt tình hình giao dịch hôm nay",
-  "Có rủi ro lừa đảo nào cần lưu ý không?",
-  "Liệt kê các khiếu nại đang xử lý",
-  "Phân tích doanh thu và phí thu được",
+  "🔍 Phát hiện giao dịch đáng ngờ/lừa đảo",
+  "🔗 Kiểm tra multi-account (cùng STK ngân hàng)",
+  "⚠️ Liệt kê các khiếu nại cần xử lý và gợi ý hành động",
+  "📝 Đánh giá KYC đang chờ duyệt",
+  "📊 Tóm tắt doanh thu và thống kê hôm nay",
+  "🔴 Danh sách tài khoản nghi vấn cần giám sát",
 ];
 
 export const AIAssistantWidget = () => {
@@ -282,13 +284,13 @@ export const AIAssistantWidget = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm flex items-center gap-2">
-                    AI Giám đốc Vận hành
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    AI An ninh & Phân tích
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                       <Sparkles className="h-2.5 w-2.5 mr-0.5" />
                       Groq
                     </Badge>
                   </h3>
-                  <p className="text-xs text-muted-foreground">Hỗ trợ phân tích dữ liệu</p>
+                  <p className="text-xs text-muted-foreground">Phát hiện lừa đảo • Phân tích rủi ro</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
@@ -330,9 +332,9 @@ export const AIAssistantWidget = () => {
                   <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 mb-5">
                     <Bot className="h-10 w-10 text-primary" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">Xin chào Admin!</h3>
+                  <h3 className="text-lg font-semibold mb-2">AI An ninh & Phân tích</h3>
                   <p className="text-sm text-muted-foreground mb-6 max-w-xs leading-relaxed">
-                    Tôi có thể phân tích giao dịch, doanh thu, rủi ro lừa đảo và tóm tắt tình hình hệ thống.
+                    Tôi có thể phát hiện lừa đảo, multi-account, đánh giá rủi ro người dùng, gợi ý xử lý dispute và tóm tắt thống kê.
                   </p>
                   <div className="flex flex-col gap-2 w-full max-w-xs">
                     {suggestedQuestions.map((q, i) => (
@@ -441,7 +443,7 @@ export const AIAssistantWidget = () => {
                 </motion.div>
               </div>
               <p className="text-[11px] text-muted-foreground mt-2 text-center">
-                AI chỉ có quyền đọc dữ liệu • Không thể chỉnh sửa database
+                🔒 AI chỉ đọc dữ liệu • Không thể chỉnh sửa số dư hay thông tin nhạy cảm
               </p>
             </div>
           </motion.div>
