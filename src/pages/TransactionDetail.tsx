@@ -47,6 +47,7 @@ import { vi } from "date-fns/locale";
 import { useState, useEffect, useRef } from "react";
 import Footer from "@/components/Footer";
 import { AIAssistantWidget } from "@/components/admin/AIAssistantWidget";
+import TransactionVideoAlert from "@/components/TransactionVideoAlert";
 
 const CATEGORY_LABELS: Record<string, string> = {
   game_account: "Tài khoản game",
@@ -336,6 +337,9 @@ const TransactionDetail = () => {
               <TransactionProgress status={transaction.status} />
             </CardContent>
           </Card>
+
+          {/* Video Recording Alert */}
+          <TransactionVideoAlert />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left Column - Details */}
