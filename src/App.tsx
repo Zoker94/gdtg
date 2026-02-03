@@ -33,6 +33,7 @@ import Messages from "./pages/Messages";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 import Maintenance from "./pages/Maintenance";
+import PopupAnnouncement from "./components/PopupAnnouncement";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const MaintenanceWrapper = ({ children }: { children: React.ReactNode }) => {
 
 const AppRoutes = () => (
   <MaintenanceWrapper>
+    <PopupAnnouncement />
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />

@@ -115,6 +115,7 @@ import ThemeSelectorWidget from "@/components/admin/ThemeSelectorWidget";
 import SuperAdminWidget from "@/components/admin/SuperAdminWidget";
 import { AIAssistantWidget } from "@/components/admin/AIAssistantWidget";
 import SimplePagination, { paginateData, getTotalPages } from "@/components/ui/simple-pagination";
+import PopupAnnouncementWidget from "@/components/admin/PopupAnnouncementWidget";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -771,6 +772,9 @@ const AdminDashboard = () => {
       case "announcements":
         return (
           <div className="space-y-4">
+            {/* Popup Announcement Widget */}
+            <PopupAnnouncementWidget />
+
             <Card>
               <CardHeader className="py-3">
                 <CardTitle className="text-base flex items-center gap-2">
