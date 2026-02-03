@@ -71,6 +71,7 @@ const TransactionDetail = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDepositing, setIsDepositing] = useState(false);
   const [videoAgreed, setVideoAgreed] = useState(false);
+  const [sellerVideoAgreed, setSellerVideoAgreed] = useState(false);
   const previousStatusRef = useRef<string | null>(null);
 
   // Loading screen with minimum duration
@@ -506,15 +507,28 @@ const TransactionDetail = () => {
                         )}
 
                         {isSeller && !transaction.seller_confirmed && (
-                          <Button
-                            onClick={() => handleConfirm("seller")}
-                            variant="outline"
-                            className="w-full"
-                            disabled={confirmTransaction.isPending}
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Xác nhận bán
-                          </Button>
+                          <div className="space-y-3">
+                            <label className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={sellerVideoAgreed}
+                                onChange={(e) => setSellerVideoAgreed(e.target.checked)}
+                                className="mt-0.5 w-4 h-4 accent-primary"
+                              />
+                              <span className="text-sm text-orange-800 dark:text-orange-200">
+                                Tôi đã hiểu quy định phải quay video màn hình để làm bằng chứng nếu có tranh chấp.
+                              </span>
+                            </label>
+                            <Button
+                              onClick={() => handleConfirm("seller")}
+                              variant="outline"
+                              className="w-full"
+                              disabled={confirmTransaction.isPending || !sellerVideoAgreed}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Xác nhận bán
+                            </Button>
+                          </div>
                         )}
 
                         {/* Seller actions */}
