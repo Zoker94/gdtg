@@ -6,104 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-interface ChatMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
-}
-
-// ============ DATA SANITIZATION ============
-function sanitizeTransaction(tx: any) {
-  return {
-    id: tx.id,
-    transaction_code: tx.transaction_code,
-    room_id: tx.room_id,
-    status: tx.status,
-    amount: tx.amount,
-    product_name: tx.product_name,
-    category: tx.category,
-    platform_fee_percent: tx.platform_fee_percent,
-    platform_fee_amount: tx.platform_fee_amount,
-    seller_receives: tx.seller_receives,
-    fee_bearer: tx.fee_bearer,
-    buyer_confirmed: tx.buyer_confirmed,
-    seller_confirmed: tx.seller_confirmed,
-    dispute_reason: tx.dispute_reason,
-    dispute_time_hours: tx.dispute_time_hours,
-    created_at: tx.created_at,
-    updated_at: tx.updated_at,
-    deposited_at: tx.deposited_at,
-    shipped_at: tx.shipped_at,
-    completed_at: tx.completed_at,
-    dispute_at: tx.dispute_at,
-  };
-}
-
-function sanitizeProfile(profile: any) {
-  return {
-    user_id: profile.user_id,
-    full_name: profile.full_name,
-    reputation_score: profile.reputation_score,
-    total_transactions: profile.total_transactions,
-    balance: profile.balance,
-    kyc_status: profile.kyc_status,
-    is_banned: profile.is_banned,
-    is_suspicious: profile.is_suspicious,
-    suspicious_reason: profile.suspicious_reason,
-    is_balance_frozen: profile.is_balance_frozen,
-    balance_freeze_reason: profile.balance_freeze_reason,
-    created_at: profile.created_at,
-  };
-}
-
-// ============ FRAUD DETECTION RULES ============
-function analyzeUserRisk(profile: any, transactions: any[], deposits: any[], withdrawals: any[]): string[] {
-  const risks: string[] = [];
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  // Rule 1: Low reputation with high balance
-  if (profile.reputation_score < 30 && profile.balance > 5000000) {
-    risks.push(`⚠️ Điểm uy tín thấp (${profile.reputation_score}) nhưng số dư cao (${profile.balance.toLocaleString()}đ)`);
-  }
-  
-  // Rule 2: New account with large transactions
-  const accountAge = Math.floor((now.getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24));
-  if (accountAge < 7 && profile.balance > 10000000) {
-    risks.push(`⚠️ Tài khoản mới (${accountAge} ngày) với số dư lớn`);
-  }
-  
-  // Rule 3: High volume today
-  const todayDeposits = deposits.filter(d => new Date(d.created_at) >= today);
-  const todayWithdrawals = withdrawals.filter(w => new Date(w.created_at) >= today);
-  const todayVolume = todayDeposits.reduce((s, d) => s + d.amount, 0) + todayWithdrawals.reduce((s, w) => s + w.amount, 0);
-  if (todayVolume > 50000000) {
-    risks.push(`🔴 Khối lượng giao dịch hôm nay vượt 50 triệu: ${todayVolume.toLocaleString()}đ`);
-  }
-  
-  // Rule 4: Many disputes
-  const userDisputes = transactions.filter(t => t.status === 'disputed');
-  if (userDisputes.length >= 3) {
-    risks.push(`🔴 Nhiều khiếu nại: ${userDisputes.length} vụ`);
-  }
-  
-  return risks;
-}
-
-function detectMultiAccount(profiles: any[], linkedBanks: any[]): { bankNumber: string; users: string[] }[] {
-  const bankToUsers: Record<string, string[]> = {};
-  
-  for (const bank of linkedBanks) {
-    const key = bank.bank_account_number;
-    if (!bankToUsers[key]) bankToUsers[key] = [];
-    const profile = profiles.find(p => p.user_id === bank.user_id);
-    bankToUsers[key].push(profile?.full_name || bank.user_id);
-  }
-  
-  return Object.entries(bankToUsers)
-    .filter(([_, users]) => users.length > 1)
-    .map(([bankNumber, users]) => ({ bankNumber: bankNumber.slice(0, 4) + "***" + bankNumber.slice(-3), users }));
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -155,227 +57,295 @@ serve(async (req) => {
     const userRole = roleData[0].role;
     const { messages } = await req.json();
 
-    // Use service role client to query data (READ ONLY)
+    // Use service role client for full database access (READ ONLY)
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // ============ FETCH DATA FOR RAG CONTEXT ============
+    console.log("[AI Support] Fetching database data...");
+
+    // ============ FETCH ALL DATA WITH FULL DETAILS ============
     
-    // 1. Fetch recent transactions (sanitized)
-    const { data: rawTransactions } = await serviceClient
+    // 1. ALL Transactions (full data)
+    const { data: allTransactions, error: txError } = await serviceClient
       .from("transactions")
       .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
+      .order("created_at", { ascending: false });
+    
+    if (txError) console.error("Error fetching transactions:", txError);
+    const transactions = allTransactions || [];
 
-    const transactions = (rawTransactions || []).map(sanitizeTransaction);
-
-    // 2. Fetch profiles/users (sanitized)
-    const { data: rawProfiles } = await serviceClient
+    // 2. ALL Profiles (full data)
+    const { data: allProfiles, error: profileError } = await serviceClient
       .from("profiles")
       .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
+      .order("created_at", { ascending: false });
+    
+    if (profileError) console.error("Error fetching profiles:", profileError);
+    const profiles = allProfiles || [];
 
-    const profiles = (rawProfiles || []).map(sanitizeProfile);
-
-    // 3. Fetch disputed transactions
-    const { data: rawDisputes } = await serviceClient
-      .from("transactions")
-      .select("*")
-      .eq("status", "disputed")
-      .order("dispute_at", { ascending: false })
-      .limit(50);
-
-    const disputes = (rawDisputes || []).map(sanitizeTransaction);
-
-    // 4. Today's statistics
-    const today = new Date().toISOString().split('T')[0];
-    const { data: todayTransactions } = await serviceClient
-      .from("transactions")
-      .select("*")
-      .gte("created_at", today);
-
-    const todayStats = {
-      total_count: todayTransactions?.length || 0,
-      total_amount: todayTransactions?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0,
-      completed_count: todayTransactions?.filter(tx => tx.status === 'completed').length || 0,
-      disputed_count: todayTransactions?.filter(tx => tx.status === 'disputed').length || 0,
-      pending_count: todayTransactions?.filter(tx => tx.status === 'pending').length || 0,
-      total_fee: todayTransactions?.reduce((sum, tx) => sum + (tx.platform_fee_amount || 0), 0) || 0,
-    };
-
-    // 5. Risk alerts
-    const { data: riskAlerts } = await serviceClient
+    // 3. ALL Risk alerts
+    const { data: allRiskAlerts, error: riskError } = await serviceClient
       .from("risk_alerts")
       .select("*")
-      .eq("is_resolved", false)
-      .order("created_at", { ascending: false })
-      .limit(20);
+      .order("created_at", { ascending: false });
+    
+    if (riskError) console.error("Error fetching risk_alerts:", riskError);
+    const riskAlerts = allRiskAlerts || [];
 
-    // 6. Suspicious users
-    const { data: suspiciousUsers } = await serviceClient
-      .from("profiles")
-      .select("user_id, full_name, suspicious_reason, suspicious_at, is_banned, ban_reason, reputation_score, balance, total_transactions")
-      .or("is_suspicious.eq.true,is_banned.eq.true")
-      .limit(30);
-
-    // 7. KYC pending
-    const { data: pendingKYC } = await serviceClient
-      .from("kyc_submissions")
-      .select("id, user_id, full_name, id_number, status, created_at")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true })
-      .limit(20);
-
-    // 8. Recent deposits & withdrawals for fraud detection
-    const { data: recentDeposits } = await serviceClient
+    // 4. ALL Deposits
+    const { data: allDeposits, error: depositError } = await serviceClient
       .from("deposits")
       .select("*")
-      .eq("status", "completed")
-      .order("created_at", { ascending: false })
-      .limit(100);
+      .order("created_at", { ascending: false });
+    
+    if (depositError) console.error("Error fetching deposits:", depositError);
+    const deposits = allDeposits || [];
 
-    const { data: recentWithdrawals } = await serviceClient
+    // 5. ALL Withdrawals
+    const { data: allWithdrawals, error: withdrawalError } = await serviceClient
       .from("withdrawals")
       .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    // 9. Linked bank accounts for multi-account detection
-    const { data: linkedBanks } = await serviceClient
-      .from("linked_bank_accounts")
-      .select("user_id, bank_account_number, bank_name");
-
-    // ============ AI-POWERED ANALYSIS ============
-    const multiAccounts = detectMultiAccount(rawProfiles || [], linkedBanks || []);
+      .order("created_at", { ascending: false });
     
-    // Analyze suspicious patterns
-    const suspiciousPatterns: string[] = [];
-    for (const profile of (rawProfiles || []).slice(0, 20)) {
-      const userTx = (rawTransactions || []).filter(t => t.buyer_id === profile.user_id || t.seller_id === profile.user_id);
-      const userDeposits = (recentDeposits || []).filter(d => d.user_id === profile.user_id);
-      const userWithdrawals = (recentWithdrawals || []).filter(w => w.user_id === profile.user_id);
-      const risks = analyzeUserRisk(profile, userTx, userDeposits, userWithdrawals);
-      if (risks.length > 0) {
-        suspiciousPatterns.push(`**${profile.full_name || profile.user_id}**: ${risks.join("; ")}`);
+    if (withdrawalError) console.error("Error fetching withdrawals:", withdrawalError);
+    const withdrawals = allWithdrawals || [];
+
+    // 6. ALL KYC submissions
+    const { data: allKYC, error: kycError } = await serviceClient
+      .from("kyc_submissions")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    if (kycError) console.error("Error fetching kyc_submissions:", kycError);
+    const kycSubmissions = allKYC || [];
+
+    // 7. ALL Linked bank accounts
+    const { data: allBanks, error: bankError } = await serviceClient
+      .from("linked_bank_accounts")
+      .select("*");
+    
+    if (bankError) console.error("Error fetching linked_bank_accounts:", bankError);
+    const linkedBanks = allBanks || [];
+
+    // 8. Admin action logs (last 50)
+    const { data: actionLogs, error: logError } = await serviceClient
+      .from("admin_action_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    
+    if (logError) console.error("Error fetching admin_action_logs:", logError);
+
+    console.log(`[AI Support] Data loaded: ${transactions.length} transactions, ${profiles.length} profiles, ${riskAlerts.length} risk alerts, ${deposits.length} deposits, ${withdrawals.length} withdrawals, ${kycSubmissions.length} KYC, ${linkedBanks.length} banks`);
+
+    // ============ CALCULATE STATISTICS ============
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const todayStart = new Date(today);
+    
+    // Today's transactions
+    const todayTx = transactions.filter(tx => new Date(tx.created_at) >= todayStart);
+    
+    // Transaction statistics by status
+    const txStats = {
+      total: transactions.length,
+      pending: transactions.filter(tx => tx.status === 'pending').length,
+      deposited: transactions.filter(tx => tx.status === 'deposited').length,
+      shipping: transactions.filter(tx => tx.status === 'shipping').length,
+      completed: transactions.filter(tx => tx.status === 'completed').length,
+      disputed: transactions.filter(tx => tx.status === 'disputed').length,
+      cancelled: transactions.filter(tx => tx.status === 'cancelled').length,
+      refunded: transactions.filter(tx => tx.status === 'refunded').length,
+    };
+
+    // User statistics
+    const userStats = {
+      total: profiles.length,
+      banned: profiles.filter(p => p.is_banned).length,
+      suspicious: profiles.filter(p => p.is_suspicious).length,
+      frozen: profiles.filter(p => p.is_balance_frozen).length,
+      kycApproved: profiles.filter(p => p.kyc_status === 'approved').length,
+      kycPending: profiles.filter(p => p.kyc_status === 'pending').length,
+      kycRejected: profiles.filter(p => p.kyc_status === 'rejected').length,
+      totalBalance: profiles.reduce((sum, p) => sum + (p.balance || 0), 0),
+    };
+
+    // Deposit statistics
+    const depositStats = {
+      total: deposits.length,
+      pending: deposits.filter(d => d.status === 'pending').length,
+      completed: deposits.filter(d => d.status === 'completed').length,
+      totalAmount: deposits.filter(d => d.status === 'completed').reduce((sum, d) => sum + (d.amount || 0), 0),
+    };
+
+    // Withdrawal statistics
+    const withdrawalStats = {
+      total: withdrawals.length,
+      pending: withdrawals.filter(w => w.status === 'pending').length,
+      onHold: withdrawals.filter(w => w.status === 'on_hold').length,
+      completed: withdrawals.filter(w => w.status === 'completed').length,
+      rejected: withdrawals.filter(w => w.status === 'rejected').length,
+      totalAmount: withdrawals.filter(w => w.status === 'completed').reduce((sum, w) => sum + (w.amount || 0), 0),
+    };
+
+    // Multi-account detection (same bank account number)
+    const bankToUsers: Record<string, { bank: string; users: string[] }> = {};
+    for (const bank of linkedBanks) {
+      const key = bank.bank_account_number;
+      if (!bankToUsers[key]) {
+        bankToUsers[key] = { bank: bank.bank_name, users: [] };
       }
+      const profile = profiles.find(p => p.user_id === bank.user_id);
+      bankToUsers[key].users.push(profile?.full_name || bank.user_id.slice(0, 8));
     }
+    const multiAccounts = Object.entries(bankToUsers)
+      .filter(([_, data]) => data.users.length > 1)
+      .map(([num, data]) => ({
+        bankNumber: num.slice(0, 4) + "***" + num.slice(-3),
+        bankName: data.bank,
+        users: data.users,
+      }));
 
-    // ============ BUILD ENHANCED CONTEXT ============
+    // Revenue calculation
+    const completedTx = transactions.filter(tx => tx.status === 'completed');
+    const totalRevenue = completedTx.reduce((sum, tx) => sum + (tx.platform_fee_amount || 0), 0);
+    const totalVolume = completedTx.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
+    // ============ BUILD COMPREHENSIVE DATA CONTEXT ============
     const dataContext = `
-=== DỮ LIỆU HỆ THỐNG (CHỈ ĐỌC - KHÔNG ĐƯỢC CHỈNH SỬA) ===
+=== DỮ LIỆU HỆ THỐNG THỰC TẾ (${now.toISOString()}) ===
+=== LƯU Ý: ĐÂY LÀ DỮ LIỆU THỰC 100% TỪ DATABASE ===
 
-📊 THỐNG KÊ HÔM NAY (${today}):
-- Tổng giao dịch: ${todayStats.total_count}
-- Tổng giá trị: ${todayStats.total_amount.toLocaleString('vi-VN')} VNĐ
-- Hoàn thành: ${todayStats.completed_count}
-- Khiếu nại: ${todayStats.disputed_count}
-- Đang chờ: ${todayStats.pending_count}
-- Phí platform thu được: ${todayStats.total_fee.toLocaleString('vi-VN')} VNĐ
+📊 TỔNG QUAN HỆ THỐNG:
+┌─────────────────────────────────────────────────────────┐
+│ GIAO DỊCH                                               │
+│ • Tổng số: ${txStats.total}                             │
+│ • Pending: ${txStats.pending} | Deposited: ${txStats.deposited} | Shipping: ${txStats.shipping} │
+│ • Completed: ${txStats.completed} | Disputed: ${txStats.disputed}    │
+│ • Cancelled: ${txStats.cancelled} | Refunded: ${txStats.refunded}    │
+│ • Doanh thu (phí sàn): ${totalRevenue.toLocaleString()} VNĐ         │
+│ • Tổng giá trị GD hoàn thành: ${totalVolume.toLocaleString()} VNĐ   │
+├─────────────────────────────────────────────────────────┤
+│ NGƯỜI DÙNG (${userStats.total} tài khoản)               │
+│ • Bị ban: ${userStats.banned} | Nghi vấn: ${userStats.suspicious} | Đóng băng: ${userStats.frozen} │
+│ • KYC approved: ${userStats.kycApproved} | pending: ${userStats.kycPending} | rejected: ${userStats.kycRejected} │
+│ • Tổng số dư hệ thống: ${userStats.totalBalance.toLocaleString()} VNĐ │
+├─────────────────────────────────────────────────────────┤
+│ NẠP TIỀN (${depositStats.total})                        │
+│ • Chờ xác nhận: ${depositStats.pending} | Đã xác nhận: ${depositStats.completed} │
+│ • Tổng đã nạp: ${depositStats.totalAmount.toLocaleString()} VNĐ      │
+├─────────────────────────────────────────────────────────┤
+│ RÚT TIỀN (${withdrawalStats.total})                     │
+│ • Chờ xử lý: ${withdrawalStats.pending} | Tạm giữ: ${withdrawalStats.onHold} │
+│ • Đã duyệt: ${withdrawalStats.completed} | Từ chối: ${withdrawalStats.rejected} │
+│ • Tổng đã rút: ${withdrawalStats.totalAmount.toLocaleString()} VNĐ   │
+├─────────────────────────────────────────────────────────┤
+│ CẢNH BÁO RỦI RO                                         │
+│ • Tổng: ${riskAlerts.length} | Chưa xử lý: ${riskAlerts.filter(r => !r.is_resolved).length} │
+└─────────────────────────────────────────────────────────┘
 
-📋 GIAO DỊCH GẦN ĐÂY (${transactions.length} giao dịch):
-${transactions.length === 0 ? "Chưa có giao dịch nào trong hệ thống." : 
-  transactions.slice(0, 20).map((tx, i) => `
-${i + 1}. [${tx.transaction_code}] - ${tx.status.toUpperCase()}
-   - Số tiền: ${tx.amount?.toLocaleString('vi-VN')} VNĐ | Phí: ${tx.platform_fee_amount?.toLocaleString('vi-VN')} VNĐ
-   - Sản phẩm: ${tx.product_name} | Danh mục: ${tx.category || 'Khác'}
-   - Tạo: ${tx.created_at}${tx.dispute_reason ? ` | Lý do dispute: ${tx.dispute_reason}` : ''}
-`).join('')}
+📋 CHI TIẾT GIAO DỊCH (${transactions.length} giao dịch):
+${transactions.length === 0 ? "❌ CHƯA CÓ GIAO DỊCH NÀO TRONG HỆ THỐNG." : 
+  transactions.map((tx, i) => `
+${i + 1}. [${tx.transaction_code}] - Trạng thái: ${tx.status.toUpperCase()}
+   • Số tiền: ${(tx.amount || 0).toLocaleString()} VNĐ | Phí sàn: ${(tx.platform_fee_amount || 0).toLocaleString()} VNĐ
+   • Sản phẩm: ${tx.product_name} | Danh mục: ${tx.category || 'other'}
+   • Người mua: ${tx.buyer_id ? tx.buyer_id.slice(0, 8) + '...' : 'Chưa có'}
+   • Người bán: ${tx.seller_id ? tx.seller_id.slice(0, 8) + '...' : 'Chưa có'}
+   • Tạo lúc: ${tx.created_at}
+   ${tx.dispute_reason ? `• LÝ DO KHIẾU NẠI: ${tx.dispute_reason}` : ''}
+   ${tx.dispute_at ? `• Khiếu nại lúc: ${tx.dispute_at}` : ''}`).join('\n')}
 
-⚠️ KHIẾU NẠI ĐANG XỬ LÝ (${disputes.length} vụ):
-${disputes.length === 0 ? "Không có khiếu nại nào đang xử lý." :
-  disputes.map((d, i) => `
-${i + 1}. [${d.transaction_code}] - ${d.amount?.toLocaleString('vi-VN')} VNĐ
-   - Lý do: ${d.dispute_reason || 'Chưa rõ'}
-   - Thời gian khiếu nại: ${d.dispute_time_hours}h
-   - Khiếu nại lúc: ${d.dispute_at}
-`).join('')}
+👥 CHI TIẾT NGƯỜI DÙNG (${profiles.length} tài khoản):
+${profiles.map((p, i) => `
+${i + 1}. ${p.full_name || 'Chưa đặt tên'} (ID: ${p.user_id.slice(0, 8)}...)
+   • Số dư: ${(p.balance || 0).toLocaleString()} VNĐ | Điểm uy tín: ${p.reputation_score}/100
+   • Số giao dịch: ${p.total_transactions} | KYC: ${p.kyc_status}
+   • Trạng thái: ${p.is_banned ? '🔴 BỊ BAN' : p.is_suspicious ? '🟡 NGHI VẤN' : p.is_balance_frozen ? '🔵 ĐÓNG BĂNG SỐ DƯ' : '🟢 Bình thường'}
+   ${p.ban_reason ? `• Lý do ban: ${p.ban_reason}` : ''}
+   ${p.suspicious_reason ? `• Lý do nghi vấn: ${p.suspicious_reason}` : ''}
+   ${p.balance_freeze_reason ? `• Lý do đóng băng: ${p.balance_freeze_reason}` : ''}
+   • Tạo tài khoản: ${p.created_at}`).join('\n')}
 
-🔴 PHÁT HIỆN BẤT THƯỜNG TỰ ĐỘNG:
-${suspiciousPatterns.length === 0 ? "Không phát hiện bất thường nào." :
-  suspiciousPatterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+🚨 CẢNH BÁO RỦI RO (${riskAlerts.length}):
+${riskAlerts.length === 0 ? "✅ KHÔNG CÓ CẢNH BÁO RỦI RO NÀO TRONG HỆ THỐNG." :
+  riskAlerts.map((alert, i) => `
+${i + 1}. [${alert.alert_type}] - ${alert.is_resolved ? '✅ Đã xử lý' : '⚠️ CHƯA XỬ LÝ'}
+   • Mô tả: ${alert.description}
+   • User ID: ${alert.user_id.slice(0, 8)}...
+   • Tạo lúc: ${alert.created_at}
+   ${alert.resolution_note ? `• Ghi chú xử lý: ${alert.resolution_note}` : ''}`).join('\n')}
 
 🔗 PHÁT HIỆN MULTI-ACCOUNT (cùng số tài khoản ngân hàng):
-${multiAccounts.length === 0 ? "Không phát hiện multi-account." :
-  multiAccounts.map((m, i) => `${i + 1}. STK ${m.bankNumber}: ${m.users.join(", ")}`).join('\n')}
+${multiAccounts.length === 0 ? "✅ KHÔNG PHÁT HIỆN MULTI-ACCOUNT." :
+  multiAccounts.map((m, i) => `
+${i + 1}. 🔴 STK ${m.bankNumber} (${m.bankName})
+   • Các tài khoản sử dụng chung: ${m.users.join(", ")}`).join('\n')}
 
-👥 NGƯỜI DÙNG (${profiles.length} tài khoản):
-- Tổng số dư hệ thống: ${profiles.reduce((sum, p) => sum + (p.balance || 0), 0).toLocaleString('vi-VN')} VNĐ
-- Đã KYC: ${profiles.filter(p => p.kyc_status === 'approved').length}
-- Chờ KYC: ${profiles.filter(p => p.kyc_status === 'pending').length}
-- Bị ban: ${profiles.filter(p => p.is_banned).length}
-- Nghi vấn: ${profiles.filter(p => p.is_suspicious).length}
+💰 NẠP TIỀN CHỜ XÁC NHẬN (${deposits.filter(d => d.status === 'pending').length}):
+${deposits.filter(d => d.status === 'pending').length === 0 ? "✅ KHÔNG CÓ LỆNH NẠP TIỀN CHỜ XÁC NHẬN." :
+  deposits.filter(d => d.status === 'pending').map((d, i) => `
+${i + 1}. ${(d.amount || 0).toLocaleString()} VNĐ - User: ${d.user_id.slice(0, 8)}...
+   • Phương thức: ${d.payment_method} | Tạo: ${d.created_at}`).join('\n')}
 
-📝 KYC CHỜ DUYỆT (${pendingKYC?.length || 0}):
-${!pendingKYC || pendingKYC.length === 0 ? "Không có KYC nào chờ duyệt." :
-  pendingKYC.slice(0, 10).map((k, i) => `
-${i + 1}. ${k.full_name} - CCCD: ${k.id_number?.slice(0, 4)}***${k.id_number?.slice(-3)}
-   - Gửi lúc: ${k.created_at}
-`).join('')}
+💸 RÚT TIỀN CHỜ XỬ LÝ (${withdrawals.filter(w => w.status === 'pending' || w.status === 'on_hold').length}):
+${withdrawals.filter(w => w.status === 'pending' || w.status === 'on_hold').length === 0 ? "✅ KHÔNG CÓ LỆNH RÚT TIỀN CHỜ XỬ LÝ." :
+  withdrawals.filter(w => w.status === 'pending' || w.status === 'on_hold').map((w, i) => `
+${i + 1}. ${(w.amount || 0).toLocaleString()} VNĐ - Trạng thái: ${w.status.toUpperCase()}
+   • Ngân hàng: ${w.bank_name} - ${w.bank_account_name}
+   • STK: ${w.bank_account_number}
+   • User: ${w.user_id.slice(0, 8)}... | Tạo: ${w.created_at}
+   ${w.admin_note ? `• Ghi chú Admin: ${w.admin_note}` : ''}`).join('\n')}
 
-🚨 CẢNH BÁO RỦI RO CHƯA XỬ LÝ (${riskAlerts?.length || 0}):
-${!riskAlerts || riskAlerts.length === 0 ? "Không có cảnh báo rủi ro nào." :
-  riskAlerts.slice(0, 15).map((alert, i) => `
-${i + 1}. [${alert.alert_type}] - ${alert.description}
-   - Tạo: ${alert.created_at}
-`).join('')}
+📝 KYC CHỜ DUYỆT (${kycSubmissions.filter(k => k.status === 'pending').length}):
+${kycSubmissions.filter(k => k.status === 'pending').length === 0 ? "✅ KHÔNG CÓ KYC CHỜ DUYỆT." :
+  kycSubmissions.filter(k => k.status === 'pending').map((k, i) => `
+${i + 1}. ${k.full_name} - CCCD: ${k.id_number}
+   • Ngày sinh: ${k.date_of_birth || 'Không có'}
+   • User: ${k.user_id.slice(0, 8)}... | Gửi: ${k.created_at}`).join('\n')}
 
-🔴 TÀI KHOẢN NGHI VẤN/BỊ KHÓA (${suspiciousUsers?.length || 0}):
-${!suspiciousUsers || suspiciousUsers.length === 0 ? "Không có tài khoản nghi vấn." :
-  suspiciousUsers.map((u, i) => `
-${i + 1}. ${u.full_name || 'Chưa có tên'} 
-   - Điểm uy tín: ${u.reputation_score} | Số dư: ${u.balance?.toLocaleString()}đ | GD: ${u.total_transactions}
-   - Bị ban: ${u.is_banned ? `CÓ - ${u.ban_reason}` : 'Không'}
-   - Nghi vấn: ${u.suspicious_reason || 'Không'}
-`).join('')}
+📜 HOẠT ĐỘNG ADMIN GẦN ĐÂY (${actionLogs?.length || 0}):
+${!actionLogs || actionLogs.length === 0 ? "Chưa có hoạt động admin nào được ghi nhận." :
+  actionLogs.slice(0, 10).map((log, i) => `
+${i + 1}. [${log.action_type}] - Admin: ${log.admin_id.slice(0, 8)}...
+   • Target: ${log.target_user_id.slice(0, 8)}...
+   • Thời gian: ${log.created_at}
+   ${log.note ? `• Ghi chú: ${log.note}` : ''}`).join('\n')}
 `;
 
-    // ============ SYSTEM INSTRUCTION ============
-    const systemInstruction = `Bạn là **Giám đốc Vận hành & An ninh** của hệ thống Giao dịch Trung gian (GDTG).
+    // ============ ENHANCED SYSTEM INSTRUCTION ============
+    const systemInstruction = `Bạn là **AI An ninh & Phân tích** của hệ thống Giao dịch Trung gian (GDTG).
 
-## VAI TRÒ VÀ TRÁCH NHIỆM:
-- Phân tích dữ liệu giao dịch, phát hiện rủi ro lừa đảo và multi-account
-- Đánh giá độ tin cậy KYC và người dùng mới
-- Gợi ý hành động xử lý dispute và trường hợp nghi vấn
-- Tóm tắt tình hình kinh doanh, doanh thu, xu hướng
-- Cảnh báo bất thường tự động
+## NGUYÊN TẮC QUAN TRỌNG NHẤT:
+1. **BẮT BUỘC TRẢ LỜI ĐÚNG 100%**: Mọi con số, thống kê PHẢI lấy từ dữ liệu được cung cấp bên dưới.
+2. **KHÔNG ĐƯỢC BỊA ĐẶT**: Nếu dữ liệu không có, phải nói rõ "Không có dữ liệu" hoặc "Hệ thống chưa có...".
+3. **CHỈ ĐỌC**: Bạn KHÔNG có quyền chỉnh sửa gì cả, chỉ phân tích và báo cáo.
+4. **TRÍCH DẪN NGUỒN**: Khi đưa ra con số, hãy cho biết nguồn (ví dụ: "Theo dữ liệu transactions: có 5 giao dịch")
 
-## NGUYÊN TẮC BẮT BUỘC:
-1. **CHỈ ĐỌC**: Bạn KHÔNG có quyền chỉnh sửa database, số dư, thông tin nhạy cảm. Chỉ phân tích và tư vấn.
-2. **DỰA TRÊN DỮ LIỆU**: Mọi câu trả lời PHẢI dựa trên dữ liệu thực được cung cấp. KHÔNG ĐƯỢC bịa đặt.
-3. **NẾU KHÔNG CÓ DỮ LIỆU**: Báo rõ "Không có dữ liệu" hoặc "Chưa có giao dịch".
-4. **BẢO MẬT**: Không tiết lộ thông tin nhạy cảm (mật khẩu, token, số tài khoản đầy đủ).
+## VAI TRÒ:
+- Phân tích giao dịch đáng ngờ, phát hiện lừa đảo
+- Phát hiện multi-account (cùng số tài khoản ngân hàng)
+- Đánh giá rủi ro người dùng
+- Gợi ý xử lý dispute
+- Tóm tắt thống kê, doanh thu
 
 ## TIÊU CHÍ PHÁT HIỆN RỦI RO:
 | Dấu hiệu | Mức độ | Hành động đề xuất |
 |----------|--------|-------------------|
-| Điểm uy tín < 30 | Cao | Giám sát chặt, yêu cầu KYC |
-| Nhiều khiếu nại (≥3) | Cao | Cân nhắc ban, kiểm tra lịch sử |
-| Giao dịch > 10tr & chưa KYC | Trung bình | Yêu cầu KYC trước khi tiếp tục |
-| Nạp-rút nhanh không giao dịch | Rất cao | Đóng băng số dư, yêu cầu giải trình |
-| Cùng STK ngân hàng nhiều tài khoản | Rất cao | Ban tất cả, điều tra |
-| Tài khoản mới < 7 ngày, GD lớn | Trung bình | Giám sát, delay rút tiền |
-| Khối lượng > 50tr/ngày | Cao | Kiểm tra nguồn tiền |
-
-## HƯỚNG DẪN XỬ LÝ DISPUTE:
-1. Xem xét bằng chứng chat trong phòng giao dịch
-2. Kiểm tra lịch sử 2 bên (điểm uy tín, số GD hoàn thành)
-3. Ưu tiên bên có bằng chứng rõ ràng
-4. Nếu không rõ ràng, đề xuất chia tiền hoặc hoàn tiền có điều kiện
-
-## ĐÁNH GIÁ KYC:
-- Kiểm tra ảnh CCCD rõ nét, không bị cắt xén
-- So khớp tên với tên đăng ký
-- Ngày sinh hợp lệ (> 18 tuổi)
-- Nếu nghi ngờ: yêu cầu chụp lại hoặc video call xác minh
+| Cùng STK ngân hàng nhiều tài khoản | 🔴 RẤT CAO | Ban tất cả, điều tra |
+| Điểm uy tín < 30 | 🔴 CAO | Giám sát chặt, yêu cầu KYC |
+| Nạp-rút nhanh không giao dịch | 🔴 CAO | Đóng băng số dư |
+| Nhiều khiếu nại (≥3) | 🟡 TRUNG BÌNH | Kiểm tra lịch sử |
+| Tài khoản mới < 7 ngày, GD lớn | 🟡 TRUNG BÌNH | Giám sát |
+| Chưa KYC nhưng GD > 5 triệu | 🟡 TRUNG BÌNH | Yêu cầu KYC |
 
 ## ĐỊNH DẠNG TRẢ LỜI:
-- Sử dụng Markdown rõ ràng (bảng, bullet, bold)
-- Luôn đưa ra **Đề xuất hành động** cụ thể
-- Emoji cho các mức độ: 🟢 An toàn, 🟡 Cần chú ý, 🔴 Nguy hiểm
+- Sử dụng Markdown (bảng, bullet, bold)
+- Luôn có **Tóm tắt** ngắn gọn ở đầu
+- Đưa ra **Đề xuất hành động** cụ thể khi phát hiện vấn đề
+- Dùng emoji cho mức độ: 🟢 An toàn, 🟡 Cần chú ý, 🔴 Nguy hiểm
 
 ${dataContext}`;
 
@@ -396,7 +366,7 @@ ${dataContext}`;
       })),
     ];
 
-    console.log(`[AI Support] User: ${userId}, Role: ${userRole}, Messages: ${groqMessages.length}`);
+    console.log(`[AI Support] User: ${userId}, Role: ${userRole}, Messages: ${groqMessages.length}, Context size: ${systemInstruction.length} chars`);
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -407,7 +377,7 @@ ${dataContext}`;
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
         messages: groqMessages,
-        temperature: 0.7,
+        temperature: 0.3, // Lower temperature for more accurate responses
         max_tokens: 4096,
         stream: true,
       }),
@@ -424,7 +394,7 @@ ${dataContext}`;
         });
       }
       
-      return new Response(JSON.stringify({ error: "Groq API error" }), {
+      return new Response(JSON.stringify({ error: "Groq API error: " + errorText }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
