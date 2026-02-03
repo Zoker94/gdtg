@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 interface ChatMessage {
-  role: "user" | "model";
-  parts: { text: string }[];
+  role: "user" | "assistant" | "system";
+  content: string;
 }
 
 // Filter sensitive columns - only return non-sensitive data
@@ -252,53 +252,53 @@ ${i + 1}. ${u.full_name || 'Chưa có tên'} (ID: ${u.user_id})
 
 ${dataContext}`;
 
-    // ============ CALL GEMINI API ============
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "GEMINI_API_KEY is not configured" }), {
+    // ============ CALL GROQ API ============
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) {
+      return new Response(JSON.stringify({ error: "GROQ_API_KEY is not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Convert messages to Gemini format
-    const geminiMessages: ChatMessage[] = messages.map((msg: any) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }],
-    }));
+    // Convert messages to OpenAI format (Groq uses OpenAI-compatible API)
+    const groqMessages = [
+      { role: "system", content: systemInstruction },
+      ...messages.map((msg: any) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+    ];
 
-    console.log("Calling Gemini API with", geminiMessages.length, "messages");
+    console.log("Calling Groq API with", groqMessages.length, "messages");
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          contents: geminiMessages,
-          generationConfig: {
-            temperature: 0.7,
-            topP: 0.95,
-            topK: 40,
-            maxOutputTokens: 8192,
-          },
-        }),
-      }
-    );
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile", // Fast & free model
+        messages: groqMessages,
+        temperature: 0.7,
+        max_tokens: 4096,
+        stream: true,
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
+      console.error("Groq API error:", response.status, errorText);
       
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Gemini API đã hết quota. Vui lòng chờ quota reset hoặc upgrade gói trả phí tại Google AI Studio." }), {
+        return new Response(JSON.stringify({ error: "Groq API đã hết quota. Vui lòng chờ vài phút và thử lại." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       
-      return new Response(JSON.stringify({ error: "Gemini API error" }), {
+      return new Response(JSON.stringify({ error: "Groq API error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
