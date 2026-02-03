@@ -5,8 +5,13 @@ import { RefreshCw, Trophy } from "lucide-react";
 import { useGameSound } from "@/hooks/useGameSound";
 import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
 import LeaderboardDisplay from "./LeaderboardDisplay";
+import DifficultySelector, { Difficulty } from "./DifficultySelector";
 
-const EMOJIS = ["🎮", "🎯", "🎲", "🎪", "🎨", "🎭", "🎱", "🎸"];
+const EMOJIS_BY_DIFFICULTY: Record<Difficulty, string[]> = {
+  easy: ["🎮", "🎯", "🎲", "🎪"], // 4 pairs = 8 cards
+  medium: ["🎮", "🎯", "🎲", "🎪", "🎨", "🎭"], // 6 pairs = 12 cards
+  hard: ["🎮", "🎯", "🎲", "🎪", "🎨", "🎭", "🎱", "🎸", "🎺", "🎻"], // 10 pairs = 20 cards
+};
 
 interface Card {
   id: number;
@@ -21,12 +26,14 @@ const MemoryCard = () => {
   const [moves, setMoves] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   
   const { playSound } = useGameSound();
   const { leaderboard, addScore } = useGameLeaderboard("memory");
 
-  const initGame = () => {
-    const shuffled = [...EMOJIS, ...EMOJIS]
+  const initGame = (diff: Difficulty = difficulty) => {
+    const emojis = EMOJIS_BY_DIFFICULTY[diff];
+    const shuffled = [...emojis, ...emojis]
       .sort(() => Math.random() - 0.5)
       .map((emoji, i) => ({
         id: i,
@@ -38,6 +45,11 @@ const MemoryCard = () => {
     setFlippedCards([]);
     setMoves(0);
     setIsComplete(false);
+  };
+
+  const handleDifficultyChange = (newDiff: Difficulty) => {
+    setDifficulty(newDiff);
+    initGame(newDiff);
   };
 
   useEffect(() => {
@@ -92,6 +104,9 @@ const MemoryCard = () => {
     setFlippedCards(prev => [...prev, index]);
   };
 
+  // Grid columns based on difficulty
+  const gridCols = difficulty === "easy" ? 4 : difficulty === "medium" ? 4 : 5;
+
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex items-center justify-between w-full px-1">
@@ -112,7 +127,13 @@ const MemoryCard = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-1.5">
+      <DifficultySelector 
+        value={difficulty} 
+        onChange={handleDifficultyChange} 
+        disabled={moves > 0 && !isComplete}
+      />
+
+      <div className={`grid gap-1.5`} style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
         {cards.map((card, i) => (
           <motion.button
             key={card.id}
@@ -130,7 +151,7 @@ const MemoryCard = () => {
         ))}
       </div>
 
-      <Button variant="ghost" size="sm" onClick={initGame} className="gap-1.5 h-7 text-xs">
+      <Button variant="ghost" size="sm" onClick={() => initGame(difficulty)} className="gap-1.5 h-7 text-xs">
         <RefreshCw className="w-3 h-3" />
         Chơi lại
       </Button>

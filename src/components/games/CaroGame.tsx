@@ -66,72 +66,121 @@ const CaroGame = () => {
     return null;
   }, []);
 
-  // Evaluate board position for AI
+  // Evaluate a line pattern for scoring
+  const evaluateLine = useCallback((b: Player[], row: number, col: number, dr: number, dc: number, player: Player): { count: number; openEnds: number; blocked: boolean } => {
+    let count = 0;
+    let openEnds = 0;
+    let blocked = false;
+    const opponent = player === "O" ? "X" : "O";
+
+    // Check forward
+    for (let i = 1; i <= 5; i++) {
+      const nr = row + dr * i;
+      const nc = col + dc * i;
+      if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE) {
+        blocked = true;
+        break;
+      }
+      const idx = nr * BOARD_SIZE + nc;
+      if (b[idx] === player) count++;
+      else if (b[idx] === opponent) {
+        blocked = true;
+        break;
+      } else {
+        openEnds++;
+        break;
+      }
+    }
+
+    // Check backward  
+    for (let i = 1; i <= 5; i++) {
+      const nr = row - dr * i;
+      const nc = col - dc * i;
+      if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE) {
+        blocked = true;
+        break;
+      }
+      const idx = nr * BOARD_SIZE + nc;
+      if (b[idx] === player) count++;
+      else if (b[idx] === opponent) {
+        blocked = true;
+        break;
+      } else {
+        openEnds++;
+        break;
+      }
+    }
+
+    return { count, openEnds, blocked };
+  }, []);
+
+  // Evaluate board position for AI - MUCH smarter now
   const evaluatePosition = useCallback((b: Player[], pos: number, player: Player, diff: Difficulty): number => {
-    if (b[pos] !== null) return -1000;
+    if (b[pos] !== null) return -Infinity;
     
-    let score = 0;
     const row = Math.floor(pos / BOARD_SIZE);
     const col = pos % BOARD_SIZE;
     const opponent = player === "O" ? "X" : "O";
-    
     const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
     
+    // Simulate placing piece
+    const testBoard = [...b];
+    testBoard[pos] = player;
+    
+    let attackScore = 0;
+    let defenseScore = 0;
+    
     for (const [dr, dc] of directions) {
-      let playerCount = 0;
-      let opponentCount = 0;
-      let openEnds = 0;
+      // Check attack potential
+      const attack = evaluateLine(testBoard, row, col, dr, dc, player);
       
-      // Count in both directions
-      for (let dir = -1; dir <= 1; dir += 2) {
-        let blocked = false;
-        for (let i = 1; i <= 4; i++) {
-          const nr = row + dr * i * dir;
-          const nc = col + dc * i * dir;
-          if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE) {
-            blocked = true;
-            break;
-          }
-          const idx = nr * BOARD_SIZE + nc;
-          if (b[idx] === player) playerCount++;
-          else if (b[idx] === opponent) {
-            opponentCount++;
-            blocked = true;
-            break;
-          }
-          else break;
-        }
-        if (!blocked) openEnds++;
-      }
+      // WINNING MOVE - highest priority
+      if (attack.count >= 4) attackScore += 100000;
+      // Open four (guaranteed win next turn)
+      else if (attack.count === 3 && attack.openEnds === 2) attackScore += 50000;
+      // Blocked four (can still win if not blocked)
+      else if (attack.count === 3 && attack.openEnds === 1) attackScore += 5000;
+      // Open three (very strong)
+      else if (attack.count === 2 && attack.openEnds === 2) attackScore += 2000;
+      // Blocked three
+      else if (attack.count === 2 && attack.openEnds === 1) attackScore += 200;
+      // Open two
+      else if (attack.count === 1 && attack.openEnds === 2) attackScore += 50;
       
-      // Score patterns - adjust based on difficulty
-      const multiplier = diff === "hard" ? 1.5 : diff === "easy" ? 0.5 : 1;
+      // Check defense - what would opponent get here?
+      testBoard[pos] = opponent;
+      const defense = evaluateLine(testBoard, row, col, dr, dc, opponent);
+      testBoard[pos] = player;
       
-      if (playerCount >= 4) score += 10000 * multiplier;
-      else if (playerCount === 3 && openEnds >= 1) score += 1000 * multiplier;
-      else if (playerCount === 2 && openEnds >= 2) score += 100 * multiplier;
-      else if (playerCount === 1 && openEnds >= 2) score += 10 * multiplier;
-      
-      // Defense - harder AI defends better
-      const defenseMultiplier = diff === "hard" ? 1.2 : diff === "easy" ? 0.6 : 1;
-      if (opponentCount >= 4) score += 9000 * defenseMultiplier;
-      else if (opponentCount === 3 && openEnds >= 1) score += 800 * defenseMultiplier;
-      else if (opponentCount === 2 && openEnds >= 2) score += 50 * defenseMultiplier;
+      // BLOCK opponent winning move
+      if (defense.count >= 4) defenseScore += 90000;
+      // Block open four
+      else if (defense.count === 3 && defense.openEnds === 2) defenseScore += 40000;
+      // Block blocked four  
+      else if (defense.count === 3 && defense.openEnds === 1) defenseScore += 4000;
+      // Block open three
+      else if (defense.count === 2 && defense.openEnds === 2) defenseScore += 1500;
+      // Block blocked three
+      else if (defense.count === 2 && defense.openEnds === 1) defenseScore += 150;
     }
     
     // Center preference
-    const centerDist = Math.abs(row - BOARD_SIZE/2) + Math.abs(col - BOARD_SIZE/2);
-    score += Math.max(0, 10 - centerDist);
+    const centerDist = Math.abs(row - BOARD_SIZE / 2) + Math.abs(col - BOARD_SIZE / 2);
+    const centerBonus = Math.max(0, 20 - centerDist * 2);
     
-    // Add randomness for easier difficulties
+    // Combine scores based on difficulty
+    let finalScore = attackScore + defenseScore + centerBonus;
+    
+    // Add randomness for easier difficulties  
     if (diff === "easy") {
-      score += Math.random() * 500;
+      finalScore += Math.random() * 3000; // Very random
     } else if (diff === "medium") {
-      score += Math.random() * 100;
+      finalScore += Math.random() * 500; // Slightly random
     }
+    // Hard: no randomness, pure strategy
     
-    return score;
-  }, []);
+    return finalScore;
+  }, [evaluateLine]);
 
   // Get AI move
   const getAIMove = useCallback((b: Player[], diff: Difficulty): number => {
@@ -266,7 +315,7 @@ const CaroGame = () => {
       <DifficultySelector 
         value={difficulty} 
         onChange={setDifficulty} 
-        disabled={!gameOver && board.some(c => c !== null)}
+        disabled={!isPlayerTurn || (!gameOver && board.some(c => c !== null))}
       />
 
       <div 

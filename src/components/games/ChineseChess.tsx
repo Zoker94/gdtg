@@ -250,46 +250,136 @@ const ChineseChess = () => {
     return false;
   }, [getValidMoves]);
 
-  // Evaluate board for AI
+  // Evaluate board for AI - MUCH smarter
   const evaluateBoard = useCallback((b: Board, diff: Difficulty): number => {
-    const pieceValues: Record<PieceType, number> = {
-      general: 10000,
-      advisor: 20,
-      elephant: 20,
-      horse: 40,
-      chariot: 90,
-      cannon: 45,
-      soldier: 10,
+    const pieceBaseValues: Record<PieceType, number> = {
+      general: 100000,
+      advisor: 200,
+      elephant: 200,
+      horse: 450,
+      chariot: 900,
+      cannon: 450,
+      soldier: 100,
     };
     
     let score = 0;
+    let blackMobility = 0;
+    let redMobility = 0;
+    
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
         const piece = b[r][c];
         if (piece) {
-          let value = pieceValues[piece.type];
+          let value = pieceBaseValues[piece.type];
           
-          // Position bonus for harder difficulties
-          if (diff === "hard" || diff === "medium") {
-            // Soldiers are more valuable after crossing river
-            if (piece.type === "soldier") {
-              const crossed = piece.color === "black" ? r >= 5 : r <= 4;
-              if (crossed) value += 5;
+          // Position bonuses
+          if (piece.type === "soldier") {
+            const crossed = piece.color === "black" ? r >= 5 : r <= 4;
+            if (crossed) value += 80; // Much more valuable after crossing
+          }
+          
+          if (piece.type === "chariot") {
+            // Chariot on open file is very strong
+            value += 50;
+          }
+          
+          if (piece.type === "cannon") {
+            // Cannon effectiveness based on pieces on board
+            value += 30;
+          }
+          
+          if (piece.type === "horse") {
+            // Central horses are better
+            if (c >= 2 && c <= 6) value += 30;
+          }
+          
+          // Central control bonus
+          if (c >= 3 && c <= 5) value += 15;
+          
+          // Mobility bonus for harder difficulties
+          if (diff !== "easy") {
+            const moves = getValidMoves(b, r, c);
+            if (piece.color === "black") {
+              blackMobility += moves.length * 5;
+            } else {
+              redMobility += moves.length * 5;
             }
-            // Central control bonus
-            if (c >= 3 && c <= 5) value += 2;
           }
           
           score += piece.color === "black" ? value : -value;
         }
       }
     }
+    
+    // Add mobility difference
+    score += (blackMobility - redMobility);
+    
     return score;
-  }, []);
+  }, [getValidMoves]);
 
-  // AI move with difficulty
+  // Minimax with alpha-beta pruning for smarter AI
+  const minimax = useCallback((b: Board, depth: number, alpha: number, beta: number, isMaximizing: boolean, diff: Difficulty): number => {
+    if (depth === 0) {
+      return evaluateBoard(b, diff);
+    }
+    
+    const color = isMaximizing ? "black" : "red";
+    const allMoves: { from: [number, number]; to: [number, number] }[] = [];
+    
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (b[r][c]?.color === color) {
+          const moves = getValidMoves(b, r, c);
+          for (const [tr, tc] of moves) {
+            allMoves.push({ from: [r, c], to: [tr, tc] });
+          }
+        }
+      }
+    }
+    
+    if (allMoves.length === 0) {
+      return isMaximizing ? -100000 : 100000;
+    }
+    
+    if (isMaximizing) {
+      let maxEval = -Infinity;
+      for (const move of allMoves) {
+        const newBoard = b.map(row => [...row]);
+        newBoard[move.to[0]][move.to[1]] = newBoard[move.from[0]][move.from[1]];
+        newBoard[move.from[0]][move.from[1]] = null;
+        
+        if (isInCheck(newBoard, "black")) continue;
+        
+        const evalScore = minimax(newBoard, depth - 1, alpha, beta, false, diff);
+        maxEval = Math.max(maxEval, evalScore);
+        alpha = Math.max(alpha, evalScore);
+        if (beta <= alpha) break;
+      }
+      return maxEval;
+    } else {
+      let minEval = Infinity;
+      for (const move of allMoves) {
+        const newBoard = b.map(row => [...row]);
+        newBoard[move.to[0]][move.to[1]] = newBoard[move.from[0]][move.from[1]];
+        newBoard[move.from[0]][move.from[1]] = null;
+        
+        if (isInCheck(newBoard, "red")) continue;
+        
+        const evalScore = minimax(newBoard, depth - 1, alpha, beta, true, diff);
+        minEval = Math.min(minEval, evalScore);
+        beta = Math.min(beta, evalScore);
+        if (beta <= alpha) break;
+      }
+      return minEval;
+    }
+  }, [evaluateBoard, getValidMoves, isInCheck]);
+
+  // AI move with difficulty - uses minimax for harder levels
   const getAIMove = useCallback((b: Board, diff: Difficulty): [[number, number], [number, number]] | null => {
     const moves: { from: [number, number]; to: [number, number]; score: number }[] = [];
+    
+    // Depth based on difficulty
+    const searchDepth = diff === "hard" ? 3 : diff === "medium" ? 2 : 1;
     
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
@@ -303,16 +393,24 @@ const ChineseChess = () => {
             
             if (isInCheck(newBoard, "black")) continue;
             
-            let score = evaluateBoard(newBoard, diff);
+            let score: number;
             
-            if (captured) score += 50;
-            if (isInCheck(newBoard, "red")) score += 30;
-            
-            // Add randomness based on difficulty
             if (diff === "easy") {
-              score += Math.random() * 200 - 100;
-            } else if (diff === "medium") {
-              score += Math.random() * 50 - 25;
+              // Simple evaluation + lots of randomness
+              score = evaluateBoard(newBoard, diff) + Math.random() * 500 - 250;
+            } else {
+              // Use minimax for better play
+              score = minimax(newBoard, searchDepth - 1, -Infinity, Infinity, false, diff);
+              
+              // Bonus for captures
+              if (captured) score += 100;
+              // Bonus for check
+              if (isInCheck(newBoard, "red")) score += 50;
+              
+              // Small randomness for medium
+              if (diff === "medium") {
+                score += Math.random() * 50 - 25;
+              }
             }
             
             moves.push({ from: [r, c], to: [tr, tc], score });
@@ -325,13 +423,13 @@ const ChineseChess = () => {
     
     moves.sort((a, b) => b.score - a.score);
     
-    // Pick from top moves based on difficulty
-    const topCount = diff === "easy" ? Math.min(10, moves.length) : diff === "medium" ? Math.min(5, moves.length) : Math.min(3, moves.length);
+    // Pick from top moves
+    const topCount = diff === "easy" ? Math.min(8, moves.length) : diff === "medium" ? Math.min(3, moves.length) : 1;
     const topMoves = moves.slice(0, topCount);
     const chosen = topMoves[Math.floor(Math.random() * topMoves.length)];
     
     return [chosen.from, chosen.to];
-  }, [getValidMoves, evaluateBoard, isInCheck]);
+  }, [getValidMoves, evaluateBoard, isInCheck, minimax]);
 
   const handleClick = (row: number, col: number) => {
     if (gameOver || !isPlayerTurn) return;
@@ -442,7 +540,7 @@ const ChineseChess = () => {
       <DifficultySelector 
         value={difficulty} 
         onChange={setDifficulty} 
-        disabled={!gameOver && board !== createInitialBoard()}
+        disabled={!isPlayerTurn || (!gameOver && selectedPos !== null)}
       />
 
       <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-1 overflow-auto">
