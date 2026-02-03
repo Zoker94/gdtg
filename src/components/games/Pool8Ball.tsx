@@ -6,6 +6,7 @@ import { useGameSound } from "@/hooks/useGameSound";
 import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import LeaderboardDisplay from "./LeaderboardDisplay";
+import DifficultySelector, { Difficulty } from "./DifficultySelector";
 
 const CANVAS_BASE_WIDTH = 400;
 const CANVAS_BASE_HEIGHT = 240;
@@ -125,6 +126,7 @@ const Pool8Ball = () => {
   const [currentTurn, setCurrentTurn] = useState<Turn>("player");
   const [pocketedThisTurn, setPocketedThisTurn] = useState<number[]>([]);
   const [aiThinking, setAiThinking] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
 
   const { playSound } = useGameSound();
   const { leaderboard, addScore } = useGameLeaderboard("pool");
@@ -270,11 +272,14 @@ const Pool8Ball = () => {
     return balls.some(ball => !ball.isPocketed && (Math.abs(ball.vx) > MIN_VELOCITY || Math.abs(ball.vy) > MIN_VELOCITY));
   }, [balls]);
 
-  // AI turn logic
+  // AI turn logic with difficulty
   const executeAiShot = useCallback(() => {
     if (gameOver || currentTurn !== "ai") return;
     
     setAiThinking(true);
+    
+    // Delay based on difficulty
+    const delay = difficulty === "hard" ? 500 : difficulty === "medium" ? 800 : 1200;
     
     setTimeout(() => {
       const cueBall = balls.find(b => b.number === 0 && !b.isPocketed);
@@ -302,17 +307,58 @@ const Pool8Ball = () => {
 
       if (targetBalls.length === 0) return;
 
-      // Pick random target and pocket
-      const target = targetBalls[Math.floor(Math.random() * targetBalls.length)];
-      const pocket = pockets[Math.floor(Math.random() * pockets.length)];
+      // AI accuracy based on difficulty
+      const accuracyMultiplier = difficulty === "hard" ? 0.95 : difficulty === "medium" ? 0.7 : 0.4;
       
-      // Calculate shot angle (aim at target towards pocket)
-      const dx = target.x - cueBall.x;
-      const dy = target.y - cueBall.y;
-      const angle = Math.atan2(dy, dx);
+      // Find best shot based on difficulty
+      let bestTarget = targetBalls[0];
+      let bestPocket = pockets[0];
+      let bestScore = -Infinity;
       
-      // Random power (AI is not perfect)
-      const power = 5 + Math.random() * 8;
+      for (const target of targetBalls) {
+        for (const pocket of pockets) {
+          // Calculate line from target to pocket
+          const toPocketDx = pocket.x - target.x;
+          const toPocketDy = pocket.y - target.y;
+          const distToPocket = Math.sqrt(toPocketDx * toPocketDx + toPocketDy * toPocketDy);
+          
+          // Calculate where cue ball should hit
+          const hitPointX = target.x - (toPocketDx / distToPocket) * (BALL_RADIUS * 2);
+          const hitPointY = target.y - (toPocketDy / distToPocket) * (BALL_RADIUS * 2);
+          
+          // Distance from cue ball to hit point
+          const distToHit = Math.sqrt(
+            Math.pow(hitPointX - cueBall.x, 2) + Math.pow(hitPointY - cueBall.y, 2)
+          );
+          
+          // Score: prefer shorter shots and closer pockets
+          const score = -distToHit - distToPocket * 0.5 + Math.random() * (difficulty === "easy" ? 200 : difficulty === "medium" ? 80 : 20);
+          
+          if (score > bestScore) {
+            bestScore = score;
+            bestTarget = target;
+            bestPocket = pocket;
+          }
+        }
+      }
+      
+      // Calculate shot angle
+      const toPocketDx = bestPocket.x - bestTarget.x;
+      const toPocketDy = bestPocket.y - bestTarget.y;
+      const distToPocket = Math.sqrt(toPocketDx * toPocketDx + toPocketDy * toPocketDy);
+      
+      const hitPointX = bestTarget.x - (toPocketDx / distToPocket) * (BALL_RADIUS * 2);
+      const hitPointY = bestTarget.y - (toPocketDy / distToPocket) * (BALL_RADIUS * 2);
+      
+      let angle = Math.atan2(hitPointY - cueBall.y, hitPointX - cueBall.x);
+      
+      // Add inaccuracy based on difficulty
+      const inaccuracy = (1 - accuracyMultiplier) * (Math.random() - 0.5) * 0.5;
+      angle += inaccuracy;
+      
+      // Power based on difficulty
+      const basePower = difficulty === "hard" ? 8 : difficulty === "medium" ? 7 : 5;
+      const power = basePower + Math.random() * 4;
       
       playSound("whack");
       setShotInProgress(true);
@@ -325,8 +371,8 @@ const Pool8Ball = () => {
           ? { ...ball, vx: Math.cos(angle) * power, vy: Math.sin(angle) * power }
           : ball
       ));
-    }, 1000 + Math.random() * 500);
-  }, [balls, pockets, aiType, currentTurn, gameOver, playSound]);
+    }, delay + Math.random() * 300);
+  }, [balls, pockets, aiType, currentTurn, gameOver, playSound, difficulty]);
 
   // Trigger AI turn
   useEffect(() => {
@@ -956,7 +1002,7 @@ const Pool8Ball = () => {
             Bạn
           </div>
           <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] ${
-            currentTurn === "ai" ? "bg-orange-500/20 text-orange-500" : "bg-muted text-muted-foreground"
+            currentTurn === "ai" ? "bg-destructive/20 text-destructive" : "bg-muted text-muted-foreground"
           }`}>
             <Bot className="w-2.5 h-2.5" />
             Máy
@@ -974,6 +1020,13 @@ const Pool8Ball = () => {
           </Button>
         </div>
       </div>
+      
+      <DifficultySelector 
+        value={difficulty} 
+        onChange={setDifficulty} 
+        disabled={balls.some(b => b.isPocketed)}
+        compact
+      />
 
       {/* Player types */}
       {playerType && (

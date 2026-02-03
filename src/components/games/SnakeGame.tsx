@@ -5,10 +5,10 @@ import { RefreshCw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Trophy } from "lu
 import { useGameSound } from "@/hooks/useGameSound";
 import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
 import LeaderboardDisplay from "./LeaderboardDisplay";
+import DifficultySelector, { Difficulty } from "./DifficultySelector";
 
 const GRID_SIZE = 10;
 const CELL_SIZE = 18;
-const INITIAL_SPEED = 200;
 
 type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
 type Position = { x: number; y: number };
@@ -21,9 +21,19 @@ const SnakeGame = () => {
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   
   const { playSound } = useGameSound();
   const { leaderboard, addScore } = useGameLeaderboard("snake");
+
+  // Speed based on difficulty
+  const getSpeed = useCallback(() => {
+    switch (difficulty) {
+      case "easy": return 250;
+      case "medium": return 180;
+      case "hard": return 120;
+    }
+  }, [difficulty]);
 
   const generateFood = useCallback(() => {
     const newFood = {
@@ -84,19 +94,21 @@ const SnakeGame = () => {
       if (head.x === food.x && head.y === food.y) {
         playSound("eat");
         setFood(generateFood());
-        setScore(s => s + 10);
+        // Points based on difficulty
+        const points = difficulty === "hard" ? 20 : difficulty === "medium" ? 10 : 5;
+        setScore(s => s + points);
       } else {
         newSnake.pop();
       }
 
       return newSnake;
     });
-  }, [direction, food, generateFood, isRunning, gameOver, playSound]);
+  }, [direction, food, generateFood, isRunning, gameOver, playSound, difficulty]);
 
   useEffect(() => {
-    const interval = setInterval(moveSnake, INITIAL_SPEED);
+    const interval = setInterval(moveSnake, getSpeed());
     return () => clearInterval(interval);
-  }, [moveSnake]);
+  }, [moveSnake, getSpeed]);
 
   const handleDirection = (newDir: Direction) => {
     const opposites: Record<Direction, Direction> = {
@@ -144,6 +156,12 @@ const SnakeGame = () => {
           <Trophy className="w-3 h-3" />
         </Button>
       </div>
+
+      <DifficultySelector 
+        value={difficulty} 
+        onChange={setDifficulty} 
+        disabled={isRunning}
+      />
 
       <div
         className="bg-muted rounded-lg p-1 relative"

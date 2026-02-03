@@ -5,6 +5,7 @@ import { RefreshCw, Trophy } from "lucide-react";
 import { useGameSound } from "@/hooks/useGameSound";
 import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
 import LeaderboardDisplay from "./LeaderboardDisplay";
+import DifficultySelector, { Difficulty } from "./DifficultySelector";
 
 // Piece types
 type PieceType = "general" | "advisor" | "elephant" | "horse" | "chariot" | "cannon" | "soldier";
@@ -88,6 +89,7 @@ const ChineseChess = () => {
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState<PieceColor | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   
   const { playSound } = useGameSound();
   const { leaderboard, addScore } = useGameLeaderboard("chess");
@@ -115,7 +117,6 @@ const ChineseChess = () => {
     
     switch (type) {
       case "general":
-        // One step in palace
         [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([dr, dc]) => {
           const nr = row + dr;
           const nc = col + dc;
@@ -126,7 +127,6 @@ const ChineseChess = () => {
         break;
         
       case "advisor":
-        // Diagonal in palace
         [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(([dr, dc]) => {
           const nr = row + dr;
           const nc = col + dc;
@@ -137,7 +137,6 @@ const ChineseChess = () => {
         break;
         
       case "elephant":
-        // Two steps diagonal, cannot cross river
         [[2, 2], [2, -2], [-2, 2], [-2, -2]].forEach(([dr, dc]) => {
           const nr = row + dr;
           const nc = col + dc;
@@ -151,7 +150,6 @@ const ChineseChess = () => {
         break;
         
       case "horse":
-        // L-shape move
         const horseMoves: [number, number, number, number][] = [
           [-2, -1, -1, 0], [-2, 1, -1, 0],
           [2, -1, 1, 0], [2, 1, 1, 0],
@@ -168,7 +166,6 @@ const ChineseChess = () => {
         break;
         
       case "chariot":
-        // Straight lines
         for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
           for (let i = 1; i < 10; i++) {
             const nr = row + dr * i;
@@ -187,7 +184,6 @@ const ChineseChess = () => {
         break;
         
       case "cannon":
-        // Straight lines, jump to capture
         for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
           let jumped = false;
           for (let i = 1; i < 10; i++) {
@@ -211,7 +207,6 @@ const ChineseChess = () => {
         break;
         
       case "soldier":
-        // Forward, sideways after crossing river
         const forward = isRed ? -1 : 1;
         const crossedRiver = isRed ? row <= 4 : row >= 5;
         
@@ -230,7 +225,6 @@ const ChineseChess = () => {
 
   // Check if general is in check
   const isInCheck = useCallback((b: Board, color: PieceColor): boolean => {
-    // Find general position
     let generalPos: [number, number] | null = null;
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
@@ -242,7 +236,6 @@ const ChineseChess = () => {
     }
     if (!generalPos) return true;
     
-    // Check if any enemy piece can capture general
     const enemyColor = color === "red" ? "black" : "red";
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 9; c++) {
@@ -258,7 +251,7 @@ const ChineseChess = () => {
   }, [getValidMoves]);
 
   // Evaluate board for AI
-  const evaluateBoard = useCallback((b: Board): number => {
+  const evaluateBoard = useCallback((b: Board, diff: Difficulty): number => {
     const pieceValues: Record<PieceType, number> = {
       general: 10000,
       advisor: 20,
@@ -274,7 +267,19 @@ const ChineseChess = () => {
       for (let c = 0; c < 9; c++) {
         const piece = b[r][c];
         if (piece) {
-          const value = pieceValues[piece.type];
+          let value = pieceValues[piece.type];
+          
+          // Position bonus for harder difficulties
+          if (diff === "hard" || diff === "medium") {
+            // Soldiers are more valuable after crossing river
+            if (piece.type === "soldier") {
+              const crossed = piece.color === "black" ? r >= 5 : r <= 4;
+              if (crossed) value += 5;
+            }
+            // Central control bonus
+            if (c >= 3 && c <= 5) value += 2;
+          }
+          
           score += piece.color === "black" ? value : -value;
         }
       }
@@ -282,8 +287,8 @@ const ChineseChess = () => {
     return score;
   }, []);
 
-  // AI move
-  const getAIMove = useCallback((b: Board): [[number, number], [number, number]] | null => {
+  // AI move with difficulty
+  const getAIMove = useCallback((b: Board, diff: Difficulty): [[number, number], [number, number]] | null => {
     const moves: { from: [number, number]; to: [number, number]; score: number }[] = [];
     
     for (let r = 0; r < 10; r++) {
@@ -291,22 +296,24 @@ const ChineseChess = () => {
         if (b[r][c]?.color === "black") {
           const validMoves = getValidMoves(b, r, c);
           for (const [tr, tc] of validMoves) {
-            // Simulate move
             const newBoard = b.map(row => [...row]);
             const captured = newBoard[tr][tc];
             newBoard[tr][tc] = newBoard[r][c];
             newBoard[r][c] = null;
             
-            // Skip if puts own general in check
             if (isInCheck(newBoard, "black")) continue;
             
-            let score = evaluateBoard(newBoard);
+            let score = evaluateBoard(newBoard, diff);
             
-            // Bonus for capturing
             if (captured) score += 50;
-            
-            // Bonus for checking opponent
             if (isInCheck(newBoard, "red")) score += 30;
+            
+            // Add randomness based on difficulty
+            if (diff === "easy") {
+              score += Math.random() * 200 - 100;
+            } else if (diff === "medium") {
+              score += Math.random() * 50 - 25;
+            }
             
             moves.push({ from: [r, c], to: [tr, tc], score });
           }
@@ -316,9 +323,11 @@ const ChineseChess = () => {
     
     if (moves.length === 0) return null;
     
-    // Sort by score and pick from top moves with some randomness
     moves.sort((a, b) => b.score - a.score);
-    const topMoves = moves.slice(0, Math.min(3, moves.length));
+    
+    // Pick from top moves based on difficulty
+    const topCount = diff === "easy" ? Math.min(10, moves.length) : diff === "medium" ? Math.min(5, moves.length) : Math.min(3, moves.length);
+    const topMoves = moves.slice(0, topCount);
     const chosen = topMoves[Math.floor(Math.random() * topMoves.length)];
     
     return [chosen.from, chosen.to];
@@ -329,7 +338,6 @@ const ChineseChess = () => {
     
     const piece = board[row][col];
     
-    // If clicking on own piece, select it
     if (piece?.color === "red") {
       playSound("click");
       setSelectedPos([row, col]);
@@ -337,7 +345,6 @@ const ChineseChess = () => {
       return;
     }
     
-    // If piece is selected and clicking valid move
     if (selectedPos) {
       const isValid = validMoves.some(([r, c]) => r === row && c === col);
       if (isValid) {
@@ -346,7 +353,6 @@ const ChineseChess = () => {
         newBoard[row][col] = newBoard[selectedPos[0]][selectedPos[1]];
         newBoard[selectedPos[0]][selectedPos[1]] = null;
         
-        // Check if move puts own general in check
         if (isInCheck(newBoard, "red")) {
           playSound("lose");
           return;
@@ -357,7 +363,6 @@ const ChineseChess = () => {
         setSelectedPos(null);
         setValidMoves([]);
         
-        // Check for checkmate
         if (captured?.type === "general") {
           playSound("win");
           setWinner("red");
@@ -368,9 +373,10 @@ const ChineseChess = () => {
         
         setIsPlayerTurn(false);
         
-        // AI move
+        // AI move with delay based on difficulty
+        const delay = difficulty === "hard" ? 800 : difficulty === "medium" ? 500 : 300;
         setTimeout(() => {
-          const aiMove = getAIMove(newBoard);
+          const aiMove = getAIMove(newBoard, difficulty);
           if (aiMove) {
             const [[fr, fc], [tr, tc]] = aiMove;
             const aiBoard = newBoard.map(r => [...r]);
@@ -388,7 +394,6 @@ const ChineseChess = () => {
               return;
             }
           } else {
-            // AI has no valid moves - player wins
             playSound("win");
             setWinner("red");
             setGameOver(true);
@@ -396,7 +401,7 @@ const ChineseChess = () => {
             return;
           }
           setIsPlayerTurn(true);
-        }, 500);
+        }, delay);
       }
     }
   };
@@ -434,6 +439,12 @@ const ChineseChess = () => {
         </Button>
       </div>
 
+      <DifficultySelector 
+        value={difficulty} 
+        onChange={setDifficulty} 
+        disabled={!gameOver && board !== createInitialBoard()}
+      />
+
       <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-1 overflow-auto">
         <div className="relative" style={{ width: 180, height: 200 }}>
           {/* Board grid lines */}
@@ -470,7 +481,6 @@ const ChineseChess = () => {
             row.map((piece, c) => {
               if (!piece) return null;
               const isSelected = selectedPos?.[0] === r && selectedPos?.[1] === c;
-              const isValidMove = validMoves.some(([vr, vc]) => vr === r && vc === c);
               
               return (
                 <motion.button

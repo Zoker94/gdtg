@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-export type GameId = "caro" | "memory" | "snake" | "whack" | "chess" | "pool";
+export type GameId = "caro" | "memory" | "snake" | "whack" | "chess" | "pool" | "tienlen";
 
 interface LeaderboardEntry {
   score: number;

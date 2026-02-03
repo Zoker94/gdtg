@@ -5,9 +5,9 @@ import { RefreshCw, Play, Trophy } from "lucide-react";
 import { useGameSound } from "@/hooks/useGameSound";
 import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
 import LeaderboardDisplay from "./LeaderboardDisplay";
+import DifficultySelector, { Difficulty } from "./DifficultySelector";
 
 const GAME_DURATION = 30; // seconds
-const MOLE_DURATION = 800; // ms
 
 const WhackAMole = () => {
   const [activeMole, setActiveMole] = useState<number | null>(null);
@@ -16,15 +16,34 @@ const WhackAMole = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   
   const { playSound } = useGameSound();
   const { leaderboard, addScore } = useGameLeaderboard("whack");
 
+  // Mole duration based on difficulty
+  const getMoleDuration = useCallback(() => {
+    switch (difficulty) {
+      case "easy": return 1200;
+      case "medium": return 800;
+      case "hard": return 500;
+    }
+  }, [difficulty]);
+
+  // Mole spawn interval based on difficulty
+  const getSpawnInterval = useCallback(() => {
+    switch (difficulty) {
+      case "easy": return 1500;
+      case "medium": return 1000;
+      case "hard": return 600;
+    }
+  }, [difficulty]);
+
   const showRandomMole = useCallback(() => {
     const randomIndex = Math.floor(Math.random() * 9);
     setActiveMole(randomIndex);
-    setTimeout(() => setActiveMole(null), MOLE_DURATION);
-  }, []);
+    setTimeout(() => setActiveMole(null), getMoleDuration());
+  }, [getMoleDuration]);
 
   const startGame = () => {
     setScore(0);
@@ -67,15 +86,17 @@ const WhackAMole = () => {
 
     const interval = setInterval(() => {
       showRandomMole();
-    }, 1000);
+    }, getSpawnInterval());
 
     return () => clearInterval(interval);
-  }, [isPlaying, showRandomMole]);
+  }, [isPlaying, showRandomMole, getSpawnInterval]);
 
   const handleWhack = (index: number) => {
     if (index === activeMole) {
       playSound("whack");
-      setScore(s => s + 10);
+      // Points based on difficulty
+      const points = difficulty === "hard" ? 15 : difficulty === "medium" ? 10 : 5;
+      setScore(s => s + points);
       setActiveMole(null);
     }
   };
@@ -98,6 +119,12 @@ const WhackAMole = () => {
           <Trophy className="w-3 h-3" />
         </Button>
       </div>
+
+      <DifficultySelector 
+        value={difficulty} 
+        onChange={setDifficulty} 
+        disabled={isPlaying}
+      />
 
       <div className="grid grid-cols-3 gap-2 bg-muted rounded-lg p-2">
         {Array.from({ length: 9 }).map((_, i) => (
