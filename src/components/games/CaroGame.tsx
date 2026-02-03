@@ -5,6 +5,7 @@ import { RefreshCw, Trophy } from "lucide-react";
 import { useGameSound } from "@/hooks/useGameSound";
 import { useGameLeaderboard } from "@/hooks/useGameLeaderboard";
 import LeaderboardDisplay from "./LeaderboardDisplay";
+import DifficultySelector, { Difficulty } from "./DifficultySelector";
 
 type Player = "X" | "O" | null;
 
@@ -18,6 +19,7 @@ const CaroGame = () => {
   const [winner, setWinner] = useState<Player>(null);
   const [winningCells, setWinningCells] = useState<number[]>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   
   const { playSound } = useGameSound();
   const { leaderboard, addScore } = useGameLeaderboard("caro");
@@ -65,7 +67,7 @@ const CaroGame = () => {
   }, []);
 
   // Evaluate board position for AI
-  const evaluatePosition = useCallback((b: Player[], pos: number, player: Player): number => {
+  const evaluatePosition = useCallback((b: Player[], pos: number, player: Player, diff: Difficulty): number => {
     if (b[pos] !== null) return -1000;
     
     let score = 0;
@@ -102,27 +104,37 @@ const CaroGame = () => {
         if (!blocked) openEnds++;
       }
       
-      // Score patterns
-      if (playerCount >= 4) score += 10000;
-      else if (playerCount === 3 && openEnds >= 1) score += 1000;
-      else if (playerCount === 2 && openEnds >= 2) score += 100;
-      else if (playerCount === 1 && openEnds >= 2) score += 10;
+      // Score patterns - adjust based on difficulty
+      const multiplier = diff === "hard" ? 1.5 : diff === "easy" ? 0.5 : 1;
       
-      // Defense
-      if (opponentCount >= 4) score += 9000;
-      else if (opponentCount === 3 && openEnds >= 1) score += 800;
-      else if (opponentCount === 2 && openEnds >= 2) score += 50;
+      if (playerCount >= 4) score += 10000 * multiplier;
+      else if (playerCount === 3 && openEnds >= 1) score += 1000 * multiplier;
+      else if (playerCount === 2 && openEnds >= 2) score += 100 * multiplier;
+      else if (playerCount === 1 && openEnds >= 2) score += 10 * multiplier;
+      
+      // Defense - harder AI defends better
+      const defenseMultiplier = diff === "hard" ? 1.2 : diff === "easy" ? 0.6 : 1;
+      if (opponentCount >= 4) score += 9000 * defenseMultiplier;
+      else if (opponentCount === 3 && openEnds >= 1) score += 800 * defenseMultiplier;
+      else if (opponentCount === 2 && openEnds >= 2) score += 50 * defenseMultiplier;
     }
     
     // Center preference
     const centerDist = Math.abs(row - BOARD_SIZE/2) + Math.abs(col - BOARD_SIZE/2);
     score += Math.max(0, 10 - centerDist);
     
+    // Add randomness for easier difficulties
+    if (diff === "easy") {
+      score += Math.random() * 500;
+    } else if (diff === "medium") {
+      score += Math.random() * 100;
+    }
+    
     return score;
   }, []);
 
   // Get AI move
-  const getAIMove = useCallback((b: Player[]): number => {
+  const getAIMove = useCallback((b: Player[], diff: Difficulty): number => {
     let bestScore = -Infinity;
     let bestMoves: number[] = [];
     
@@ -141,8 +153,10 @@ const CaroGame = () => {
       const col = i % BOARD_SIZE;
       let hasNeighbor = false;
       
-      for (let dr = -2; dr <= 2; dr++) {
-        for (let dc = -2; dc <= 2; dc++) {
+      const searchRange = diff === "hard" ? 2 : diff === "medium" ? 2 : 1;
+      
+      for (let dr = -searchRange; dr <= searchRange; dr++) {
+        for (let dc = -searchRange; dc <= searchRange; dc++) {
           const nr = row + dr;
           const nc = col + dc;
           if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
@@ -157,7 +171,7 @@ const CaroGame = () => {
       
       if (!hasNeighbor) continue;
       
-      const score = evaluatePosition(b, i, "O");
+      const score = evaluatePosition(b, i, "O", diff);
       if (score > bestScore) {
         bestScore = score;
         bestMoves = [i];
@@ -194,9 +208,10 @@ const CaroGame = () => {
 
     setIsPlayerTurn(false);
 
-    // AI move
+    // AI move with delay based on difficulty
+    const delay = difficulty === "hard" ? 500 : difficulty === "medium" ? 300 : 150;
     setTimeout(() => {
-      const aiMove = getAIMove([...newBoard]);
+      const aiMove = getAIMove([...newBoard], difficulty);
       if (aiMove !== -1) {
         playSound("move");
         newBoard[aiMove] = "O";
@@ -213,7 +228,7 @@ const CaroGame = () => {
         }
       }
       setIsPlayerTurn(true);
-    }, 300);
+    }, delay);
   };
 
   const resetGame = () => {
@@ -247,6 +262,12 @@ const CaroGame = () => {
           <Trophy className="w-3 h-3" />
         </Button>
       </div>
+
+      <DifficultySelector 
+        value={difficulty} 
+        onChange={setDifficulty} 
+        disabled={!gameOver && board.some(c => c !== null)}
+      />
 
       <div 
         className="bg-muted rounded-lg p-1 overflow-auto max-h-[200px]"
