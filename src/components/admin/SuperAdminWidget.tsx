@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Crown, Eraser, Wrench, AlertTriangle } from "lucide-react";
+import { Crown, Eraser, Wrench, AlertTriangle, Database, Download, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ import { toast } from "@/hooks/use-toast";
 const SuperAdminWidget = () => {
   const queryClient = useQueryClient();
   const [confirmMaintenance, setConfirmMaintenance] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Fetch maintenance mode setting
   const { data: maintenanceMode, isLoading } = useQuery({
@@ -85,6 +86,51 @@ const SuperAdminWidget = () => {
     } else {
       // Turning off - no confirmation needed
       toggleMaintenance.mutate(false);
+    }
+  };
+
+  const handleDownloadBackup = async () => {
+    setIsDownloading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        throw new Error("Chưa đăng nhập");
+      }
+
+      const response = await supabase.functions.invoke("backup-sql", {
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Lỗi tải backup");
+      }
+
+      // Create blob and download
+      const blob = new Blob([response.data], { type: "application/sql" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `gdtg_backup_${new Date().toISOString().split("T")[0]}.sql`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Tải backup thành công!",
+        description: "File SQL đã được tải về máy của bạn",
+      });
+    } catch (error) {
+      console.error("Backup error:", error);
+      toast({
+        title: "Lỗi tải backup",
+        description: error instanceof Error ? error.message : "Không thể tải backup",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -163,6 +209,35 @@ const SuperAdminWidget = () => {
               <span>Website đang ở chế độ bảo trì. Chỉ bạn có thể truy cập.</span>
             </div>
           )}
+
+          {/* Backup SQL */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-blue-500/10 text-blue-500">
+                <Database className="w-4 h-4" />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Backup SQL</Label>
+                <p className="text-xs text-muted-foreground">
+                  Tải xuống toàn bộ dữ liệu dạng SQL
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleDownloadBackup}
+              disabled={isDownloading}
+              className="gap-2"
+            >
+              {isDownloading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {isDownloading ? "Đang tải..." : "Tải xuống"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
