@@ -46,6 +46,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useState, useEffect, useRef } from "react";
 import Footer from "@/components/Footer";
+import { AIAssistantWidget } from "@/components/admin/AIAssistantWidget";
 
 const CATEGORY_LABELS: Record<string, string> = {
   game_account: "Tài khoản game",
@@ -629,6 +630,9 @@ const TransactionDetail = () => {
         </div>
       )}
       <Footer />
+      
+      {/* AI Assistant for Staff (Admin/Moderator) */}
+      {isStaff && <AIAssistantWidget />}
     </div>
   );
 };

@@ -6,9 +6,15 @@ import MarketplaceFeed from "@/components/marketplace/MarketplaceFeed";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Home, ShoppingBag } from "lucide-react";
 import Footer from "@/components/Footer";
+import { useUserRole } from "@/hooks/useProfile";
+import { AIAssistantWidget } from "@/components/admin/AIAssistantWidget";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("sanh");
+  const { data: roleInfo } = useUserRole();
+  
+  // Show AI for Admin or Moderator
+  const canAccessAI = roleInfo?.isAdmin || roleInfo?.isModerator;
 
   return (
     <div className="min-h-screen bg-background">
@@ -38,6 +44,9 @@ const Dashboard = () => {
         </Tabs>
       </main>
       <Footer />
+      
+      {/* AI Assistant for Admin/Moderator */}
+      {canAccessAI && <AIAssistantWidget />}
     </div>
   );
 };
