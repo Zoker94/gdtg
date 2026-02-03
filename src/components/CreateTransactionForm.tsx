@@ -71,6 +71,7 @@ export const CreateTransactionForm = () => {
   const [uploading, setUploading] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState<FormValues | null>(null);
+  const [videoAgreed, setVideoAgreed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
@@ -512,11 +513,26 @@ export const CreateTransactionForm = () => {
               </div>
             )}
 
+            {/* Video Recording Agreement Checkbox - not required for moderator */}
+            {watchRole !== "moderator" && (
+              <label className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={videoAgreed}
+                  onChange={(e) => setVideoAgreed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-primary"
+                />
+                <span className="text-sm text-orange-800 dark:text-orange-200">
+                  Tôi đã hiểu quy định phải quay video màn hình để làm bằng chứng nếu có tranh chấp.
+                </span>
+              </label>
+            )}
+
             <Button
               type="submit"
               className={`w-full ${watchRole === "moderator" ? (roles?.isAdmin ? "bg-red-500 hover:bg-red-600" : "bg-pink-500 hover:bg-pink-600") : "glow-primary"}`}
               size="lg"
-              disabled={createTransaction.isPending || uploading}
+              disabled={createTransaction.isPending || uploading || (watchRole !== "moderator" && !videoAgreed)}
             >
               {createTransaction.isPending ? "Đang tạo..." : (watchRole === "moderator" ? "Tạo phòng ngay" : "Tạo phòng giao dịch")}
             </Button>
