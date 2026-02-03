@@ -70,6 +70,7 @@ const TransactionDetail = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDepositing, setIsDepositing] = useState(false);
+  const [videoAgreed, setVideoAgreed] = useState(false);
   const previousStatusRef = useRef<string | null>(null);
 
   // Loading screen with minimum duration
@@ -369,7 +370,18 @@ const TransactionDetail = () => {
                             </p>
                           )}
                         </div>
-                        <Button onClick={handleMockDeposit} className="glow-primary" disabled={isDepositing}>
+                        <label className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg cursor-pointer mb-4">
+                          <input
+                            type="checkbox"
+                            checked={videoAgreed}
+                            onChange={(e) => setVideoAgreed(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 accent-primary"
+                          />
+                          <span className="text-sm text-orange-800 dark:text-orange-200">
+                            Tôi đã hiểu quy định phải quay video màn hình để làm bằng chứng nếu có tranh chấp.
+                          </span>
+                        </label>
+                        <Button onClick={handleMockDeposit} className="glow-primary" disabled={isDepositing || !videoAgreed}>
                           <DollarSign className="w-4 h-4 mr-2" />
                           {isDepositing ? "Đang xử lý..." : "Đặt cọc ngay"}
                         </Button>
