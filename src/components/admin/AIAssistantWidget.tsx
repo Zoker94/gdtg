@@ -46,8 +46,8 @@ export const AIAssistantWidget = () => {
     }
   }, [isOpen]);
 
-  // Parse Gemini SSE stream format
-  const parseGeminiStream = async (
+  // Parse OpenAI-compatible SSE stream format (Groq uses this)
+  const parseOpenAIStream = async (
     reader: ReadableStreamDefaultReader<Uint8Array>,
     onDelta: (text: string) => void,
     onDone: () => void
@@ -61,23 +61,36 @@ export const AIAssistantWidget = () => {
 
       buffer += decoder.decode(value, { stream: true });
 
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
+      // Process line by line
+      let newlineIndex: number;
+      while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+        let line = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
 
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
+        // Handle CRLF
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        
+        // Skip comments and empty lines
+        if (line.startsWith(":") || line.trim() === "") continue;
+        if (!line.startsWith("data: ")) continue;
 
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              onDelta(text);
-            }
-          } catch {
-            // Ignore parse errors for incomplete chunks
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === "[DONE]") {
+          onDone();
+          return;
+        }
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          // OpenAI/Groq format: choices[0].delta.content
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            onDelta(content);
           }
+        } catch {
+          // Put incomplete JSON back and wait for more data
+          buffer = line + "\n" + buffer;
+          break;
         }
       }
     }
@@ -119,7 +132,7 @@ export const AIAssistantWidget = () => {
 
       setMessages([...newMessages, { role: "assistant", content: "" }]);
 
-      await parseGeminiStream(
+      await parseOpenAIStream(
         reader,
         (text) => {
           assistantContent += text;
@@ -272,7 +285,7 @@ export const AIAssistantWidget = () => {
                     AI Giám đốc Vận hành
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                       <Sparkles className="h-2.5 w-2.5 mr-0.5" />
-                      Gemini
+                      Groq
                     </Badge>
                   </h3>
                   <p className="text-xs text-muted-foreground">Hỗ trợ phân tích dữ liệu</p>
