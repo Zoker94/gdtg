@@ -284,7 +284,7 @@ const TienLenGame = () => {
   const [lastPlayedCards, setLastPlayedCards] = useState<Card[]>([]);
   const [lastPlayedBy, setLastPlayedBy] = useState<number | null>(null);
   const [passedPlayers, setPassedPlayers] = useState<Set<number>>(new Set());
-  const [gamePhase, setGamePhase] = useState<"dealing" | "playing" | "ended">("dealing");
+  const [gamePhase, setGamePhase] = useState<"setup" | "dealing" | "playing" | "ended">("setup");
   const [winner, setWinner] = useState<number | null>(null);
   const [rankings, setRankings] = useState<number[]>([]);
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
@@ -344,10 +344,23 @@ const TienLenGame = () => {
     return () => clearInterval(dealInterval);
   }, [playSound]);
 
-  // Start game
-  useEffect(() => {
+  // Start game handler
+  const startGame = () => {
     dealCards();
-  }, []);
+  };
+
+  // Reset to setup
+  const resetToSetup = () => {
+    setGamePhase("setup");
+    setHands([[], [], [], []]);
+    setSelectedCards(new Set());
+    setLastPlayedCards([]);
+    setLastPlayedBy(null);
+    setPassedPlayers(new Set());
+    setWinner(null);
+    setRankings([]);
+    setMessage("");
+  };
 
   // Bot play
   useEffect(() => {
@@ -578,6 +591,52 @@ const TienLenGame = () => {
     );
   };
 
+  // Setup screen
+  if (gamePhase === "setup") {
+    return (
+      <div className="flex flex-col items-center gap-4 w-full max-w-md mx-auto py-4">
+        <div className="text-center mb-2">
+          <h3 className="text-lg font-bold mb-1">🃏 Tiến Lên Miền Nam</h3>
+          <p className="text-xs text-muted-foreground">Đấu với 3 Bot AI</p>
+        </div>
+        
+        <div className="bg-card border rounded-xl p-4 w-full">
+          <h4 className="text-sm font-medium mb-3 text-center">Chọn độ khó Bot</h4>
+          <DifficultySelector 
+            value={difficulty} 
+            onChange={setDifficulty} 
+          />
+        </div>
+
+        <Button
+          onClick={startGame}
+          className="gap-2 w-full max-w-[200px]"
+        >
+          <Play className="w-4 h-4" />
+          Bắt đầu chơi
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowLeaderboard(true)}
+          className="gap-1.5 text-xs"
+        >
+          <Trophy className="w-3 h-3" />
+          Bảng xếp hạng
+        </Button>
+
+        <LeaderboardDisplay
+          isOpen={showLeaderboard}
+          onClose={() => setShowLeaderboard(false)}
+          leaderboard={leaderboard}
+          title="Bảng xếp hạng Tiến lên"
+          scoreLabel="Điểm"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center gap-2 w-full max-w-md mx-auto">
       {/* Header */}
@@ -585,7 +644,7 @@ const TienLenGame = () => {
         <DifficultySelector 
           value={difficulty} 
           onChange={setDifficulty} 
-          disabled={gamePhase === "playing"}
+          disabled={true}
           compact
         />
         <Button
@@ -694,7 +753,7 @@ const TienLenGame = () => {
         <Button
           size="sm"
           variant="ghost"
-          onClick={dealCards}
+          onClick={resetToSetup}
           className="gap-1 h-8 text-xs"
         >
           <RefreshCw className="w-3 h-3" />
@@ -723,7 +782,7 @@ const TienLenGame = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 {winner === 0 ? "Xuất sắc! Bạn đã về nhất!" : "Cố gắng hơn ở ván sau nhé!"}
               </p>
-              <Button onClick={dealCards} className="gap-2">
+              <Button onClick={resetToSetup} className="gap-2">
                 <RefreshCw className="w-4 h-4" />
                 Chơi lại
               </Button>
