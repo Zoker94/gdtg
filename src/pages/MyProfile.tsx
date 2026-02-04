@@ -36,6 +36,7 @@ import {
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import Footer from "@/components/Footer";
+import SocialLinksCard from "@/components/profile/SocialLinksCard";
 
 const MyProfile = () => {
   const navigate = useNavigate();
@@ -423,6 +424,15 @@ const MyProfile = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Social Links Card */}
+          <SocialLinksCard
+            facebookUrl={profile.facebook_url}
+            zaloContact={profile.zalo_contact}
+            phone={profile.phone}
+            bio={profile.bio}
+            isOwnProfile={true}
+          />
 
           {/* Telegram Verification */}
           <TelegramVerification

@@ -487,7 +487,9 @@ export type Database = {
           balance_frozen_at: string | null
           ban_reason: string | null
           banned_at: string | null
+          bio: string | null
           created_at: string
+          facebook_url: string | null
           full_name: string | null
           id: string
           is_balance_frozen: boolean | null
@@ -505,6 +507,7 @@ export type Database = {
           updated_at: string
           user_id: string
           warning_message: string | null
+          zalo_contact: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -513,7 +516,9 @@ export type Database = {
           balance_frozen_at?: string | null
           ban_reason?: string | null
           banned_at?: string | null
+          bio?: string | null
           created_at?: string
+          facebook_url?: string | null
           full_name?: string | null
           id?: string
           is_balance_frozen?: boolean | null
@@ -531,6 +536,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           warning_message?: string | null
+          zalo_contact?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -539,7 +545,9 @@ export type Database = {
           balance_frozen_at?: string | null
           ban_reason?: string | null
           banned_at?: string | null
+          bio?: string | null
           created_at?: string
+          facebook_url?: string | null
           full_name?: string | null
           id?: string
           is_balance_frozen?: boolean | null
@@ -557,6 +565,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           warning_message?: string | null
+          zalo_contact?: string | null
         }
         Relationships: []
       }

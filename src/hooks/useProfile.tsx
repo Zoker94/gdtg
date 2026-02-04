@@ -26,6 +26,9 @@ export interface Profile {
   is_balance_frozen: boolean | null;
   balance_frozen_at: string | null;
   balance_freeze_reason: string | null;
+  facebook_url: string | null;
+  zalo_contact: string | null;
+  bio: string | null;
   created_at: string;
   updated_at: string;
 }

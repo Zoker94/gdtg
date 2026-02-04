@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import PrivateMessageDialog from "@/components/messaging/PrivateMessageDialog";
 import Footer from "@/components/Footer";
+import SocialLinksCard from "@/components/profile/SocialLinksCard";
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -265,6 +266,15 @@ const UserProfile = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Social Links Card - View Only */}
+          <SocialLinksCard
+            facebookUrl={profile.facebook_url}
+            zaloContact={profile.zalo_contact}
+            phone={profile.phone}
+            bio={profile.bio}
+            isOwnProfile={false}
+          />
         </motion.div>
       </main>
 
