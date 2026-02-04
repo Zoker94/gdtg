@@ -44,6 +44,13 @@
     --gradient-start: 24 100% 50%;
     --gradient-end: 32 100% 55%;
     --shadow-card: 0 2px 8px -2px hsl(var(--foreground) / 0.08);
+    
+    /* Chart colors */
+    --chart-1: 210 90% 55%;
+    --chart-2: 142 76% 46%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 48 96% 53%;
+    --chart-5: 0 84% 60%;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 20% 10%;
@@ -92,6 +99,13 @@
     --gradient-start: 24 100% 50%;
     --gradient-end: 32 100% 55%;
     --shadow-card: 0 2px 8px -2px hsl(var(--foreground) / 0.08);
+    
+    /* Chart colors */
+    --chart-1: 210 90% 55%;
+    --chart-2: 142 76% 46%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 48 96% 53%;
+    --chart-5: 0 84% 60%;
 
     --sidebar-background: 220 20% 10%;
     --sidebar-foreground: 0 0% 95%;
