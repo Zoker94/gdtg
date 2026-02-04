@@ -115,7 +115,7 @@ const DashboardRoomMap = () => {
       case "occupied":
         return "hsl(var(--destructive))"; // Red
       case "pending":
-        return "hsl(var(--chart-4))"; // Yellow
+        return "hsl(var(--chart-1))"; // Blue
       default:
         return "hsl(var(--muted))";
     }
@@ -131,7 +131,7 @@ const DashboardRoomMap = () => {
           ? "bg-destructive/10 hover:bg-destructive/20 border-destructive/50 cursor-pointer"
           : "bg-destructive/10 border-destructive/50 cursor-not-allowed";
       case "pending":
-        return "bg-chart-4/20 hover:bg-chart-4/30 border-chart-4/50";
+        return "bg-chart-1/20 hover:bg-chart-1/30 border-chart-1/50";
       default:
         return "bg-muted";
     }
@@ -187,7 +187,7 @@ const DashboardRoomMap = () => {
             <span className="text-muted-foreground">Trống</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-chart-4/60 border border-chart-4"></div>
+            <div className="w-3 h-3 rounded bg-chart-1/60 border border-chart-1"></div>
             <span className="text-muted-foreground">Đang chờ</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -232,7 +232,7 @@ const DashboardRoomMap = () => {
                 {/* Status indicator pulse */}
                 {table.status === "pending" && (
                   <motion.div
-                    className="absolute top-2 right-2 w-2 h-2 rounded-full bg-chart-4"
+                    className="absolute top-2 right-2 w-2 h-2 rounded-full bg-chart-1"
                     animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   />
@@ -312,7 +312,7 @@ const DashboardRoomMap = () => {
                 )}
                 {table.status === "pending" && (
                   <motion.p 
-                    className="text-[10px] text-center mt-1 text-chart-4"
+                    className="text-[10px] text-center mt-1 text-chart-1"
                     animate={{ opacity: [1, 0.6, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
