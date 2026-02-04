@@ -119,7 +119,7 @@ const TransactionRoomMap = () => {
       case "occupied":
         return "hsl(var(--destructive))"; // Red
       case "pending":
-        return "hsl(var(--chart-4))"; // Yellow
+        return "hsl(var(--chart-1))"; // Blue
       default:
         return "hsl(var(--muted))";
     }
@@ -135,7 +135,7 @@ const TransactionRoomMap = () => {
           ? "bg-destructive/20 hover:bg-destructive/30 border-destructive/50 cursor-pointer"
           : "bg-destructive/20 border-destructive/50 cursor-not-allowed";
       case "pending":
-        return "bg-chart-4/20 hover:bg-chart-4/30 border-chart-4/50";
+        return "bg-chart-1/20 hover:bg-chart-1/30 border-chart-1/50";
       default:
         return "bg-muted";
     }
@@ -203,7 +203,7 @@ const TransactionRoomMap = () => {
             <span className="text-sm text-muted-foreground">Trống</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-chart-4/60 border border-chart-4"></div>
+            <div className="w-4 h-4 rounded bg-chart-1/60 border border-chart-1"></div>
             <span className="text-sm text-muted-foreground">Đang chờ</span>
           </div>
           <div className="flex items-center gap-2">
@@ -253,7 +253,7 @@ const TransactionRoomMap = () => {
                   {/* Status indicator pulse for pending */}
                   {table.status === "pending" && (
                     <motion.div
-                      className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-chart-4"
+                      className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-chart-1"
                       animate={{ scale: [1, 1.4, 1], opacity: [1, 0.4, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity }}
                     />
@@ -315,7 +315,7 @@ const TransactionRoomMap = () => {
                   )}
                   {table.status === "pending" && (
                     <motion.p 
-                      className="text-xs text-center mt-2 text-chart-4"
+                      className="text-xs text-center mt-2 text-chart-1"
                       animate={{ opacity: [1, 0.5, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity }}
                     >
