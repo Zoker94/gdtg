@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Shield, ArrowLeft, AlertTriangle, Ban, FileWarning, Scale, Phone } from "lucide-react";
+ import { Gamepad2 } from "lucide-react";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import Footer from "@/components/Footer";
@@ -160,9 +161,80 @@ const TermsOfService = () => {
 
                 <Separator />
 
-                {/* Penalties */}
+                 {/* Illegal Game Items Disclaimer */}
+                 <section className="bg-destructive/5 border border-destructive/30 rounded-lg p-4">
+                   <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-destructive">
+                     <Gamepad2 className="w-5 h-5" />
+                     6. Miễn trừ trách nhiệm đối với giao dịch tài khoản/vật phẩm game lậu
+                   </h2>
+                   <p className="text-muted-foreground leading-relaxed mb-4">
+                     GDTG là nền tảng trung gian thanh toán và <strong>KHÔNG có khả năng xác minh</strong> nguồn gốc, 
+                     tính hợp pháp hay quyền sở hữu của các tài khoản game, vật phẩm ảo, hoặc bất kỳ nội dung số 
+                     nào được giao dịch thông qua nền tảng. Do đó, chúng tôi tuyên bố miễn trừ hoàn toàn trách 
+                     nhiệm trong các trường hợp sau:
+                   </p>
+                   
+                   <div className="space-y-4">
+                     <div className="bg-background/50 rounded p-3 border border-border">
+                       <h3 className="font-medium text-destructive mb-2">6.1. Game lậu (Private Server)</h3>
+                       <ul className="list-disc list-inside space-y-1.5 text-sm text-muted-foreground">
+                         <li>Tài khoản hoặc vật phẩm từ các máy chủ game không chính thức (private server, server lậu).</li>
+                         <li>Game được crack, mod hoặc vận hành không có giấy phép từ nhà phát hành gốc.</li>
+                         <li>Các vật phẩm được tạo ra bằng cách khai thác lỗ hổng, hack hoặc cheat engine.</li>
+                         <li>Tiền ảo, kim cương, hoặc tài nguyên game có nguồn gốc từ các nguồn không chính thống.</li>
+                       </ul>
+                     </div>
+                     
+                     <div className="bg-background/50 rounded p-3 border border-border">
+                       <h3 className="font-medium text-destructive mb-2">6.2. Vi phạm điều khoản nhà phát hành</h3>
+                       <ul className="list-disc list-inside space-y-1.5 text-sm text-muted-foreground">
+                         <li>Mua bán tài khoản game vi phạm Terms of Service của nhà phát hành (VD: Riot Games, Garena, VNG...).</li>
+                         <li>Tài khoản bị khóa, bị ban hoặc bị thu hồi sau giao dịch do vi phạm quy định game.</li>
+                         <li>Vật phẩm bị xóa, thu hồi bởi hệ thống anti-cheat hoặc ban wave của nhà phát hành.</li>
+                         <li>Mất quyền truy cập do nhà phát hành phát hiện hoạt động mua bán tài khoản.</li>
+                       </ul>
+                     </div>
+                     
+                     <div className="bg-background/50 rounded p-3 border border-border">
+                       <h3 className="font-medium text-destructive mb-2">6.3. Rủi ro người dùng phải chấp nhận</h3>
+                       <ul className="list-disc list-inside space-y-1.5 text-sm text-muted-foreground">
+                         <li><strong>Tài khoản bị khôi phục (recovery):</strong> Người bán giành lại quyền sở hữu sau giao dịch.</li>
+                         <li><strong>Mật khẩu bị thay đổi:</strong> Email hoặc số điện thoại gốc vẫn còn liên kết với tài khoản.</li>
+                         <li><strong>Server đóng cửa:</strong> Game lậu có thể ngừng hoạt động bất cứ lúc nào mà không thông báo.</li>
+                         <li><strong>Scam nội bộ game:</strong> Các hình thức lừa đảo xảy ra bên trong game sau khi giao dịch hoàn tất.</li>
+                         <li><strong>Vật phẩm không như mô tả:</strong> Thông số, giá trị thực tế khác với quảng cáo.</li>
+                       </ul>
+                     </div>
+                   </div>
+                   
+                   <div className="mt-4 p-3 bg-destructive/10 rounded border border-destructive/30">
+                     <p className="text-sm font-medium text-destructive mb-2">
+                       ⚠️ CẢNH BÁO QUAN TRỌNG:
+                     </p>
+                     <ul className="list-disc list-inside space-y-1.5 text-sm text-destructive/90">
+                       <li>GDTG <strong>KHÔNG</strong> chịu trách nhiệm cho bất kỳ thiệt hại nào phát sinh từ việc 
+                       giao dịch tài khoản/vật phẩm game lậu hoặc vi phạm điều khoản nhà phát hành.</li>
+                       <li>Người dùng tự chịu <strong>TOÀN BỘ RỦI RO</strong> khi quyết định thực hiện các giao dịch này.</li>
+                       <li>Chúng tôi <strong>KHÔNG</strong> hoàn tiền cho các trường hợp tài khoản bị khóa, thu hồi 
+                       hoặc mất quyền truy cập sau giao dịch do nguyên nhân từ phía nhà phát hành game.</li>
+                       <li>Việc mua bán tài khoản game có thể <strong>VI PHẠM PHÁP LUẬT</strong> tại một số quốc gia. 
+                       Người dùng có trách nhiệm tìm hiểu và tuân thủ quy định pháp luật địa phương.</li>
+                     </ul>
+                   </div>
+                   
+                   <p className="text-xs text-muted-foreground mt-4 italic">
+                     Bằng việc sử dụng GDTG để giao dịch tài khoản hoặc vật phẩm game, bạn xác nhận đã đọc, hiểu 
+                     và chấp nhận hoàn toàn các rủi ro nêu trên. GDTG chỉ đóng vai trò trung gian thanh toán và 
+                     không tham gia vào quá trình xác minh, bảo đảm hay bảo hành cho các giao dịch liên quan đến 
+                     game lậu hoặc vi phạm điều khoản nhà phát hành.
+                   </p>
+                 </section>
+
+                 <Separator />
+
+                 {/* Penalties - renumber to 7 */}
                 <section>
-                  <h2 className="text-lg font-semibold mb-3">6. Hình thức xử lý vi phạm</h2>
+                   <h2 className="text-lg font-semibold mb-3">7. Hình thức xử lý vi phạm</h2>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li><strong>Cảnh cáo:</strong> Áp dụng cho vi phạm lần đầu ở mức độ nhẹ.</li>
                     <li><strong>Tạm khóa tài khoản:</strong> Từ 7-30 ngày tùy mức độ vi phạm.</li>
@@ -176,9 +248,9 @@ const TermsOfService = () => {
 
                 <Separator />
 
-                {/* Dispute Resolution */}
+                 {/* Dispute Resolution - renumber to 8 */}
                 <section>
-                  <h2 className="text-lg font-semibold mb-3">7. Giải quyết tranh chấp</h2>
+                   <h2 className="text-lg font-semibold mb-3">8. Giải quyết tranh chấp</h2>
                   <p className="text-muted-foreground leading-relaxed mb-4">
                     Trong trường hợp có tranh chấp giữa các bên, GDTG sẽ:
                   </p>
@@ -192,9 +264,9 @@ const TermsOfService = () => {
 
                 <Separator />
 
-                {/* Liability Limitation */}
+                 {/* Liability Limitation - renumber to 9 */}
                 <section>
-                  <h2 className="text-lg font-semibold mb-3">8. Giới hạn trách nhiệm</h2>
+                   <h2 className="text-lg font-semibold mb-3">9. Giới hạn trách nhiệm</h2>
                   <p className="text-muted-foreground leading-relaxed">
                     GDTG không chịu trách nhiệm về:
                   </p>
@@ -208,9 +280,9 @@ const TermsOfService = () => {
 
                 <Separator />
 
-                {/* Contact */}
+                 {/* Contact - renumber to 10 */}
                 <section className="bg-muted/50 rounded-lg p-4">
-                  <h2 className="text-lg font-semibold mb-3">9. Liên hệ hỗ trợ</h2>
+                   <h2 className="text-lg font-semibold mb-3">10. Liên hệ hỗ trợ</h2>
                   <p className="text-muted-foreground leading-relaxed mb-4">
                     Nếu bạn có thắc mắc về điều khoản sử dụng hoặc cần hỗ trợ, vui lòng liên hệ:
                   </p>
