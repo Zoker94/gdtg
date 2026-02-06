@@ -282,17 +282,31 @@ const TermsOfService = () => {
 
                  {/* Contact - renumber to 10 */}
                 <section className="bg-muted/50 rounded-lg p-4">
-                   <h2 className="text-lg font-semibold mb-3">10. Liên hệ hỗ trợ</h2>
+                   <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                     <Phone className="w-5 h-5 text-primary" />
+                     10. Liên hệ hỗ trợ
+                   </h2>
                   <p className="text-muted-foreground leading-relaxed mb-4">
-                    Nếu bạn có thắc mắc về điều khoản sử dụng hoặc cần hỗ trợ, vui lòng liên hệ:
+                    Nếu bạn có thắc mắc về điều khoản sử dụng hoặc cần hỗ trợ, vui lòng liên hệ với đội ngũ quản trị viên:
                   </p>
-                  {platformSettings?.admin_contact_link && (
-                    <Button asChild>
-                      <a href={platformSettings.admin_contact_link} target="_blank" rel="noopener noreferrer">
-                        Liên hệ Admin
-                      </a>
+                  <div className="flex flex-wrap gap-3">
+                    <Button asChild variant={platformSettings?.admin_contact_link ? "default" : "secondary"} disabled={!platformSettings?.admin_contact_link}>
+                      {platformSettings?.admin_contact_link ? (
+                        <a href={platformSettings.admin_contact_link} target="_blank" rel="noopener noreferrer">
+                          Liên hệ Admin
+                        </a>
+                      ) : (
+                        <span>Liên hệ Admin (chưa cấu hình)</span>
+                      )}
                     </Button>
-                  )}
+                    {(platformSettings as any)?.zalo_group_link && (
+                      <Button asChild variant="outline">
+                        <a href={(platformSettings as any).zalo_group_link} target="_blank" rel="noopener noreferrer">
+                          Nhóm Zalo hỗ trợ
+                        </a>
+                      </Button>
+                    )}
+                  </div>
                 </section>
 
                 {/* Agreement */}
