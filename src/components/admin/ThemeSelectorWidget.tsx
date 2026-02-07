@@ -74,12 +74,16 @@ const ThemeSelectorWidget = () => {
             Chọn một preset sẵn có hoặc tùy chỉnh theo ý muốn bên dưới.
           </p>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {(Object.keys(presetThemes) as PresetTheme[]).map((preset) => {
               const config = presetThemes[preset];
               const colorConfig = colorThemes[config.colorTheme];
               const isActive = presetTheme === preset;
-              const isNeon = preset === "neon";
+              const isSpecial = ["neon", "cyberpunk", "retro"].includes(preset);
+              
+              const glowStyle = isSpecial && isActive
+                ? `shadow-[0_0_20px_${colorConfig.preview.replace("hsl(", "hsl(").replace(")", "/0.4)")}]`
+                : "";
               
               return (
                 <button
@@ -90,25 +94,30 @@ const ThemeSelectorWidget = () => {
                     isActive 
                       ? "border-primary bg-primary/5 shadow-sm" 
                       : "border-border hover:border-primary/50 hover:bg-muted/50",
-                    isNeon && !isActive && "hover:shadow-[0_0_15px_hsl(180_70%_45%/0.3)]",
-                    isNeon && isActive && "shadow-[0_0_20px_hsl(180_70%_45%/0.4)]",
+                    preset === "neon" && isActive && "shadow-[0_0_20px_hsl(180_70%_45%/0.4)]",
+                    preset === "neon" && !isActive && "hover:shadow-[0_0_15px_hsl(180_70%_45%/0.3)]",
+                    preset === "cyberpunk" && isActive && "shadow-[0_0_20px_hsl(262_83%_58%/0.4)]",
+                    preset === "cyberpunk" && !isActive && "hover:shadow-[0_0_15px_hsl(262_83%_58%/0.3)]",
+                    preset === "retro" && isActive && "shadow-[4px_4px_0px_hsl(30_20%_15%/0.2)]",
+                    preset === "retro" && !isActive && "hover:shadow-[3px_3px_0px_hsl(30_20%_15%/0.15)]",
                   )}
                 >
                   <div className="flex items-center gap-2 w-full">
                     <div
                       className={cn(
                         "w-6 h-6 rounded-full shadow-sm flex-shrink-0",
-                        isNeon && "shadow-[0_0_10px_hsl(180_70%_45%/0.6)]"
+                        preset === "neon" && "shadow-[0_0_10px_hsl(180_70%_45%/0.6)]",
+                        preset === "cyberpunk" && "shadow-[0_0_10px_hsl(262_83%_58%/0.6)]",
                       )}
                       style={{ 
                         backgroundColor: colorConfig.preview,
-                        borderRadius: `${config.borderRadius}px`,
+                        borderRadius: preset === "retro" ? "2px" : `${config.borderRadius}px`,
                       }}
                     />
                     <span className={cn(
                       "font-semibold text-sm",
                       isActive ? "text-primary" : "text-foreground",
-                      isNeon && isActive && "drop-shadow-[0_0_6px_hsl(180_70%_45%/0.5)]"
+                      isSpecial && isActive && "drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]"
                     )}>
                       {config.name}
                     </span>
