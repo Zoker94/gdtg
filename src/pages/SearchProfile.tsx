@@ -32,11 +32,12 @@ const SearchProfile = () => {
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
 
-      // Use proper filtering syntax for ilike
+      // Search by full_name (text column)
+      // Also try exact match on user_id if it looks like a UUID prefix
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .or(`full_name.ilike.%${searchTerm}%,user_id.ilike.%${searchTerm}%`)
+        .ilike("full_name", `%${searchTerm}%`)
         .order("reputation_score", { ascending: false })
         .limit(20);
 
@@ -44,7 +45,24 @@ const SearchProfile = () => {
         console.error("Search error:", error);
         throw error;
       }
-      return data;
+      
+      // If search term looks like it could be a user ID (8+ chars), also search by user_id
+      if (searchTerm.length >= 8) {
+        const { data: idMatch } = await supabase
+          .from("profiles")
+          .select("*")
+          .filter("user_id", "ilike", `${searchTerm}%`)
+          .limit(5);
+        
+        if (idMatch && idMatch.length > 0) {
+          // Merge and dedupe results
+          const existingIds = new Set(data?.map(p => p.id) || []);
+          const uniqueIdMatches = idMatch.filter(p => !existingIds.has(p.id));
+          return [...(data || []), ...uniqueIdMatches];
+        }
+      }
+      
+      return data || [];
     },
     enabled: !!user && searchTerm.length >= 2,
   });
