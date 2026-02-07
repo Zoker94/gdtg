@@ -4,7 +4,7 @@ import { Shield, ArrowRight, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import tetHorseCorner from "@/assets/tet-horse-corner.png";
+
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -59,11 +59,7 @@ const HeroSection = () => {
             className="border-primary/20 hover:border-primary/50 transition-all duration-300 cursor-pointer group relative overflow-hidden" 
             onClick={handleCreateRoom}
           >
-            <img 
-              src={tetHorseCorner} 
-              alt="" 
-              className="absolute bottom-2 right-2 w-20 h-20 object-contain opacity-[0.15] group-hover:opacity-[0.3] transition-opacity duration-500 pointer-events-none tet-horse" 
-            />
+            <span className="absolute bottom-2 right-2 text-5xl opacity-[0.12] group-hover:opacity-[0.25] transition-opacity duration-500 pointer-events-none">🐴</span>
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <Shield className="w-4 h-4 text-primary" />
@@ -85,11 +81,7 @@ const HeroSection = () => {
             className="border-border hover:border-primary/30 transition-all duration-300 cursor-pointer group relative overflow-hidden" 
             onClick={() => navigate("/join")}
           >
-            <img 
-              src={tetHorseCorner} 
-              alt="" 
-              className="absolute bottom-2 right-2 w-20 h-20 object-contain opacity-[0.15] group-hover:opacity-[0.3] transition-opacity duration-500 pointer-events-none scale-x-[-1] tet-horse"
-            />
+            <span className="absolute bottom-2 right-2 text-5xl opacity-[0.12] group-hover:opacity-[0.25] transition-opacity duration-500 pointer-events-none scale-x-[-1]">🐴</span>
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <LogIn className="w-4 h-4 text-muted-foreground" />
