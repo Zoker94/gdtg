@@ -72,6 +72,23 @@ const Withdraw = () => {
     enabled: !!user,
   });
 
+  // Check last completed transaction time for cooldown
+  const { data: lastCompletedTx } = useQuery({
+    queryKey: ["last-completed-tx", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("completed_at")
+        .or(`buyer_id.eq.${user!.id},seller_id.eq.${user!.id}`)
+        .eq("status", "completed")
+        .order("completed_at", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+    enabled: !!user,
+  });
+
   // Get selected bank details
   const selectedBank = linkedBanks?.find((b) => b.id === selectedBankId);
 
@@ -104,8 +121,30 @@ const Withdraw = () => {
     return new Intl.NumberFormat("vi-VN").format(value) + "đ";
   };
 
+  // Calculate cooldown remaining
+  const getCooldownRemaining = () => {
+    if (!lastCompletedTx?.completed_at || !platformSettings) return 0;
+    const cooldownMs = platformSettings.withdrawal_cooldown_minutes * 60 * 1000;
+    const completedAt = new Date(lastCompletedTx.completed_at).getTime();
+    const remaining = (completedAt + cooldownMs) - Date.now();
+    return Math.max(0, remaining);
+  };
+
+  const cooldownRemaining = getCooldownRemaining();
+  const cooldownMinutes = Math.ceil(cooldownRemaining / 60000);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check cooldown
+    if (cooldownRemaining > 0) {
+      toast({
+        title: "Chưa thể rút tiền",
+        description: `Vui lòng chờ thêm ${cooldownMinutes} phút sau giao dịch gần nhất.`,
+        variant: "destructive",
+      });
+      return;
+    }
     
     const amountNum = parseFloat(amount);
     if (!amountNum || amountNum <= 0) {
@@ -411,6 +450,17 @@ const Withdraw = () => {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {cooldownRemaining > 0 && (
+                    <div className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 flex items-start gap-2">
+                      <Clock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Đang trong thời gian chờ</p>
+                        <p className="text-xs text-muted-foreground">
+                          Bạn cần chờ thêm {cooldownMinutes} phút sau giao dịch gần nhất mới có thể rút tiền.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="bank">Chọn tài khoản nhận tiền</Label>
                     <Select value={selectedBankId} onValueChange={setSelectedBankId}>
