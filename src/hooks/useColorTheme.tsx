@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 
 export type ColorTheme = "orange" | "blue" | "purple" | "green" | "red" | "teal" | "pink";
-export type PresetTheme = "modern" | "classic" | "minimal" | "vibrant" | "elegant" | "neon";
+export type PresetTheme = "modern" | "classic" | "minimal" | "vibrant" | "elegant" | "neon" | "cyberpunk" | "retro";
 
 interface ThemeConfig {
   colorTheme: ColorTheme;
@@ -134,6 +134,22 @@ export const presetThemes: Record<PresetTheme, {
     shadowIntensity: "strong",
     cardStyle: "elevated",
   },
+  cyberpunk: {
+    name: "Cyberpunk",
+    description: "Tương lai u tối, sắc tím hồng mạnh mẽ",
+    colorTheme: "purple",
+    borderRadius: 4,
+    shadowIntensity: "strong",
+    cardStyle: "bordered",
+  },
+  retro: {
+    name: "Retro",
+    description: "Cổ điển hoài niệm, ấm áp vintage",
+    colorTheme: "orange",
+    borderRadius: 0,
+    shadowIntensity: "none",
+    cardStyle: "bordered",
+  },
 };
 
 const STORAGE_KEY = "gdtg-theme-config";
@@ -179,11 +195,14 @@ function applyThemeStyles(config: ThemeConfig) {
   root.classList.remove("card-flat", "card-bordered", "card-elevated");
   root.classList.add(`card-${config.cardStyle}`);
 
-  // Apply neon mode
+  // Apply special theme modes
+  root.classList.remove("theme-neon", "theme-cyberpunk", "theme-retro");
   if (config.presetTheme === "neon") {
     root.classList.add("theme-neon");
-  } else {
-    root.classList.remove("theme-neon");
+  } else if (config.presetTheme === "cyberpunk") {
+    root.classList.add("theme-cyberpunk");
+  } else if (config.presetTheme === "retro") {
+    root.classList.add("theme-retro");
   }
 }
 
