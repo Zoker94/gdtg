@@ -35,8 +35,10 @@ import {
   X,
   ImagePlus,
   Loader2,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useProfile";
 import {
   MarketplacePost,
   useToggleReaction,
@@ -64,6 +66,7 @@ const REACTIONS = [
 const PostCard = ({ post }: PostCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: roleInfo } = useUserRole();
   const [showComments, setShowComments] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -83,6 +86,8 @@ const PostCard = ({ post }: PostCardProps) => {
   const updatePost = useUpdatePost();
 
   const isOwner = user?.id === post.user_id;
+  const isAdmin = roleInfo?.isAdmin || false;
+  const canModerate = isOwner || isAdmin;
 
   const getInitials = (name: string | null) => {
     if (!name) return "U";
@@ -221,7 +226,7 @@ const PostCard = ({ post }: PostCardProps) => {
               </div>
             </div>
 
-            {isOwner && (
+            {canModerate && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -231,15 +236,21 @@ const PostCard = ({ post }: PostCardProps) => {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={handleOpenEditDialog}>
                     <Edit className="w-4 h-4 mr-2" />
-                    Chỉnh sửa bài viết
+                    {isAdmin && !isOwner ? "Chỉnh sửa (Admin)" : "Chỉnh sửa bài viết"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => deletePost.mutate(post.id)}
                     className="text-destructive"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Xóa bài viết
+                    {isAdmin && !isOwner ? "Xóa (Admin)" : "Xóa bài viết"}
                   </DropdownMenuItem>
+                  {isAdmin && !isOwner && (
+                    <div className="px-2 py-1 text-[10px] text-muted-foreground flex items-center gap-1 border-t mt-1 pt-1">
+                      <Shield className="w-3 h-3" />
+                      Quyền quản trị viên
+                    </div>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -417,12 +428,13 @@ const PostCard = ({ post }: PostCardProps) => {
                           <span className="text-xs font-semibold">
                             {comment.profile?.full_name || "Người dùng"}
                           </span>
-                          {user?.id === comment.user_id && (
+                          {(user?.id === comment.user_id || isAdmin) && (
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-5 w-5"
                               onClick={() => deleteComment.mutate(comment.id)}
+                              title={user?.id !== comment.user_id ? "Xóa (Admin)" : "Xóa"}
                             >
                               <Trash2 className="w-3 h-3" />
                             </Button>
