@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import DashboardRoomMap from "@/components/DashboardRoomMap";
 import ModeratorsList from "@/components/ModeratorsList";
-import tetHorseCorner from "@/assets/tet-horse-corner.png";
+
 
 const TetBanner = () => (
   <motion.div
@@ -23,7 +23,7 @@ const TetBanner = () => (
     animate={{ opacity: 1, y: 0 }}
     className="mb-4 p-3 rounded-lg border border-red-500/20 bg-red-500/5 flex items-center gap-3"
   >
-    <img src={tetHorseCorner} alt="Ngựa Tết" className="w-10 h-10 object-contain tet-horse" />
+    <span className="text-3xl">🐴</span>
     <div className="flex-1 min-w-0">
       <p className="text-sm font-semibold">🎊 Chúc Mừng Năm Mới 2026</p>
       <p className="text-xs text-muted-foreground">Năm Bính Ngọ — Chúc bạn giao dịch thuận lợi!</p>
@@ -108,11 +108,7 @@ const DashboardContent = () => {
           </div>
         ) : activeTransactions?.length === 0 ? (
           <Card className="border-border relative overflow-hidden">
-            <img 
-              src={tetHorseCorner} 
-              alt="" 
-              className="absolute bottom-2 right-2 w-16 h-16 object-contain opacity-[0.15] pointer-events-none tet-horse" 
-            />
+            <span className="absolute bottom-2 right-2 text-4xl opacity-[0.1] pointer-events-none">🐴</span>
             <CardContent className="py-8 text-center">
               <Package className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground text-sm">Chưa có giao dịch nào</p>
@@ -149,11 +145,7 @@ const DashboardContent = () => {
           <DepositListSkeleton />
         ) : deposits?.length === 0 ? (
           <Card className="border-border relative overflow-hidden">
-            <img 
-              src={tetHorseCorner} 
-              alt="" 
-              className="absolute bottom-2 right-2 w-14 h-14 object-contain opacity-[0.15] pointer-events-none scale-x-[-1] tet-horse" 
-            />
+            <span className="absolute bottom-2 right-2 text-4xl opacity-[0.1] pointer-events-none scale-x-[-1]">🐴</span>
             <CardContent className="py-6 text-center">
               <Wallet className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-muted-foreground text-sm">Chưa có lịch sử nạp tiền</p>
@@ -164,11 +156,7 @@ const DashboardContent = () => {
           </Card>
         ) : (
           <Card className="relative overflow-hidden">
-            <img 
-              src={tetHorseCorner} 
-              alt="" 
-              className="absolute bottom-2 right-2 w-16 h-16 object-contain opacity-[0.1] pointer-events-none tet-horse" 
-            />
+            <span className="absolute bottom-2 right-2 text-4xl opacity-[0.08] pointer-events-none">🐴</span>
             <CardContent className="p-0">
               <div className="divide-y divide-border">
                 {deposits?.map((d) => (
