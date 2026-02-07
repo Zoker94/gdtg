@@ -8,7 +8,7 @@ import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { Settings, Save, Percent, Clock, DollarSign, MessageCircle } from "lucide-react";
+import { Settings, Save, Percent, Clock, DollarSign, MessageCircle, Timer } from "lucide-react";
 
 const PlatformSettingsWidget = () => {
   const queryClient = useQueryClient();
@@ -18,6 +18,7 @@ const PlatformSettingsWidget = () => {
   const [disputeHours, setDisputeHours] = useState(24);
   const [minAmount, setMinAmount] = useState(10000);
   const [adminContactLink, setAdminContactLink] = useState("");
+  const [withdrawalCooldown, setWithdrawalCooldown] = useState(15);
 
   useEffect(() => {
     if (settings) {
@@ -25,6 +26,7 @@ const PlatformSettingsWidget = () => {
       setDisputeHours(settings.default_dispute_hours);
       setMinAmount(settings.min_transaction_amount);
       setAdminContactLink(settings.admin_contact_link);
+      setWithdrawalCooldown(settings.withdrawal_cooldown_minutes);
     }
   }, [settings]);
 
@@ -54,6 +56,7 @@ const PlatformSettingsWidget = () => {
       { key: "default_dispute_hours", value: String(disputeHours) },
       { key: "min_transaction_amount", value: String(minAmount) },
       { key: "admin_contact_link", value: adminContactLink },
+      { key: "withdrawal_cooldown_minutes", value: String(withdrawalCooldown) },
     ]);
   };
 
@@ -61,7 +64,8 @@ const PlatformSettingsWidget = () => {
     feePercent !== settings.default_fee_percent ||
     disputeHours !== settings.default_dispute_hours ||
     minAmount !== settings.min_transaction_amount ||
-    adminContactLink !== settings.admin_contact_link
+    adminContactLink !== settings.admin_contact_link ||
+    withdrawalCooldown !== settings.withdrawal_cooldown_minutes
   );
 
   if (isLoading) {
@@ -161,6 +165,25 @@ const PlatformSettingsWidget = () => {
           />
           <p className="text-xs text-muted-foreground">
             Link Zalo/Messenger để user liên hệ khi rút tiền
+          </p>
+        </div>
+
+        {/* Withdrawal Cooldown */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 text-sm">
+            <Timer className="w-3.5 h-3.5 text-muted-foreground" />
+            Thời gian chờ rút tiền sau giao dịch (phút)
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            max={1440}
+            value={withdrawalCooldown}
+            onChange={(e) => setWithdrawalCooldown(Number(e.target.value))}
+            className="h-9"
+          />
+          <p className="text-xs text-muted-foreground">
+            Số phút người dùng phải chờ sau khi giao dịch hoàn tất mới được rút tiền
           </p>
         </div>
 

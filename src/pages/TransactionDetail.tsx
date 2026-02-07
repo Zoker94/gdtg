@@ -45,6 +45,7 @@ import {
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useState, useEffect, useRef } from "react";
+import confetti from "canvas-confetti";
 import Footer from "@/components/Footer";
 import { AIAssistantWidget } from "@/components/admin/AIAssistantWidget";
 import TransactionVideoAlert from "@/components/TransactionVideoAlert";
@@ -141,6 +142,30 @@ const TransactionDetail = () => {
           title: message.title,
           description: message.description,
         });
+      }
+
+      // Fire confetti on successful completion
+      if (transaction.status === "completed") {
+        const duration = 3000;
+        const end = Date.now() + duration;
+        const frame = () => {
+          confetti({
+            particleCount: 3,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: ["#ff0000", "#ff6600", "#ffd700", "#ff3366"],
+          });
+          confetti({
+            particleCount: 3,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: ["#ff0000", "#ff6600", "#ffd700", "#ff3366"],
+          });
+          if (Date.now() < end) requestAnimationFrame(frame);
+        };
+        frame();
       }
 
       // Redirect after a short delay for user to see the notification

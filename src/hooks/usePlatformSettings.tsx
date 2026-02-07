@@ -9,6 +9,7 @@ export interface PlatformSettings {
   admin_bank_account: string;
   admin_bank_holder: string;
   admin_contact_link: string;
+  withdrawal_cooldown_minutes: number;
 }
 
 export const usePlatformSettings = () => {
@@ -29,6 +30,7 @@ export const usePlatformSettings = () => {
         admin_bank_account: "1234567890",
         admin_bank_holder: "ESCROW VN",
         admin_contact_link: "",
+        withdrawal_cooldown_minutes: 15,
       };
 
       data?.forEach((row) => {
@@ -46,6 +48,8 @@ export const usePlatformSettings = () => {
           settings.admin_bank_holder = row.setting_value;
         } else if (row.setting_key === "admin_contact_link") {
           settings.admin_contact_link = row.setting_value;
+        } else if (row.setting_key === "withdrawal_cooldown_minutes") {
+          settings.withdrawal_cooldown_minutes = Number(row.setting_value);
         }
       });
 
