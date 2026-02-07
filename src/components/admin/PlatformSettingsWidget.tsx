@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { Settings, Save, Percent, Clock, DollarSign, MessageCircle, Timer } from "lucide-react";
+import { Settings, Save, Percent, Clock, DollarSign, MessageCircle, Timer, Flower2 } from "lucide-react";
 
 const PlatformSettingsWidget = () => {
   const queryClient = useQueryClient();
@@ -19,6 +20,7 @@ const PlatformSettingsWidget = () => {
   const [minAmount, setMinAmount] = useState(10000);
   const [adminContactLink, setAdminContactLink] = useState("");
   const [withdrawalCooldown, setWithdrawalCooldown] = useState(15);
+  const [tetPetalsEnabled, setTetPetalsEnabled] = useState(true);
 
   useEffect(() => {
     if (settings) {
@@ -27,6 +29,7 @@ const PlatformSettingsWidget = () => {
       setMinAmount(settings.min_transaction_amount);
       setAdminContactLink(settings.admin_contact_link);
       setWithdrawalCooldown(settings.withdrawal_cooldown_minutes);
+      setTetPetalsEnabled(settings.tet_falling_petals_enabled);
     }
   }, [settings]);
 
@@ -57,6 +60,7 @@ const PlatformSettingsWidget = () => {
       { key: "min_transaction_amount", value: String(minAmount) },
       { key: "admin_contact_link", value: adminContactLink },
       { key: "withdrawal_cooldown_minutes", value: String(withdrawalCooldown) },
+      { key: "tet_falling_petals_enabled", value: String(tetPetalsEnabled) },
     ]);
   };
 
@@ -65,7 +69,8 @@ const PlatformSettingsWidget = () => {
     disputeHours !== settings.default_dispute_hours ||
     minAmount !== settings.min_transaction_amount ||
     adminContactLink !== settings.admin_contact_link ||
-    withdrawalCooldown !== settings.withdrawal_cooldown_minutes
+    withdrawalCooldown !== settings.withdrawal_cooldown_minutes ||
+    tetPetalsEnabled !== settings.tet_falling_petals_enabled
   );
 
   if (isLoading) {
@@ -187,7 +192,24 @@ const PlatformSettingsWidget = () => {
           </p>
         </div>
 
-        <Button 
+        {/* Tet Falling Petals Toggle */}
+        <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-2">
+            <Flower2 className="w-4 h-4 text-pink-500" />
+            <div>
+              <Label className="text-sm font-medium">Hiệu ứng hoa mai rơi</Label>
+              <p className="text-xs text-muted-foreground">
+                Hiển thị hoa rơi trên trang chủ
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={tetPetalsEnabled}
+            onCheckedChange={setTetPetalsEnabled}
+          />
+        </div>
+
+        <Button
           onClick={handleSave} 
           className="w-full gap-2"
           disabled={updateSettings.isPending || !hasChanges}

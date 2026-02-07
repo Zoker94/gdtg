@@ -10,6 +10,7 @@ export interface PlatformSettings {
   admin_bank_holder: string;
   admin_contact_link: string;
   withdrawal_cooldown_minutes: number;
+  tet_falling_petals_enabled: boolean;
 }
 
 export const usePlatformSettings = () => {
@@ -31,6 +32,7 @@ export const usePlatformSettings = () => {
         admin_bank_holder: "ESCROW VN",
         admin_contact_link: "",
         withdrawal_cooldown_minutes: 15,
+        tet_falling_petals_enabled: true,
       };
 
       data?.forEach((row) => {
@@ -50,6 +52,8 @@ export const usePlatformSettings = () => {
           settings.admin_contact_link = row.setting_value;
         } else if (row.setting_key === "withdrawal_cooldown_minutes") {
           settings.withdrawal_cooldown_minutes = Number(row.setting_value);
+        } else if (row.setting_key === "tet_falling_petals_enabled") {
+          settings.tet_falling_petals_enabled = row.setting_value === "true";
         }
       });
 
