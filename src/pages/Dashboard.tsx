@@ -8,16 +8,21 @@ import { Home, ShoppingBag } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useUserRole } from "@/hooks/useProfile";
 import { AIAssistantWidget } from "@/components/admin/AIAssistantWidget";
+import FallingPetals from "@/components/FallingPetals";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("sanh");
   const { data: roleInfo } = useUserRole();
+  const { data: settings } = usePlatformSettings();
   
   // Show AI for Admin or Moderator
   const canAccessAI = roleInfo?.isAdmin || roleInfo?.isModerator;
+  const showPetals = settings?.tet_falling_petals_enabled ?? true;
 
   return (
     <div className="min-h-screen bg-background">
+      {showPetals && <FallingPetals />}
       <DashboardHeader />
       <AnnouncementBanner />
 
