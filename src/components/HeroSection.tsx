@@ -62,7 +62,7 @@ const HeroSection = () => {
             <img 
               src={tetHorseCorner} 
               alt="" 
-              className="absolute bottom-2 right-2 w-20 h-20 object-contain opacity-[0.12] group-hover:opacity-[0.22] transition-opacity duration-500 pointer-events-none" 
+              className="absolute bottom-2 right-2 w-20 h-20 object-contain opacity-[0.15] group-hover:opacity-[0.3] transition-opacity duration-500 pointer-events-none tet-horse" 
             />
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-base flex items-center gap-2">
@@ -88,7 +88,7 @@ const HeroSection = () => {
             <img 
               src={tetHorseCorner} 
               alt="" 
-              className="absolute bottom-2 right-2 w-20 h-20 object-contain opacity-[0.12] group-hover:opacity-[0.22] transition-opacity duration-500 pointer-events-none scale-x-[-1]" 
+              className="absolute bottom-2 right-2 w-20 h-20 object-contain opacity-[0.15] group-hover:opacity-[0.3] transition-opacity duration-500 pointer-events-none scale-x-[-1] tet-horse"
             />
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-base flex items-center gap-2">
