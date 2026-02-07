@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 
 export type ColorTheme = "orange" | "blue" | "purple" | "green" | "red" | "teal" | "pink";
-export type PresetTheme = "modern" | "classic" | "minimal" | "vibrant" | "elegant";
+export type PresetTheme = "modern" | "classic" | "minimal" | "vibrant" | "elegant" | "neon";
 
 interface ThemeConfig {
   colorTheme: ColorTheme;
@@ -126,6 +126,14 @@ export const presetThemes: Record<PresetTheme, {
     shadowIntensity: "medium",
     cardStyle: "bordered",
   },
+  neon: {
+    name: "Neon",
+    description: "Phát sáng rực rỡ, hiệu ứng neon cyber",
+    colorTheme: "teal",
+    borderRadius: 12,
+    shadowIntensity: "strong",
+    cardStyle: "elevated",
+  },
 };
 
 const STORAGE_KEY = "gdtg-theme-config";
@@ -170,6 +178,13 @@ function applyThemeStyles(config: ThemeConfig) {
   // Apply card style class
   root.classList.remove("card-flat", "card-bordered", "card-elevated");
   root.classList.add(`card-${config.cardStyle}`);
+
+  // Apply neon mode
+  if (config.presetTheme === "neon") {
+    root.classList.add("theme-neon");
+  } else {
+    root.classList.remove("theme-neon");
+  }
 }
 
 export function ColorThemeProvider({ children }: { children: React.ReactNode }) {

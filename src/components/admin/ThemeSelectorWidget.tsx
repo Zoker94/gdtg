@@ -79,6 +79,7 @@ const ThemeSelectorWidget = () => {
               const config = presetThemes[preset];
               const colorConfig = colorThemes[config.colorTheme];
               const isActive = presetTheme === preset;
+              const isNeon = preset === "neon";
               
               return (
                 <button
@@ -88,12 +89,17 @@ const ThemeSelectorWidget = () => {
                     "relative flex flex-col items-start gap-2 p-3 rounded-lg border-2 transition-all duration-200 text-left",
                     isActive 
                       ? "border-primary bg-primary/5 shadow-sm" 
-                      : "border-border hover:border-primary/50 hover:bg-muted/50"
+                      : "border-border hover:border-primary/50 hover:bg-muted/50",
+                    isNeon && !isActive && "hover:shadow-[0_0_15px_hsl(180_70%_45%/0.3)]",
+                    isNeon && isActive && "shadow-[0_0_20px_hsl(180_70%_45%/0.4)]",
                   )}
                 >
                   <div className="flex items-center gap-2 w-full">
                     <div
-                      className="w-6 h-6 rounded-full shadow-sm flex-shrink-0"
+                      className={cn(
+                        "w-6 h-6 rounded-full shadow-sm flex-shrink-0",
+                        isNeon && "shadow-[0_0_10px_hsl(180_70%_45%/0.6)]"
+                      )}
                       style={{ 
                         backgroundColor: colorConfig.preview,
                         borderRadius: `${config.borderRadius}px`,
@@ -101,7 +107,8 @@ const ThemeSelectorWidget = () => {
                     />
                     <span className={cn(
                       "font-semibold text-sm",
-                      isActive ? "text-primary" : "text-foreground"
+                      isActive ? "text-primary" : "text-foreground",
+                      isNeon && isActive && "drop-shadow-[0_0_6px_hsl(180_70%_45%/0.5)]"
                     )}>
                       {config.name}
                     </span>
@@ -245,16 +252,24 @@ const ThemeSelectorWidget = () => {
         </CardHeader>
         <CardContent>
           <div 
-            className="p-4 border rounded-lg bg-card"
+            className={cn(
+              "p-4 border rounded-lg bg-card",
+              presetTheme === "neon" && "border-primary/50 shadow-[0_0_20px_hsl(var(--primary)/0.3)]"
+            )}
             style={{ 
               borderRadius: `${borderRadius}px`,
-              boxShadow: shadowIntensity !== "none" ? "var(--shadow-card)" : "none",
-              borderWidth: cardStyle === "bordered" ? "1px" : "0px",
+              boxShadow: presetTheme === "neon" 
+                ? undefined 
+                : shadowIntensity !== "none" ? "var(--shadow-card)" : "none",
+              borderWidth: cardStyle === "bordered" || presetTheme === "neon" ? "1px" : "0px",
             }}
           >
             <div className="flex items-center gap-3 mb-3">
               <div 
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold",
+                  presetTheme === "neon" && "shadow-[0_0_15px_hsl(var(--primary)/0.6)]"
+                )}
                 style={{ 
                   backgroundColor: colorThemes[colorTheme].preview,
                   borderRadius: `${Math.min(borderRadius, 20)}px`,
@@ -263,13 +278,22 @@ const ThemeSelectorWidget = () => {
                 A
               </div>
               <div>
-                <p className="font-semibold text-sm">Thẻ mẫu</p>
+                <p className={cn(
+                  "font-semibold text-sm",
+                  presetTheme === "neon" && "text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]"
+                )}>Thẻ mẫu</p>
                 <p className="text-xs text-muted-foreground">Xem trước giao diện</p>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" className="text-xs">Nút chính</Button>
-              <Button size="sm" variant="outline" className="text-xs">Nút phụ</Button>
+              <Button size="sm" className={cn(
+                "text-xs",
+                presetTheme === "neon" && "shadow-[0_0_12px_hsl(var(--primary)/0.4)]"
+              )}>Nút chính</Button>
+              <Button size="sm" variant="outline" className={cn(
+                "text-xs",
+                presetTheme === "neon" && "border-primary/50 shadow-[0_0_8px_hsl(var(--primary)/0.2)]"
+              )}>Nút phụ</Button>
             </div>
           </div>
         </CardContent>
