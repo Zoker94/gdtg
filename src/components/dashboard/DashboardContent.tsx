@@ -15,13 +15,27 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import DashboardRoomMap from "@/components/DashboardRoomMap";
 import ModeratorsList from "@/components/ModeratorsList";
+import tetHorseCorner from "@/assets/tet-horse-corner.png";
+
+const TetBanner = () => (
+  <motion.div
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="mb-4 p-3 rounded-lg border border-red-500/20 bg-red-500/5 flex items-center gap-3"
+  >
+    <img src={tetHorseCorner} alt="Ngựa Tết" className="w-10 h-10 object-contain" />
+    <div className="flex-1 min-w-0">
+      <p className="text-sm font-semibold">🎊 Chúc Mừng Năm Mới 2026</p>
+      <p className="text-xs text-muted-foreground">Năm Bính Ngọ — Chúc bạn giao dịch thuận lợi!</p>
+    </div>
+  </motion.div>
+);
 
 const DashboardContent = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: transactions, isLoading: transactionsLoading } = useTransactions();
 
-  // Fetch user's deposits
   const { data: deposits, isLoading: depositsLoading } = useQuery({
     queryKey: ["user-deposits", user?.id],
     queryFn: async () => {
@@ -49,17 +63,20 @@ const DashboardContent = () => {
 
   return (
     <>
+      {/* Tết 2026 Banner */}
+      <TetBanner />
+
       {/* Actions */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <Button onClick={() => navigate("/create-transaction")} className="glow-primary">
+        <Button onClick={() => navigate("/create-transaction")} className="tet-btn-primary">
           <Plus className="w-4 h-4 mr-2" />
           Tạo giao dịch
         </Button>
-        <Button variant="outline" onClick={() => navigate("/deposit")}>
+        <Button variant="outline" onClick={() => navigate("/deposit")} className="tet-btn-outline">
           <Wallet className="w-4 h-4 mr-2" />
           Nạp tiền
         </Button>
-        <Button variant="outline" onClick={() => navigate("/withdraw")}>
+        <Button variant="outline" onClick={() => navigate("/withdraw")} className="tet-btn-outline">
           <ArrowDownToLine className="w-4 h-4 mr-2" />
           Rút tiền
         </Button>
@@ -90,7 +107,12 @@ const DashboardContent = () => {
             ))}
           </div>
         ) : activeTransactions?.length === 0 ? (
-          <Card className="border-border">
+          <Card className="border-border relative overflow-hidden">
+            <img 
+              src={tetHorseCorner} 
+              alt="" 
+              className="absolute bottom-2 right-2 w-16 h-16 object-contain opacity-[0.08] pointer-events-none" 
+            />
             <CardContent className="py-8 text-center">
               <Package className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground text-sm">Chưa có giao dịch nào</p>
@@ -126,7 +148,12 @@ const DashboardContent = () => {
         {depositsLoading ? (
           <DepositListSkeleton />
         ) : deposits?.length === 0 ? (
-          <Card className="border-border">
+          <Card className="border-border relative overflow-hidden">
+            <img 
+              src={tetHorseCorner} 
+              alt="" 
+              className="absolute bottom-2 right-2 w-14 h-14 object-contain opacity-[0.08] pointer-events-none scale-x-[-1]" 
+            />
             <CardContent className="py-6 text-center">
               <Wallet className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-muted-foreground text-sm">Chưa có lịch sử nạp tiền</p>
@@ -136,7 +163,12 @@ const DashboardContent = () => {
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="relative overflow-hidden">
+            <img 
+              src={tetHorseCorner} 
+              alt="" 
+              className="absolute bottom-2 right-2 w-16 h-16 object-contain opacity-[0.06] pointer-events-none" 
+            />
             <CardContent className="p-0">
               <div className="divide-y divide-border">
                 {deposits?.map((d) => (
