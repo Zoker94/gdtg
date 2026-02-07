@@ -20,6 +20,18 @@ const HeroSection = () => {
 
   return (
     <section className="py-10 px-4 relative overflow-hidden">
+      {/* Tết decorative emojis */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-2 left-3 text-2xl animate-bounce" style={{ animationDuration: '3s' }}>🏮</div>
+        <div className="absolute top-6 right-6 text-xl animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>🧧</div>
+        <div className="absolute top-1/2 left-2 text-lg animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '1s' }}>🌸</div>
+        <div className="absolute bottom-8 right-10 text-xl animate-bounce" style={{ animationDuration: '2.8s', animationDelay: '0.3s' }}>🎋</div>
+        <div className="absolute top-20 left-1/4 text-lg animate-bounce" style={{ animationDuration: '3.2s', animationDelay: '0.8s' }}>🎊</div>
+        <div className="absolute bottom-16 left-10 text-xl animate-bounce" style={{ animationDuration: '2.6s', animationDelay: '1.2s' }}>🐴</div>
+        <div className="absolute top-12 right-1/4 text-lg animate-bounce" style={{ animationDuration: '3.8s', animationDelay: '0.6s' }}>🎆</div>
+        <div className="absolute bottom-4 right-1/3 text-lg animate-bounce" style={{ animationDuration: '3.1s', animationDelay: '0.9s' }}>🌺</div>
+      </div>
+
       <div className="container mx-auto max-w-5xl relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
