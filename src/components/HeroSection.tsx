@@ -4,8 +4,7 @@ import { Shield, ArrowRight, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import tetHorse1 from "@/assets/tet-horse-1.png";
-import tetHorse2 from "@/assets/tet-horse-2.png";
+import tetHorseCorner from "@/assets/tet-horse-corner.png";
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -21,14 +20,6 @@ const HeroSection = () => {
 
   return (
     <section className="py-10 px-4 relative overflow-hidden">
-      {/* Tết decorative background elements */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-4 left-4 text-2xl animate-bounce" style={{ animationDuration: '3s' }}>🏮</div>
-        <div className="absolute top-8 right-8 text-xl animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>🧧</div>
-        <div className="absolute bottom-12 left-8 text-lg animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '1s' }}>🌸</div>
-        <div className="absolute bottom-8 right-12 text-xl animate-bounce" style={{ animationDuration: '2.8s', animationDelay: '0.3s' }}>🎋</div>
-      </div>
-
       <div className="container mx-auto max-w-5xl relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -52,18 +43,18 @@ const HeroSection = () => {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6"
         >
-          {/* Card Tạo phòng - với hình ngựa */}
           <Card 
-            className="border-red-500/30 hover:border-red-500/60 transition-all duration-300 cursor-pointer group relative overflow-hidden tet-card" 
+            className="border-primary/20 hover:border-primary/50 transition-all duration-300 cursor-pointer group relative overflow-hidden" 
             onClick={handleCreateRoom}
           >
-            {/* Horse watermark */}
-            <div className="absolute -right-4 -bottom-4 w-28 h-28 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
-              <img src={tetHorse1} alt="" className="w-full h-full object-contain" />
-            </div>
+            <img 
+              src={tetHorseCorner} 
+              alt="" 
+              className="absolute bottom-2 right-2 w-20 h-20 object-contain opacity-[0.12] group-hover:opacity-[0.22] transition-opacity duration-500 pointer-events-none" 
+            />
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="w-4 h-4 text-red-500" />
+                <Shield className="w-4 h-4 text-primary" />
                 Tạo phòng giao dịch
               </CardTitle>
             </CardHeader>
@@ -78,15 +69,15 @@ const HeroSection = () => {
             </CardContent>
           </Card>
 
-          {/* Card Vào phòng - với hình ngựa */}
           <Card 
-            className="border-border hover:border-red-500/30 transition-all duration-300 cursor-pointer group relative overflow-hidden tet-card" 
+            className="border-border hover:border-primary/30 transition-all duration-300 cursor-pointer group relative overflow-hidden" 
             onClick={() => navigate("/join")}
           >
-            {/* Horse watermark */}
-            <div className="absolute -right-4 -bottom-4 w-28 h-28 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
-              <img src={tetHorse2} alt="" className="w-full h-full object-contain" />
-            </div>
+            <img 
+              src={tetHorseCorner} 
+              alt="" 
+              className="absolute bottom-2 right-2 w-20 h-20 object-contain opacity-[0.12] group-hover:opacity-[0.22] transition-opacity duration-500 pointer-events-none scale-x-[-1]" 
+            />
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <LogIn className="w-4 h-4 text-muted-foreground" />
