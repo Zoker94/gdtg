@@ -266,6 +266,39 @@
   box-shadow: 0 0 8px hsl(var(--primary) / 0.4);
 }
 
+/* Cyberpunk glitch effect on headings */
+@keyframes cyberpunk-glitch {
+  0%, 92%, 100% { transform: none; opacity: 1; }
+  93% { transform: translate(-2px, 1px); opacity: 0.8; }
+  94% { transform: translate(2px, -1px); }
+  95% { transform: translate(-1px, -1px); opacity: 0.9; }
+  96% { transform: none; opacity: 1; }
+}
+
+.theme-cyberpunk h1,
+.theme-cyberpunk h2 {
+  animation: cyberpunk-glitch 8s ease-in-out infinite;
+  position: relative;
+}
+
+.theme-cyberpunk h1::after,
+.theme-cyberpunk h2::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Cyberpunk hover flicker */
+.theme-cyberpunk [data-slot="card"]:hover {
+  box-shadow: 0 0 15px hsl(var(--primary) / 0.4), inset 0 1px 0 hsl(var(--primary) / 0.15);
+  transition: box-shadow 0.15s ease;
+}
+
 /* Retro theme styles */
 .theme-retro {
   --background: 40 30% 94%;
@@ -290,6 +323,7 @@
 
 .theme-retro button {
   box-shadow: 2px 2px 0px hsl(var(--foreground) / 0.2);
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
 }
 
 .theme-retro button:active {
@@ -301,11 +335,48 @@
 .theme-retro h2,
 .theme-retro h3 {
   letter-spacing: 0.02em;
+  font-variant-numeric: oldstyle-nums;
 }
 
 .theme-retro .gradient-primary {
   background: hsl(var(--primary));
   box-shadow: 3px 3px 0px hsl(var(--foreground) / 0.25);
+}
+
+/* Retro scanline overlay - lightweight CSS only */
+.theme-retro body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    hsl(var(--foreground) / 0.015) 2px,
+    hsl(var(--foreground) / 0.015) 4px
+  );
+}
+
+/* Retro card hover - subtle lift */
+.theme-retro [data-slot="card"]:hover {
+  box-shadow: 5px 5px 0px hsl(var(--foreground) / 0.2);
+  transform: translate(-1px, -1px);
+  transition: all 0.1s ease;
+}
+
+/* Neon pulse on hover */
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: var(--neon-glow-sm); }
+  50% { box-shadow: var(--neon-glow); }
+}
+
+.theme-neon [data-slot="card"]:hover {
+  animation: neon-pulse 1.5s ease-in-out infinite;
 }
 
 /* Card style variants */
