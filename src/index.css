@@ -421,6 +421,16 @@
   box-shadow: 0 8px 24px hsl(0 72% 50% / 0.12);
 }
 
+/* Horse watermark - hide white background */
+.tet-horse {
+  mix-blend-mode: multiply;
+}
+
+.dark .tet-horse {
+  mix-blend-mode: screen;
+  filter: brightness(1.2);
+}
+
 /* Card style variants */
 :root.card-flat .card-themed,
 .card-flat .card-themed {
