@@ -19,6 +19,7 @@ export interface UserProfile {
   balance_frozen_at: string | null;
   balance_freeze_reason: string | null;
   created_at: string;
+  registration_ip: string | null;
 }
 
 // Fetch all users for admin
