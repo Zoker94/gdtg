@@ -129,16 +129,100 @@ serve(async (req) => {
     if (bankError) console.error("Error fetching linked_bank_accounts:", bankError);
     const linkedBanks = allBanks || [];
 
-    // 8. Admin action logs (last 50)
+    // 8. Admin action logs (last 100 for better analysis)
     const { data: actionLogs, error: logError } = await serviceClient
       .from("admin_action_logs")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(100);
     
     if (logError) console.error("Error fetching admin_action_logs:", logError);
 
     console.log(`[AI Support] Data loaded: ${transactions.length} transactions, ${profiles.length} profiles, ${riskAlerts.length} risk alerts, ${deposits.length} deposits, ${withdrawals.length} withdrawals, ${kycSubmissions.length} KYC, ${linkedBanks.length} banks`);
+
+    // ============ SECURITY ANALYSIS: Detect Balance Anomalies ============
+    const balanceAnomalies: Array<{
+      userId: string;
+      userName: string;
+      issue: string;
+      severity: 'high' | 'medium' | 'low';
+      details: string;
+    }> = [];
+
+    // Check each user for balance anomalies
+    for (const profile of profiles) {
+      const userDeposits = deposits.filter(d => d.user_id === profile.user_id && d.status === 'completed');
+      const userWithdrawals = withdrawals.filter(w => w.user_id === profile.user_id && w.status === 'completed');
+      const userTxAsBuyer = transactions.filter(t => t.buyer_id === profile.user_id);
+      const userTxAsSeller = transactions.filter(t => t.seller_id === profile.user_id && t.status === 'completed');
+      
+      const totalDeposited = userDeposits.reduce((sum, d) => sum + Number(d.amount || 0), 0);
+      const totalWithdrawn = userWithdrawals.reduce((sum, w) => sum + Number(w.amount || 0), 0);
+      const totalSpentAsBuyer = userTxAsBuyer.filter(t => t.status === 'deposited' || t.status === 'shipping' || t.status === 'completed').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+      const totalReceivedAsSeller = userTxAsSeller.reduce((sum, t) => sum + Number(t.seller_receives || 0), 0);
+      
+      // Expected balance = deposits - withdrawals - spent + received
+      const expectedBalance = totalDeposited - totalWithdrawn - totalSpentAsBuyer + totalReceivedAsSeller;
+      const actualBalance = profile.balance || 0;
+      const difference = actualBalance - expectedBalance;
+      
+      // Check for balance manipulation (difference > 100k VND is suspicious)
+      if (Math.abs(difference) > 100000) {
+        balanceAnomalies.push({
+          userId: profile.user_id,
+          userName: profile.full_name || 'Chưa đặt tên',
+          issue: difference > 0 ? 'BALANCE_INFLATED' : 'BALANCE_DEFLATED',
+          severity: Math.abs(difference) > 1000000 ? 'high' : 'medium',
+          details: `Số dư thực: ${actualBalance.toLocaleString()}đ, Số dư kỳ vọng: ${expectedBalance.toLocaleString()}đ, Chênh lệch: ${difference > 0 ? '+' : ''}${difference.toLocaleString()}đ (Nạp: ${totalDeposited.toLocaleString()}, Rút: ${totalWithdrawn.toLocaleString()}, Chi mua: ${totalSpentAsBuyer.toLocaleString()}, Thu bán: ${totalReceivedAsSeller.toLocaleString()})`
+        });
+      }
+      
+      // Check for suspicious high balance without deposits
+      if (actualBalance > 500000 && totalDeposited === 0 && userTxAsSeller.length === 0) {
+        balanceAnomalies.push({
+          userId: profile.user_id,
+          userName: profile.full_name || 'Chưa đặt tên',
+          issue: 'UNEXPLAINED_BALANCE',
+          severity: 'high',
+          details: `Có ${actualBalance.toLocaleString()}đ nhưng chưa từng nạp tiền hay bán hàng`
+        });
+      }
+    }
+
+    // Analyze balance_change logs for suspicious patterns
+    const balanceChangeLogs = (actionLogs || []).filter(log => log.action_type === 'balance_change');
+    const unknownSourceChanges = balanceChangeLogs.filter(log => {
+      const details = log.details as any;
+      return details?.source === 'unknown';
+    });
+    
+    // Group suspicious changes by user
+    const suspiciousLogsByUser: Record<string, any[]> = {};
+    for (const log of unknownSourceChanges) {
+      const userId = log.target_user_id;
+      if (!suspiciousLogsByUser[userId]) {
+        suspiciousLogsByUser[userId] = [];
+      }
+      suspiciousLogsByUser[userId].push(log);
+    }
+    
+    for (const [userId, logs] of Object.entries(suspiciousLogsByUser)) {
+      const profile = profiles.find(p => p.user_id === userId);
+      const totalSuspiciousChange = logs.reduce((sum, log) => {
+        const details = log.details as any;
+        return sum + (details?.difference || 0);
+      }, 0);
+      
+      if (totalSuspiciousChange !== 0) {
+        balanceAnomalies.push({
+          userId,
+          userName: profile?.full_name || 'Chưa đặt tên',
+          issue: 'SUSPICIOUS_BALANCE_CHANGE',
+          severity: 'high',
+          details: `Có ${logs.length} lần thay đổi số dư từ nguồn "unknown" với tổng ${totalSuspiciousChange > 0 ? '+' : ''}${totalSuspiciousChange.toLocaleString()}đ`
+        });
+      }
+    }
 
     // ============ CALCULATE STATISTICS ============
     const now = new Date();
@@ -306,12 +390,19 @@ ${i + 1}. ${k.full_name} - CCCD: ${k.id_number}
    • Ngày sinh: ${k.date_of_birth || 'Không có'}
    • User: ${k.user_id.slice(0, 8)}... | Gửi: ${k.created_at}`).join('\n')}
 
+🔐 PHÁT HIỆN BẤT THƯỜNG SỐ DƯ (${balanceAnomalies.length}):
+${balanceAnomalies.length === 0 ? "✅ KHÔNG PHÁT HIỆN BẤT THƯỜNG SỐ DƯ NÀO." :
+  balanceAnomalies.map((a, i) => `
+${i + 1}. ${a.severity === 'high' ? '🔴' : a.severity === 'medium' ? '🟡' : '🟢'} [${a.issue}] - ${a.userName} (${a.userId.slice(0, 8)}...)
+   • Chi tiết: ${a.details}`).join('\n')}
+
 📜 HOẠT ĐỘNG ADMIN GẦN ĐÂY (${actionLogs?.length || 0}):
 ${!actionLogs || actionLogs.length === 0 ? "Chưa có hoạt động admin nào được ghi nhận." :
-  actionLogs.slice(0, 10).map((log, i) => `
+  actionLogs.slice(0, 15).map((log, i) => `
 ${i + 1}. [${log.action_type}] - Admin: ${log.admin_id.slice(0, 8)}...
    • Target: ${log.target_user_id.slice(0, 8)}...
    • Thời gian: ${log.created_at}
+   ${log.details ? `• Chi tiết: ${JSON.stringify(log.details)}` : ''}
    ${log.note ? `• Ghi chú: ${log.note}` : ''}`).join('\n')}
 `;
 
@@ -327,6 +418,7 @@ ${i + 1}. [${log.action_type}] - Admin: ${log.admin_id.slice(0, 8)}...
 ## VAI TRÒ:
 - Phân tích giao dịch đáng ngờ, phát hiện lừa đảo
 - Phát hiện multi-account (cùng số tài khoản ngân hàng)
+- **PHÁT HIỆN BALANCE MANIPULATION** (số dư bất thường)
 - Đánh giá rủi ro người dùng
 - Gợi ý xử lý dispute
 - Tóm tắt thống kê, doanh thu
@@ -334,12 +426,20 @@ ${i + 1}. [${log.action_type}] - Admin: ${log.admin_id.slice(0, 8)}...
 ## TIÊU CHÍ PHÁT HIỆN RỦI RO:
 | Dấu hiệu | Mức độ | Hành động đề xuất |
 |----------|--------|-------------------|
+| **BALANCE_INFLATED**: Số dư thực > số dư kỳ vọng | 🔴 RẤT CAO | Ban ngay, reset về 0, điều tra |
+| **UNEXPLAINED_BALANCE**: Có tiền mà chưa nạp/bán | 🔴 RẤT CAO | Đóng băng, yêu cầu giải trình |
+| **SUSPICIOUS_BALANCE_CHANGE**: Thay đổi từ nguồn unknown | 🔴 RẤT CAO | Điều tra ngay, có thể bị exploit |
 | Cùng STK ngân hàng nhiều tài khoản | 🔴 RẤT CAO | Ban tất cả, điều tra |
 | Điểm uy tín < 30 | 🔴 CAO | Giám sát chặt, yêu cầu KYC |
 | Nạp-rút nhanh không giao dịch | 🔴 CAO | Đóng băng số dư |
 | Nhiều khiếu nại (≥3) | 🟡 TRUNG BÌNH | Kiểm tra lịch sử |
 | Tài khoản mới < 7 ngày, GD lớn | 🟡 TRUNG BÌNH | Giám sát |
 | Chưa KYC nhưng GD > 5 triệu | 🟡 TRUNG BÌNH | Yêu cầu KYC |
+
+## GIẢI THÍCH BALANCE ANOMALY:
+- **Số dư kỳ vọng** = Tổng nạp - Tổng rút - Tổng chi mua hàng + Tổng thu bán hàng
+- Nếu **số dư thực > số dư kỳ vọng**: User có thể đã exploit API để tự cộng tiền
+- Nếu có log "balance_change" với source="unknown": User đã dùng Supabase client API để sửa balance trực tiếp
 
 ## ĐỊNH DẠNG TRẢ LỜI:
 - Sử dụng Markdown (bảng, bullet, bold)
