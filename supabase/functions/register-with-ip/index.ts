@@ -3,10 +3,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-forwarded-for, x-real-ip",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-forwarded-for, x-real-ip, cf-connecting-ip",
 };
 
 const MAX_ACCOUNTS_PER_IP = 3;
+const MAX_SIGNUP_ATTEMPTS_PER_HOUR = 5;
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -35,7 +36,7 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // For registration, check IP limit first
+    // For registration, check rate limit and IP limit first
     if (action === "signup") {
       if (!email || !password || !fullName) {
         return new Response(
@@ -43,6 +44,39 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // Check rate limit for signup attempts
+      const { data: rateLimitCheck, error: rateLimitError } = await supabaseAdmin.rpc(
+        "check_rate_limit",
+        {
+          p_ip: clientIp,
+          p_action_type: "signup",
+          p_max_requests: MAX_SIGNUP_ATTEMPTS_PER_HOUR,
+          p_window_minutes: 60,
+        }
+      );
+
+      if (rateLimitError) {
+        console.error("[register-with-ip] Rate limit check error:", rateLimitError);
+      }
+
+      // If rate limit exceeded
+      if (rateLimitCheck === false) {
+        console.log(`[register-with-ip] Rate limit exceeded for IP: ${clientIp}`);
+        return new Response(
+          JSON.stringify({
+            error: "RATE_LIMIT_EXCEEDED",
+            message: `Địa chỉ IP này đã thử đăng ký quá nhiều lần. Vui lòng chờ 1 giờ trước khi thử lại.`,
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Log the signup attempt
+      await supabaseAdmin.rpc("log_rate_limit_action", {
+        p_ip: clientIp,
+        p_action_type: "signup",
+      });
 
       // Count existing accounts with this IP
       const { count, error: countError } = await supabaseAdmin
