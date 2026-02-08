@@ -8,6 +8,7 @@ interface Petal {
   duration: number;
   size: number;
   emoji: string;
+  swayAmount: number;
 }
 
 const PETAL_EMOJIS = ["🌸", "🏵️", "💮"];
@@ -17,13 +18,14 @@ const FallingPetals = () => {
 
   // Generate petals once on mount
   const petals = useMemo<Petal[]>(() => {
-    return Array.from({ length: 15 }, (_, i) => ({
+    return Array.from({ length: 12 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
-      delay: Math.random() * 8,
-      duration: 8 + Math.random() * 6,
-      size: 12 + Math.random() * 10,
+      delay: Math.random() * 10,
+      duration: 14 + Math.random() * 8, // Slower: 14-22 seconds
+      size: 14 + Math.random() * 8,
       emoji: PETAL_EMOJIS[Math.floor(Math.random() * PETAL_EMOJIS.length)],
+      swayAmount: 30 + Math.random() * 40, // Random sway distance
     }));
   }, []);
 
@@ -59,15 +61,26 @@ const FallingPetals = () => {
           }}
           animate={{
             y: ["0vh", "110vh"],
-            x: [0, Math.sin(petal.id) * 50, Math.cos(petal.id) * 30, 0],
-            rotate: [0, 360],
-            opacity: [0.7, 0.9, 0.7, 0.5, 0],
+            x: [
+              0, 
+              petal.swayAmount, 
+              -petal.swayAmount * 0.7, 
+              petal.swayAmount * 0.5, 
+              -petal.swayAmount * 0.3,
+              0
+            ],
+            rotate: [0, 180, 360],
+            opacity: [0, 0.8, 0.9, 0.8, 0.6, 0],
           }}
           transition={{
             duration: petal.duration,
             delay: petal.delay,
             repeat: Infinity,
-            ease: "linear",
+            ease: "easeInOut",
+            x: {
+              duration: petal.duration,
+              ease: "easeInOut",
+            },
           }}
         >
           {petal.emoji}
