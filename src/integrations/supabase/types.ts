@@ -857,7 +857,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          facebook_url: string | null
+          full_name: string | null
+          id: string | null
+          is_verified: boolean | null
+          kyc_status: Database["public"]["Enums"]["kyc_status"] | null
+          reputation_score: number | null
+          total_transactions: number | null
+          updated_at: string | null
+          user_id: string | null
+          zalo_contact: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          facebook_url?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
+          reputation_score?: number | null
+          total_transactions?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          zalo_contact?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          facebook_url?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
+          reputation_score?: number | null
+          total_transactions?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          zalo_contact?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_adjust_balance: {

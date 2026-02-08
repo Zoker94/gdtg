@@ -34,19 +34,40 @@ const UserProfile = () => {
   const { user } = useAuth();
   const [showMessageDialog, setShowMessageDialog] = useState(false);
 
+  const isOwnProfile = user?.id === userId;
+
   const { data: profile, isLoading, error } = useQuery({
-    queryKey: ["user-profile", userId],
+    queryKey: ["user-profile", userId, isOwnProfile],
     queryFn: async () => {
       if (!userId) return null;
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
+      // If viewing own profile, query full profiles table
+      // Otherwise, query the public view which hides sensitive data
+      if (isOwnProfile) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from("profiles_public")
+          .select("*")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (error) throw error;
+        // Add default values for fields not in public view
+        return data ? {
+          ...data,
+          is_banned: false,
+          ban_reason: null,
+          warning_message: null,
+          phone: null,
+          phone_number: null,
+        } : null;
+      }
     },
     enabled: !!userId && !!user,
   });
@@ -110,7 +131,7 @@ const UserProfile = () => {
     );
   }
 
-  const isOwnProfile = user.id === userId;
+  // isOwnProfile is now defined earlier for the query
 
   return (
     <div className="min-h-screen bg-background">
