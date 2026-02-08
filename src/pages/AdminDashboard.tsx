@@ -593,6 +593,7 @@ const AdminDashboard = () => {
                       <TableRow>
                         <TableHead className="text-xs">Tên</TableHead>
                         <TableHead className="text-xs">Số điện thoại</TableHead>
+                        <TableHead className="text-xs">IP đăng ký</TableHead>
                         <TableHead className="text-xs">Số dư</TableHead>
                         <TableHead className="text-xs">GD</TableHead>
                         <TableHead className="text-xs">Uy tín</TableHead>
@@ -614,6 +615,13 @@ const AdminDashboard = () => {
                               <span className="font-mono">{u.phone_number}</span>
                             ) : (
                               <span className="text-muted-foreground italic">Chưa xác thực</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {u.registration_ip ? (
+                              <span className="font-mono text-muted-foreground">{u.registration_ip}</span>
+                            ) : (
+                              <span className="text-muted-foreground italic">-</span>
                             )}
                           </TableCell>
                           <TableCell className="text-xs">{formatCurrency(u.balance)}</TableCell>
