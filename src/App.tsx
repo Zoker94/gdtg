@@ -36,6 +36,7 @@ import NotFound from "./pages/NotFound";
 import Maintenance from "./pages/Maintenance";
 import PopupAnnouncement from "./components/PopupAnnouncement";
 import ConnectionStatus from "./components/ConnectionStatus";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Configure QueryClient with retry logic for better resilience
 const queryClient = new QueryClient({
@@ -142,22 +143,24 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <ColorThemeProvider>
-          <AuthProvider>
-            <TooltipProvider>
-              <ConnectionStatus />
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <AppRoutes />
-              </BrowserRouter>
-            </TooltipProvider>
-          </AuthProvider>
-        </ColorThemeProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <ColorThemeProvider>
+            <AuthProvider>
+              <TooltipProvider>
+                <ConnectionStatus />
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <AppRoutes />
+                </BrowserRouter>
+              </TooltipProvider>
+            </AuthProvider>
+          </ColorThemeProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 

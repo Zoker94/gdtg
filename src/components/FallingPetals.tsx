@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 
 interface Petal {
   id: number;
@@ -13,21 +13,37 @@ interface Petal {
 
 const PETAL_EMOJIS = ["🌸", "🏵️", "💮"];
 
+// Reduce petals on low-end devices
+const getOptimalPetalCount = () => {
+  // Check for low-end device indicators
+  const isLowEnd = 
+    navigator.hardwareConcurrency <= 2 || 
+    (navigator as any).deviceMemory <= 2 ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  return isLowEnd ? 6 : 10;
+};
+
 const FallingPetals = () => {
   const [isVisible, setIsVisible] = useState(true);
+  const [isPageActive, setIsPageActive] = useState(true);
+  const prefersReducedMotion = useReducedMotion();
+  
+  // Get optimal petal count based on device capability
+  const petalCount = useMemo(() => getOptimalPetalCount(), []);
 
   // Generate petals once on mount
   const petals = useMemo<Petal[]>(() => {
-    return Array.from({ length: 12 }, (_, i) => ({
+    return Array.from({ length: petalCount }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       delay: Math.random() * 10,
-      duration: 14 + Math.random() * 8, // Slower: 14-22 seconds
+      duration: 16 + Math.random() * 8, // Slower: 16-24 seconds for less CPU usage
       size: 14 + Math.random() * 8,
       emoji: PETAL_EMOJIS[Math.floor(Math.random() * PETAL_EMOJIS.length)],
-      swayAmount: 30 + Math.random() * 40, // Random sway distance
+      swayAmount: 30 + Math.random() * 40,
     }));
-  }, []);
+  }, [petalCount]);
 
   // Hide on scroll for performance
   useEffect(() => {
@@ -46,10 +62,26 @@ const FallingPetals = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  if (!isVisible) return null;
+  // Pause animation when page is hidden (tab inactive)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPageActive(!document.hidden);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  // Don't render if user prefers reduced motion, page is hidden, or scrolled down
+  if (prefersReducedMotion || !isVisible || !isPageActive) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-10">
+    <div 
+      className="fixed inset-0 pointer-events-none overflow-hidden z-10"
+      style={{ willChange: "auto" }} // Hint for GPU acceleration
+    >
       {petals.map((petal) => (
         <motion.div
           key={petal.id}
@@ -58,6 +90,7 @@ const FallingPetals = () => {
             left: `${petal.x}%`,
             fontSize: petal.size,
             top: -30,
+            willChange: "transform, opacity",
           }}
           animate={{
             y: ["0vh", "110vh"],
@@ -76,7 +109,7 @@ const FallingPetals = () => {
             duration: petal.duration,
             delay: petal.delay,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: "linear", // Linear is more performant than easeInOut
             x: {
               duration: petal.duration,
               ease: "easeInOut",
