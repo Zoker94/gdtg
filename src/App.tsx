@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ColorThemeProvider } from "@/hooks/useColorTheme";
 import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
 import { toast } from "sonner";
+import LoadingScreen from "@/components/LoadingScreen";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -34,12 +35,41 @@ import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 import Maintenance from "./pages/Maintenance";
 import PopupAnnouncement from "./components/PopupAnnouncement";
+import ConnectionStatus from "./components/ConnectionStatus";
 
-const queryClient = new QueryClient();
+// Configure QueryClient with retry logic for better resilience
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Retry failed requests up to 3 times with exponential backoff
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors (client errors)
+        if (error?.status >= 400 && error?.status < 500) return false;
+        // Retry up to 3 times for network/server errors
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // Stale time and cache time for better UX
+      staleTime: 1000 * 60, // 1 minute
+      gcTime: 1000 * 60 * 5, // 5 minutes (formerly cacheTime)
+      // Refetch settings
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      retry: 1,
+      retryDelay: 1000,
+    },
+  },
+});
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen bg-background" />;
+  
+  if (loading) {
+    return <LoadingScreen message="Đang xác thực..." />;
+  }
+  
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 };
@@ -47,7 +77,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const MaintenanceWrapper = ({ children }: { children: React.ReactNode }) => {
   const { shouldShowMaintenance, isLoading } = useMaintenanceMode();
   
-  if (isLoading) return <div className="min-h-screen bg-background" />;
+  if (isLoading) {
+    return <LoadingScreen message="Đang kiểm tra trạng thái hệ thống..." />;
+  }
+  
   if (shouldShowMaintenance) return <Maintenance />;
   
   return <>{children}</>;
@@ -114,6 +147,7 @@ const App = () => {
         <ColorThemeProvider>
           <AuthProvider>
             <TooltipProvider>
+              <ConnectionStatus />
               <Toaster />
               <Sonner />
               <BrowserRouter>
