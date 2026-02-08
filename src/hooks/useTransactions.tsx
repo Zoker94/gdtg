@@ -245,29 +245,45 @@ export const useCreateTransaction = () => {
     mutationFn: async (input: CreateTransactionInput) => {
       if (!user?.id) throw new Error("Not authenticated");
 
-      const insertData = {
-        product_name: input.product_name,
-        product_description: input.product_description || null,
-        category: input.category || "other",
-        images: input.images || [],
-        amount: input.amount,
-        platform_fee_percent: input.platform_fee_percent,
-        fee_bearer: input.fee_bearer,
-        dispute_time_hours: input.dispute_time_hours,
-        buyer_id: input.buyer_id || null,
-        seller_id: input.seller_id || null,
-        moderator_id: input.moderator_id || null,
-      };
+      // Get the current session for auth header
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase
-        .from("transactions")
-        .insert(insertData as any)
-        .select()
-        .single();
+      // Call edge function with rate limiting
+      const response = await fetch(
+        "https://ucfjjcccgoxnfjaqfmws.supabase.co/functions/v1/create-transaction",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            product_name: input.product_name,
+            product_description: input.product_description || null,
+            category: input.category || "other",
+            images: input.images || [],
+            amount: input.amount,
+            platform_fee_percent: input.platform_fee_percent,
+            fee_bearer: input.fee_bearer,
+            dispute_time_hours: input.dispute_time_hours,
+            buyer_id: input.buyer_id || null,
+            seller_id: input.seller_id || null,
+            moderator_id: input.moderator_id || null,
+          }),
+        }
+      );
 
-      if (error) throw error;
-      return data as Transaction;
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.error === "RATE_LIMIT_EXCEEDED") {
+          throw new Error(result.message || "Bạn đã tạo quá nhiều phòng. Vui lòng chờ 1 giờ.");
+        }
+        throw new Error(result.error || "Có lỗi xảy ra");
+      }
+
+      return result.transaction as Transaction;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
