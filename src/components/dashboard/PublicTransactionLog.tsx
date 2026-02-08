@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,67 @@ const formatCurrency = (amount: number) => {
   }
   return amount.toString();
 };
+
+// Memoized transaction item
+const TransactionItem = memo(({ transaction, index }: { 
+  transaction: {
+    id: string;
+    product_name: string;
+    amount: number;
+    status: string;
+    buyer_name: string | null;
+    seller_name: string | null;
+    created_at: string;
+  };
+  index: number;
+}) => {
+  const config = statusConfig[transaction.status] || statusConfig.deposited;
+  const StatusIcon = config.icon;
+  
+  const timeAgo = useMemo(() => 
+    formatDistanceToNow(new Date(transaction.created_at), {
+      addSuffix: true,
+      locale: vi,
+    }), [transaction.created_at]
+  );
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors"
+    >
+      <div className="p-2 rounded-full bg-primary/10 shrink-0">
+        <ShoppingBag className="w-4 h-4 text-primary" />
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">
+          {transaction.product_name}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {transaction.buyer_name} ↔ {transaction.seller_name}
+        </p>
+      </div>
+
+      <div className="text-right shrink-0">
+        <p className="text-sm font-semibold text-primary">
+          {formatCurrency(transaction.amount)}đ
+        </p>
+        <Badge variant={config.variant} className="text-[10px] h-5">
+          <StatusIcon className="w-3 h-3 mr-1" />
+          {config.label}
+        </Badge>
+      </div>
+
+      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+        {timeAgo}
+      </span>
+    </motion.div>
+  );
+});
+TransactionItem.displayName = "TransactionItem";
 
 const PublicTransactionLog = () => {
   const { data: transactions, isLoading } = usePublicTransactions(8);
@@ -62,50 +124,13 @@ const PublicTransactionLog = () => {
       <CardContent className="p-0">
         <div className="max-h-[320px] overflow-y-auto">
           <div className="divide-y divide-border">
-            {transactions.map((transaction, index) => {
-              const config = statusConfig[transaction.status] || statusConfig.deposited;
-              const StatusIcon = config.icon;
-              
-              return (
-                <motion.div
-                  key={transaction.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors"
-                >
-                  <div className="p-2 rounded-full bg-primary/10 shrink-0">
-                    <ShoppingBag className="w-4 h-4 text-primary" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {transaction.product_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {transaction.buyer_name} ↔ {transaction.seller_name}
-                    </p>
-                  </div>
-
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold text-primary">
-                      {formatCurrency(transaction.amount)}đ
-                    </p>
-                    <Badge variant={config.variant} className="text-[10px] h-5">
-                      <StatusIcon className="w-3 h-3 mr-1" />
-                      {config.label}
-                    </Badge>
-                  </div>
-
-                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                    {formatDistanceToNow(new Date(transaction.created_at), {
-                      addSuffix: true,
-                      locale: vi,
-                    })}
-                  </span>
-                </motion.div>
-              );
-            })}
+            {transactions.map((transaction, index) => (
+              <TransactionItem 
+                key={transaction.id} 
+                transaction={transaction} 
+                index={index} 
+              />
+            ))}
           </div>
         </div>
         
@@ -116,4 +141,4 @@ const PublicTransactionLog = () => {
   );
 };
 
-export default PublicTransactionLog;
+export default memo(PublicTransactionLog);

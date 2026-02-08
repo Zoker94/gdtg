@@ -46,7 +46,7 @@ export const usePublicTransactions = (limit = 10) => {
 
       if (error) throw error;
 
-      // Get profiles for participants
+      // Get profiles for participants - batch in single query
       const userIds = new Set<string>();
       data.forEach((t) => {
         if (t.buyer_id) userIds.add(t.buyer_id);
@@ -72,7 +72,8 @@ export const usePublicTransactions = (limit = 10) => {
         seller_name: anonymizeName(profileMap.get(t.seller_id!) || null),
       })) as PublicTransaction[];
     },
-    refetchInterval: 30000, // Auto refresh every 30s
-    staleTime: 15000,
+    refetchInterval: 60000, // Reduced: auto refresh every 60s (was 30s)
+    staleTime: 30000, // Increased: 30s stale time (was 15s)
+    gcTime: 1000 * 60 * 5, // 5 minutes cache
   });
 };

@@ -1,9 +1,10 @@
+import { memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ModeratorGridSkeleton } from "@/components/skeletons/ModeratorGridSkeleton";
-import { useModerators } from "@/hooks/useModerators";
+import { useModerators, ModeratorProfile } from "@/hooks/useModerators";
 import { Users, ExternalLink } from "lucide-react";
 
 interface ModeratorsListProps {
@@ -11,9 +12,39 @@ interface ModeratorsListProps {
   maxItems?: number;
 }
 
+// Memoized moderator item
+const ModeratorItem = memo(({ mod, index, onClick }: { 
+  mod: ModeratorProfile; 
+  index: number;
+  onClick: () => void;
+}) => (
+  <div
+    className="flex flex-col items-center gap-1.5 cursor-pointer group"
+    onClick={onClick}
+  >
+    <div className="relative">
+      <Avatar className="h-14 w-14 sm:h-16 sm:w-16 ring-2 ring-border group-hover:ring-primary transition-all">
+        <AvatarImage src={mod.avatar_url || undefined} className="object-cover" />
+        <AvatarFallback className="bg-primary/10 text-primary text-sm">
+          {mod.display_name.slice(0, 2).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+    </div>
+    <p className="text-xs text-center font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+      {index + 1}. {mod.display_name}
+    </p>
+  </div>
+));
+ModeratorItem.displayName = "ModeratorItem";
+
 const ModeratorsList = ({ variant = "compact", maxItems = 6 }: ModeratorsListProps) => {
   const navigate = useNavigate();
   const { data: moderators, isLoading } = useModerators();
+
+  const displayModerators = useMemo(() => 
+    maxItems && moderators ? moderators.slice(0, maxItems) : moderators || [],
+    [moderators, maxItems]
+  );
 
   if (isLoading) {
     return <ModeratorGridSkeleton count={maxItems} />;
@@ -22,8 +53,6 @@ const ModeratorsList = ({ variant = "compact", maxItems = 6 }: ModeratorsListPro
   if (!moderators || moderators.length === 0) {
     return null;
   }
-
-  const displayModerators = maxItems ? moderators.slice(0, maxItems) : moderators;
 
   return (
     <Card>
@@ -36,23 +65,12 @@ const ModeratorsList = ({ variant = "compact", maxItems = 6 }: ModeratorsListPro
       <CardContent className="px-4 pt-0 pb-4">
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
           {displayModerators.map((mod, index) => (
-            <div
+            <ModeratorItem
               key={mod.id}
-              className="flex flex-col items-center gap-1.5 cursor-pointer group"
+              mod={mod}
+              index={index}
               onClick={() => navigate(`/moderator/${mod.user_id}`)}
-            >
-              <div className="relative">
-                <Avatar className="h-14 w-14 sm:h-16 sm:w-16 ring-2 ring-border group-hover:ring-primary transition-all">
-                  <AvatarImage src={mod.avatar_url || undefined} className="object-cover" />
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                    {mod.display_name.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <p className="text-xs text-center font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-                {index + 1}. {mod.display_name}
-              </p>
-            </div>
+            />
           ))}
         </div>
 
@@ -72,4 +90,4 @@ const ModeratorsList = ({ variant = "compact", maxItems = 6 }: ModeratorsListPro
   );
 };
 
-export default ModeratorsList;
+export default memo(ModeratorsList);

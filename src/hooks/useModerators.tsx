@@ -32,6 +32,8 @@ export const useModerators = () => {
       if (error) throw error;
       return data as ModeratorProfile[];
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes - moderators rarely change
+    gcTime: 1000 * 60 * 15, // 15 minutes cache
   });
 };
 
