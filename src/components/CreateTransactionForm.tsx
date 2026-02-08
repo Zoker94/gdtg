@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCreateTransaction, FeeBearer } from "@/hooks/useTransactions";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { useUserRole } from "@/hooks/useProfile";
-import { Calculator, ImageIcon, X, Info } from "lucide-react";
+import { Calculator, ImageIcon, X, Info, User, KeyRound, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -44,6 +44,8 @@ const formSchema = z.object({
   product_name: z.string().max(200).optional(),
   product_description: z.string().max(1000).optional(),
   category: z.string().optional(),
+  account_username: z.string().max(100).optional(),
+  account_password: z.string().max(100).optional(),
   amount: z.number().min(10000, "Số tiền tối thiểu là 10,000 VNĐ").optional(),
   fee_bearer: z.enum(["buyer", "seller", "split"]),
   role: z.enum(["buyer", "seller", "moderator"]),
@@ -51,7 +53,13 @@ const formSchema = z.object({
   // If seller role, require product_name, category, and amount
   // Buyer and moderator roles don't need product details
   if (data.role === "seller") {
-    return data.product_name && data.product_name.length >= 1 && data.category && data.category.length >= 1 && data.amount && data.amount >= 10000;
+    if (!data.product_name || data.product_name.length < 1 || !data.category || data.category.length < 1 || !data.amount || data.amount < 10000) {
+      return false;
+    }
+    // If game_account category, require account credentials
+    if (data.category === "game_account") {
+      return data.account_username && data.account_username.length >= 1 && data.account_password && data.account_password.length >= 1;
+    }
   }
   return true;
 }, {
@@ -72,6 +80,7 @@ export const CreateTransactionForm = () => {
   const [showTerms, setShowTerms] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState<FormValues | null>(null);
   const [videoAgreed, setVideoAgreed] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
@@ -80,6 +89,8 @@ export const CreateTransactionForm = () => {
       product_name: "",
       product_description: "",
       category: "",
+      account_username: "",
+      account_password: "",
       amount: 100000,
       fee_bearer: "buyer",
       role: "seller",
@@ -89,6 +100,7 @@ export const CreateTransactionForm = () => {
   const watchAmount = form.watch("amount");
   const watchFeeBearer = form.watch("fee_bearer");
   const watchRole = form.watch("role");
+  const watchCategory = form.watch("category");
 
   const feePercent = platformSettings?.default_fee_percent || 5;
   const disputeHours = platformSettings?.default_dispute_hours || 24;
@@ -178,6 +190,13 @@ export const CreateTransactionForm = () => {
     // Check if user is admin/moderator - they become the room arbitrator
     const isStaff = roles?.isAdmin || roles?.isModerator;
     
+    // Build product description with account credentials if game_account
+    let finalDescription = values.product_description || "";
+    if (values.category === "game_account" && values.account_username && values.account_password) {
+      const credentialsBlock = `\n\n---\n📋 THÔNG TIN TÀI KHOẢN:\n👤 Tên đăng nhập: ${values.account_username}\n🔑 Mật khẩu: ${values.account_password}\n---`;
+      finalDescription = finalDescription + credentialsBlock;
+    }
+    
     const transactionData: {
       product_name: string;
       product_description?: string;
@@ -192,7 +211,7 @@ export const CreateTransactionForm = () => {
       moderator_id?: string;
     } = {
       product_name: values.role === "buyer" ? "Phòng người mua" : (values.product_name || "Phòng giao dịch viên"),
-      product_description: values.product_description,
+      product_description: finalDescription,
       amount: values.role === "buyer" ? 0 : (values.amount || 0),
       platform_fee_percent: feePercent,
       fee_bearer: values.fee_bearer as FeeBearer,
@@ -351,6 +370,66 @@ export const CreateTransactionForm = () => {
                     </FormItem>
                   )}
                 />
+
+                {/* Account Credentials - only show for game_account category */}
+                {watchCategory === "game_account" && (
+                  <div className="space-y-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                      <KeyRound className="w-4 h-4" />
+                      <span className="font-medium text-sm">Thông tin tài khoản bán</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Thông tin này sẽ được hiển thị cho người mua sau khi đặt cọc thành công.
+                    </p>
+                    
+                    <FormField
+                      control={form.control}
+                      name="account_username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <User className="w-3.5 h-3.5" />
+                            Tên đăng nhập *
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nhập tên đăng nhập tài khoản" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="account_password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <KeyRound className="w-3.5 h-3.5" />
+                            Mật khẩu *
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Nhập mật khẩu tài khoản" 
+                                {...field} 
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
 
                 <FormField
                   control={form.control}
