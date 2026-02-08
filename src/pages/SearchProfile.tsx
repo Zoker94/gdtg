@@ -32,10 +32,9 @@ const SearchProfile = () => {
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
 
-      // Search by full_name (text column)
-      // Also try exact match on user_id if it looks like a UUID prefix
+      // Use profiles_public view to search - this only exposes public data
       const { data, error } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("*")
         .ilike("full_name", `%${searchTerm}%`)
         .order("reputation_score", { ascending: false })
@@ -49,7 +48,7 @@ const SearchProfile = () => {
       // If search term looks like it could be a user ID (8+ chars), also search by user_id
       if (searchTerm.length >= 8) {
         const { data: idMatch } = await supabase
-          .from("profiles")
+          .from("profiles_public")
           .select("*")
           .filter("user_id", "ilike", `${searchTerm}%`)
           .limit(5);
