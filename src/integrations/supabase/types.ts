@@ -942,6 +942,10 @@ export type Database = {
         Returns: undefined
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      process_buyer_deposit: {
+        Args: { p_amount: number; p_buyer_id: string; p_transaction_id: string }
+        Returns: undefined
+      }
       reject_kyc: {
         Args: { p_reason: string; p_submission_id: string }
         Returns: undefined
