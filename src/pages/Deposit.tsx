@@ -12,8 +12,11 @@ import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import confetti from "canvas-confetti";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 const predefinedAmounts = [10000, 50000, 100000, 200000, 500000, 1000000, 2000000];
+const DAILY_DEPOSIT_LIMIT = 50000000; // 50 million VND
 
 // Map bank names to VietQR BIN codes (case-insensitive matching)
 const bankBinMap: Record<string, string> = {
@@ -49,6 +52,35 @@ const Deposit = () => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isWaitingForPayment, setIsWaitingForPayment] = useState(false);
   const [successAmount, setSuccessAmount] = useState<number>(0);
+  const [todayDeposits, setTodayDeposits] = useState<number>(0);
+  const [loadingLimit, setLoadingLimit] = useState(true);
+
+  // Fetch today's deposits to check limit
+  useEffect(() => {
+    const fetchTodayDeposits = async () => {
+      if (!user) return;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data, error } = await supabase
+        .from("deposits")
+        .select("amount")
+        .eq("user_id", user.id)
+        .gte("created_at", today.toISOString())
+        .in("status", ["pending", "completed"]);
+      
+      if (!error && data) {
+        const total = data.reduce((sum, d) => sum + Number(d.amount), 0);
+        setTodayDeposits(total);
+      }
+      setLoadingLimit(false);
+    };
+    
+    fetchTodayDeposits();
+  }, [user]);
+
+  const remainingLimit = DAILY_DEPOSIT_LIMIT - todayDeposits;
 
   // Use admin bank settings from platform_settings
   const bankInfo = {
@@ -147,6 +179,16 @@ const Deposit = () => {
 
     if (!user) {
       toast({ title: "Lỗi", description: "Vui lòng đăng nhập", variant: "destructive" });
+      return;
+    }
+
+    // Check daily deposit limit
+    if (todayDeposits + numAmount > DAILY_DEPOSIT_LIMIT) {
+      toast({ 
+        title: "Vượt giới hạn nạp tiền", 
+        description: `Bạn chỉ có thể nạp thêm ${remainingLimit.toLocaleString()}đ hôm nay. Vui lòng liên hệ Admin nếu cần nạp nhiều hơn.`, 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -250,9 +292,30 @@ const Deposit = () => {
                       setAmount(e.target.value);
                     }}
                     min={10000}
+                    max={remainingLimit > 0 ? remainingLimit : undefined}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Tối thiểu 10,000đ</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Tối thiểu 10,000đ • Giới hạn còn lại hôm nay: <span className="font-medium text-primary">{remainingLimit.toLocaleString()}đ</span>
+                </p>
+
+                {remainingLimit <= 0 && (
+                  <Alert variant="destructive" className="mt-3">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Bạn đã đạt giới hạn nạp tiền 50 triệu/ngày. Vui lòng liên hệ Admin nếu cần nạp thêm.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {remainingLimit > 0 && parseFloat(amount) > remainingLimit && (
+                  <Alert variant="destructive" className="mt-3">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Số tiền vượt quá giới hạn còn lại ({remainingLimit.toLocaleString()}đ). Vui lòng liên hệ Admin nếu cần nạp nhiều hơn.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
 
               <div className="p-3 bg-muted/50 rounded-lg">
@@ -263,8 +326,12 @@ const Deposit = () => {
                 <p className="text-xs text-muted-foreground mt-1">Xác nhận tự động qua SePay</p>
               </div>
 
-              <Button onClick={handleSubmit} className="w-full glow-primary" disabled={loading}>
-                {loading ? "Đang xử lý..." : "Tiếp tục"}
+              <Button 
+                onClick={handleSubmit} 
+                className="w-full glow-primary" 
+                disabled={loading || loadingLimit || remainingLimit <= 0 || parseFloat(amount) > remainingLimit}
+              >
+                {loading ? "Đang xử lý..." : loadingLimit ? "Đang kiểm tra..." : "Tiếp tục"}
               </Button>
             </CardContent>
           </Card>
