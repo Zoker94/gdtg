@@ -81,6 +81,7 @@ import {
   useDeleteTransaction,
   useDeleteDeposit,
   useFreezeBalance,
+  useDeleteUser,
 } from "@/hooks/useAdminActions";
 import {
   useAllWithdrawals,
@@ -248,6 +249,7 @@ const AdminDashboard = () => {
   const [banReason, setBanReason] = useState("");
   const [warningUserId, setWarningUserId] = useState<string | null>(null);
   const [warningMessage, setWarningMessage] = useState("");
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
 
   // Announcement
   const [newAnnouncement, setNewAnnouncement] = useState("");
@@ -320,6 +322,7 @@ const AdminDashboard = () => {
   const holdWithdrawal = useHoldWithdrawal();
   const adjustBalance = useAdjustBalance();
   const freezeBalance = useFreezeBalance();
+  const deleteUser = useDeleteUser();
 
   const isAdmin = roles?.isAdmin;
   const isSuperAdmin = roles?.isSuperAdmin;
@@ -734,6 +737,9 @@ const AdminDashboard = () => {
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setWarningUserId(u.user_id); setWarningMessage(u.warning_message || ""); }} title="Gắn cảnh báo">
                                 <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                               </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteUserId(u.user_id)} title="Xoá tài khoản">
+                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1143,6 +1149,34 @@ const AdminDashboard = () => {
                   <Button variant="outline" onClick={() => setWarningUserId(null)}>Hủy</Button>
                   <Button onClick={handleSetWarning}>
                     {warningMessage ? "Cập nhật" : "Xoá cảnh báo"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Dialog: Delete User */}
+            <Dialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="text-destructive flex items-center gap-2">
+                    <Trash2 className="w-5 h-5" />
+                    Xoá tài khoản người dùng
+                  </DialogTitle>
+                  <DialogDescription>
+                    Hành động này sẽ xoá vĩnh viễn tài khoản người dùng và tất cả dữ liệu liên quan. Không thể hoàn tác!
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDeleteUserId(null)}>Hủy</Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => { 
+                      deleteUser.mutate(deleteUserId!); 
+                      setDeleteUserId(null); 
+                    }}
+                    disabled={deleteUser.isPending}
+                  >
+                    {deleteUser.isPending ? "Đang xoá..." : "Xoá vĩnh viễn"}
                   </Button>
                 </DialogFooter>
               </DialogContent>

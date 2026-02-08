@@ -211,3 +211,30 @@ export const useFreezeBalance = () => {
     },
   });
 };
+
+// Delete user account completely
+export const useDeleteUser = () => {
+  const queryClient = useQueryClient();
+  const logAction = useLogAdminAction();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase.rpc("admin_delete_user", {
+        p_user_id: userId,
+      });
+      if (error) throw error;
+      return userId;
+    },
+    onSuccess: (userId) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      logAction.mutate({
+        targetUserId: userId,
+        actionType: "delete_user",
+      });
+      toast({ title: "Đã xoá tài khoản người dùng!" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+    },
+  });
+};

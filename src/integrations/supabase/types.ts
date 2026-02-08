@@ -935,6 +935,7 @@ export type Database = {
         Args: { p_amount: number; p_note?: string; p_user_id: string }
         Returns: undefined
       }
+      admin_delete_user: { Args: { p_user_id: string }; Returns: undefined }
       admin_freeze_balance: {
         Args: { p_freeze: boolean; p_reason?: string; p_user_id: string }
         Returns: undefined
