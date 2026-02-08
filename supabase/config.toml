@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.cleanup-stale-deposits]
 verify_jwt = false
 
+[functions.register-with-ip]
+verify_jwt = false
+
 [functions.sepay-webhook]
 verify_jwt = false
 
