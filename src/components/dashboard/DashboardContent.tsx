@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import DashboardRoomMap from "@/components/DashboardRoomMap";
 import ModeratorsList from "@/components/ModeratorsList";
+import PublicTransactionLog from "@/components/dashboard/PublicTransactionLog";
 
 
 const TetBanner = () => (
@@ -201,11 +202,21 @@ const DashboardContent = () => {
         )}
       </motion.section>
 
-      {/* Moderators List */}
+      {/* Public Transaction Log - Social Proof */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
+        className="mb-6"
+      >
+        <PublicTransactionLog />
+      </motion.section>
+
+      {/* Moderators List */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
         className="mb-6"
       >
         <ModeratorsList variant="compact" maxItems={3} />
@@ -216,7 +227,7 @@ const DashboardContent = () => {
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.25 }}
         >
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold">

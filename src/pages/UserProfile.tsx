@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserAverageRating } from "@/hooks/useUserRatings";
 import {
   ArrowLeft,
   Shield,
@@ -18,12 +19,14 @@ import {
   User,
   AlertTriangle,
   MessageSquare,
+  Star,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import PrivateMessageDialog from "@/components/messaging/PrivateMessageDialog";
 import Footer from "@/components/Footer";
 import SocialLinksCard from "@/components/profile/SocialLinksCard";
+import UserRatingsSection from "@/components/rating/UserRatingsSection";
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -47,6 +50,8 @@ const UserProfile = () => {
     },
     enabled: !!userId && !!user,
   });
+
+  const { average: avgRating, count: ratingCount } = useUserAverageRating(userId);
 
   const getReputationColor = (score: number) => {
     if (score >= 90) return "text-green-500";
@@ -191,7 +196,7 @@ const UserProfile = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Stats Grid */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-4 bg-muted rounded-lg text-center">
                   <TrendingUp className={`w-6 h-6 mx-auto mb-2 ${getReputationColor(profile.reputation_score)}`} />
                   <p className="text-2xl font-bold">{profile.reputation_score}</p>
@@ -208,6 +213,14 @@ const UserProfile = () => {
                   <Package className="w-6 h-6 mx-auto mb-2 text-primary" />
                   <p className="text-2xl font-bold">{profile.total_transactions}</p>
                   <p className="text-xs text-muted-foreground">Giao dịch</p>
+                </div>
+
+                <div className="p-4 bg-muted rounded-lg text-center">
+                  <Star className="w-6 h-6 mx-auto mb-2 text-yellow-400 fill-yellow-400" />
+                  <p className="text-2xl font-bold">{avgRating || "-"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {ratingCount > 0 ? `${ratingCount} đánh giá` : "Chưa có"}
+                  </p>
                 </div>
 
                 <div className="p-4 bg-muted rounded-lg text-center">
@@ -275,6 +288,9 @@ const UserProfile = () => {
             bio={profile.bio}
             isOwnProfile={false}
           />
+
+          {/* User Ratings Section */}
+          {userId && <UserRatingsSection userId={userId} />}
         </motion.div>
       </main>
 

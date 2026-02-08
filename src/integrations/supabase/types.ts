@@ -751,6 +751,50 @@ export type Database = {
         }
         Relationships: []
       }
+      user_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rated_user_id: string
+          rater_id: string
+          rating: number
+          tags: string[] | null
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rated_user_id: string
+          rater_id: string
+          rating: number
+          tags?: string[] | null
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rated_user_id?: string
+          rater_id?: string
+          rating?: number
+          tags?: string[] | null
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ratings_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
