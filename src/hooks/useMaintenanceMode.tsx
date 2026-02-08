@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
 export const useMaintenanceMode = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Check if maintenance mode is enabled
   const { data: isMaintenanceMode, isLoading: maintenanceLoading } = useQuery({
@@ -22,7 +22,7 @@ export const useMaintenanceMode = () => {
     refetchInterval: 1000 * 30,
   });
 
-  // Check if current user is super_admin
+  // Check if current user is super_admin (only if user is logged in)
   const { data: isSuperAdmin, isLoading: roleLoading } = useQuery({
     queryKey: ["is-super-admin", user?.id],
     queryFn: async () => {
@@ -41,7 +41,10 @@ export const useMaintenanceMode = () => {
     enabled: !!user?.id,
   });
 
-  const isLoading = maintenanceLoading || roleLoading;
+  // Only consider role loading if user is actually logged in
+  // If user is not logged in, we don't need to wait for role check
+  const isRoleCheckNeeded = !!user?.id;
+  const isLoading = authLoading || maintenanceLoading || (isRoleCheckNeeded && roleLoading);
   
   // Show maintenance page if:
   // 1. Maintenance mode is ON
