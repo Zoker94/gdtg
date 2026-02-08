@@ -232,6 +232,7 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [depositSearchQuery, setDepositSearchQuery] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [ipFilterQuery, setIpFilterQuery] = useState("");
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [actionType, setActionType] = useState<"resolve" | "refund" | null>(null);
   const [selectedDeposit, setSelectedDeposit] = useState<string | null>(null);
@@ -366,11 +367,23 @@ const AdminDashboard = () => {
       t.product_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredUsers = users?.filter(
-    (u) =>
+  const filteredUsers = users?.filter((u) => {
+    const matchesSearch =
       u.full_name?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-      u.user_id.toLowerCase().includes(userSearchQuery.toLowerCase())
-  );
+      u.user_id.toLowerCase().includes(userSearchQuery.toLowerCase());
+    const matchesIp = !ipFilterQuery || 
+      (u.registration_ip && String(u.registration_ip).includes(ipFilterQuery));
+    return matchesSearch && matchesIp;
+  });
+
+  // Count IPs to highlight duplicates
+  const ipCounts = users?.reduce((acc, u) => {
+    if (u.registration_ip) {
+      const ip = String(u.registration_ip);
+      acc[ip] = (acc[ip] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>) || {};
 
   const disputedTransactions = transactions?.filter((t) => t.status === "disputed") || [];
   const totalVolume = transactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
@@ -574,10 +587,26 @@ const AdminDashboard = () => {
             <CardHeader className="py-3">
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="text-base">Quản lý người dùng</CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                    <Input placeholder="Tìm..." value={userSearchQuery} onChange={(e) => setUserSearchQuery(e.target.value)} className="pl-8 h-8 w-48 text-sm" />
+                    <Input placeholder="Tìm tên/ID..." value={userSearchQuery} onChange={(e) => setUserSearchQuery(e.target.value)} className="pl-8 h-8 w-40 text-sm" />
+                  </div>
+                  <div className="relative">
+                    <Input 
+                      placeholder="Lọc theo IP..." 
+                      value={ipFilterQuery} 
+                      onChange={(e) => setIpFilterQuery(e.target.value)} 
+                      className="h-8 w-36 text-sm font-mono"
+                    />
+                    {ipFilterQuery && (
+                      <button 
+                        onClick={() => setIpFilterQuery("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
                   <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => refetchUsers()}>
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -619,7 +648,23 @@ const AdminDashboard = () => {
                           </TableCell>
                           <TableCell className="text-xs">
                             {u.registration_ip ? (
-                              <span className="font-mono text-muted-foreground">{u.registration_ip}</span>
+                              <button
+                                onClick={() => setIpFilterQuery(String(u.registration_ip))}
+                                className={`font-mono cursor-pointer hover:underline ${
+                                  ipCounts[String(u.registration_ip)] > 1 
+                                    ? "text-amber-500 font-semibold" 
+                                    : "text-muted-foreground"
+                                }`}
+                                title={ipCounts[String(u.registration_ip)] > 1 
+                                  ? `${ipCounts[String(u.registration_ip)]} tài khoản dùng IP này - Click để lọc`
+                                  : "Click để lọc theo IP này"
+                                }
+                              >
+                                {String(u.registration_ip)}
+                                {ipCounts[String(u.registration_ip)] > 1 && (
+                                  <span className="ml-1 text-xs">({ipCounts[String(u.registration_ip)]})</span>
+                                )}
+                              </button>
                             ) : (
                               <span className="text-muted-foreground italic">-</span>
                             )}
