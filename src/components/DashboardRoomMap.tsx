@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, memo, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +22,183 @@ interface TableData {
   hasSeller?: boolean;
 }
 
+// Memoized Chair component
+const Chair = memo(({ 
+  filled, 
+  color, 
+  rotate = false,
+  size = "md" 
+}: { 
+  filled: boolean; 
+  color: string; 
+  rotate?: boolean;
+  size?: "sm" | "md";
+}) => {
+  const dimensions = size === "sm" ? { width: 16, height: 14 } : { width: 24, height: 20 };
+  
+  return (
+    <svg 
+      width={dimensions.width} 
+      height={dimensions.height} 
+      viewBox="0 0 24 20" 
+      className={`${rotate ? "rotate-180" : ""}`}
+    >
+      <path
+        d="M4 2C4 1 5 0 6 0H18C19 0 20 1 20 2V8C20 9 19 10 18 10H6C5 10 4 9 4 8V2Z"
+        fill={filled ? color : "transparent"}
+        stroke={color}
+        strokeWidth="1.5"
+      />
+      <rect
+        x="3"
+        y="10"
+        width="18"
+        height="6"
+        rx="1"
+        fill={filled ? color : "transparent"}
+        stroke={color}
+        strokeWidth="1.5"
+      />
+      <line x1="5" y1="16" x2="5" y2="20" stroke={color} strokeWidth="1.5" />
+      <line x1="19" y1="16" x2="19" y2="20" stroke={color} strokeWidth="1.5" />
+    </svg>
+  );
+});
+Chair.displayName = "Chair";
+
+// Memoized Table component
+const TableCell = memo(({ 
+  table, 
+  index,
+  isStaff,
+  onTableClick,
+  getStatusColor,
+  getStatusBgClass,
+  canEnterTable,
+  formatCurrency
+}: { 
+  table: TableData;
+  index: number;
+  isStaff: boolean;
+  onTableClick: (table: TableData) => void;
+  getStatusColor: (status: RoomStatus) => string;
+  getStatusBgClass: (status: RoomStatus, canEnter: boolean) => string;
+  canEnterTable: (table: TableData) => boolean;
+  formatCurrency: (amount: number) => string;
+}) => {
+  const canEnter = canEnterTable(table);
+  const statusColor = getStatusColor(table.status);
+  
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ 
+        type: "spring",
+        stiffness: 300,
+        damping: 25,
+        delay: index * 0.05 
+      }}
+      className={`
+        relative p-3 rounded-lg border-2 transition-colors duration-300
+        ${getStatusBgClass(table.status, canEnter)}
+        ${canEnter ? "cursor-pointer hover:scale-[1.02]" : ""}
+      `}
+      onClick={() => onTableClick(table)}
+      whileHover={canEnter ? { scale: 1.02 } : {}}
+      whileTap={canEnter ? { scale: 0.98 } : {}}
+    >
+      {table.status === "pending" && (
+        <motion.div
+          className="absolute top-2 right-2 w-2 h-2 rounded-full bg-chart-1"
+          animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        />
+      )}
+
+      <div className="flex flex-col items-center">
+        <div className="flex gap-1 mb-1">
+          <Chair 
+            filled={table.status === "occupied" || table.status === "pending"} 
+            color={statusColor} 
+            size="sm"
+          />
+          <Chair 
+            filled={table.status === "occupied"} 
+            color={statusColor} 
+            size="sm"
+          />
+        </div>
+        
+        <motion.div 
+          className="w-full h-8 rounded flex items-center justify-center text-xs font-medium"
+          style={{ 
+            backgroundColor: `color-mix(in srgb, ${statusColor} 20%, transparent)`,
+            border: `1.5px solid ${statusColor}`
+          }}
+          animate={table.status === "pending" ? { 
+            borderColor: [statusColor, "hsl(var(--primary))", statusColor]
+          } : {}}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <span className="text-foreground">Bàn {table.tableNumber}</span>
+        </motion.div>
+
+        <div className="flex gap-1 mt-1">
+          <Chair 
+            filled={table.status === "occupied"} 
+            color={statusColor} 
+            rotate 
+            size="sm"
+          />
+          <Chair 
+            filled={table.status === "occupied" || table.status === "pending"} 
+            color={statusColor} 
+            rotate 
+            size="sm"
+          />
+        </div>
+      </div>
+
+      {table.productName && (
+        <motion.div 
+          className="mt-2 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <p className="text-[10px] text-foreground font-medium truncate">
+            {table.productName}
+          </p>
+          {table.amount && (
+            <p className="text-[10px] text-primary font-semibold">
+              {formatCurrency(table.amount)}
+            </p>
+          )}
+        </motion.div>
+      )}
+
+      {table.status === "available" && (
+        <p className="text-[10px] text-center mt-1 text-muted-foreground">
+          Nhấn để tạo
+        </p>
+      )}
+      {table.status === "pending" && (
+        <motion.p 
+          className="text-[10px] text-center mt-1 text-chart-1"
+          animate={{ opacity: [1, 0.6, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          Nhấn để tham gia
+        </motion.p>
+      )}
+    </motion.div>
+  );
+});
+TableCell.displayName = "TableCell";
+
 const DashboardRoomMap = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -30,7 +207,6 @@ const DashboardRoomMap = () => {
 
   const isStaff = roles?.isAdmin || roles?.isModerator;
 
-  // Fetch active transactions to map to tables
   const { data: transactions = [] } = useQuery({
     queryKey: ["public-transactions-dashboard"],
     queryFn: async () => {
@@ -44,9 +220,10 @@ const DashboardRoomMap = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 1000 * 60, // 1 minute
   });
 
-  // Realtime subscription for transactions
+  // Realtime subscription - simplified
   useEffect(() => {
     const channel = supabase
       .channel("dashboard-room-map")
@@ -57,22 +234,8 @@ const DashboardRoomMap = () => {
           schema: "public",
           table: "transactions",
         },
-        (payload) => {
-          // Invalidate query to refresh data
+        () => {
           queryClient.invalidateQueries({ queryKey: ["public-transactions-dashboard"] });
-          
-          // Show toast notification for relevant events
-          if (payload.eventType === "INSERT") {
-            toast.info("Có phòng giao dịch mới được tạo!");
-          } else if (payload.eventType === "UPDATE") {
-            const newData = payload.new as { buyer_id?: string; seller_id?: string };
-            const oldData = payload.old as { buyer_id?: string; seller_id?: string };
-            
-            // Check if someone joined (buyer or seller changed from null to having value)
-            if ((!oldData.buyer_id && newData.buyer_id) || (!oldData.seller_id && newData.seller_id)) {
-              toast.info("Có người vừa tham gia phòng giao dịch!");
-            }
-          }
         }
       )
       .subscribe();
@@ -82,51 +245,52 @@ const DashboardRoomMap = () => {
     };
   }, [queryClient]);
 
-  // Generate 4 tables, mapping real transactions to them
-  const tables: TableData[] = Array.from({ length: 4 }, (_, i) => {
-    const transaction = transactions[i];
-    
-    if (transaction) {
-      const hasBoth = transaction.buyer_id && transaction.seller_id;
+  // Memoized tables
+  const tables: TableData[] = useMemo(() => 
+    Array.from({ length: 4 }, (_, i) => {
+      const transaction = transactions[i];
+      
+      if (transaction) {
+        const hasBoth = transaction.buyer_id && transaction.seller_id;
+        
+        return {
+          id: transaction.id,
+          tableNumber: i + 1,
+          status: hasBoth ? "occupied" as const : "pending" as const,
+          roomId: transaction.room_id || undefined,
+          productName: transaction.product_name,
+          amount: transaction.amount,
+          hasBuyer: !!transaction.buyer_id,
+          hasSeller: !!transaction.seller_id,
+        };
+      }
       
       return {
-        id: transaction.id,
+        id: `empty-${i}`,
         tableNumber: i + 1,
-        status: hasBoth ? "occupied" : "pending",
-        roomId: transaction.room_id || undefined,
-        productName: transaction.product_name,
-        amount: transaction.amount,
-        hasBuyer: !!transaction.buyer_id,
-        hasSeller: !!transaction.seller_id,
+        status: "available" as const,
       };
-    }
-    
-    return {
-      id: `empty-${i}`,
-      tableNumber: i + 1,
-      status: "available",
-    };
-  });
+    }), [transactions]
+  );
 
-  const getStatusColor = (status: RoomStatus) => {
+  const getStatusColor = useCallback((status: RoomStatus) => {
     switch (status) {
       case "available":
-        return "hsl(var(--muted-foreground))"; // White/neutral
+        return "hsl(var(--muted-foreground))";
       case "occupied":
-        return "hsl(var(--destructive))"; // Red
+        return "hsl(var(--destructive))";
       case "pending":
-        return "hsl(var(--chart-1))"; // Blue
+        return "hsl(var(--chart-1))";
       default:
         return "hsl(var(--muted))";
     }
-  };
+  }, []);
 
-  const getStatusBgClass = (status: RoomStatus, canEnter: boolean) => {
+  const getStatusBgClass = useCallback((status: RoomStatus, canEnter: boolean) => {
     switch (status) {
       case "available":
         return "bg-background hover:bg-muted/50 border-border";
       case "occupied":
-        // Staff can always enter occupied rooms
         return canEnter 
           ? "bg-destructive/10 hover:bg-destructive/20 border-destructive/50 cursor-pointer"
           : "bg-destructive/10 border-destructive/50 cursor-not-allowed";
@@ -135,10 +299,9 @@ const DashboardRoomMap = () => {
       default:
         return "bg-muted";
     }
-  };
+  }, []);
 
-  const handleTableClick = (table: TableData) => {
-    // Staff can enter any room with a room_id
+  const handleTableClick = useCallback((table: TableData) => {
     if (isStaff && table.roomId) {
       navigate(`/join/${table.roomId}`);
       return;
@@ -154,22 +317,21 @@ const DashboardRoomMap = () => {
       return;
     }
 
-    // Pending - has room but needs another participant
     if (table.roomId) {
       navigate(`/join/${table.roomId}`);
     } else {
       navigate("/join");
     }
-  };
+  }, [isStaff, navigate]);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat("vi-VN").format(amount) + "đ";
-  };
+  }, []);
 
-  const canEnterTable = (table: TableData) => {
+  const canEnterTable = useCallback((table: TableData) => {
     if (isStaff && table.roomId) return true;
     return table.status !== "occupied";
-  };
+  }, [isStaff]);
 
   return (
     <Card>
@@ -208,118 +370,17 @@ const DashboardRoomMap = () => {
         <div className="grid grid-cols-2 gap-3">
           <AnimatePresence mode="popLayout">
             {tables.map((table, index) => (
-              <motion.div
+              <TableCell
                 key={table.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ 
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 25,
-                  delay: index * 0.05 
-                }}
-              className={`
-                relative p-3 rounded-lg border-2 transition-colors duration-300
-                ${getStatusBgClass(table.status, canEnterTable(table))}
-                ${canEnterTable(table) ? "cursor-pointer hover:scale-[1.02]" : ""}
-              `}
-              onClick={() => handleTableClick(table)}
-              whileHover={canEnterTable(table) ? { scale: 1.02 } : {}}
-              whileTap={canEnterTable(table) ? { scale: 0.98 } : {}}
-              >
-                {/* Status indicator pulse */}
-                {table.status === "pending" && (
-                  <motion.div
-                    className="absolute top-2 right-2 w-2 h-2 rounded-full bg-chart-1"
-                    animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  />
-                )}
-
-                {/* Table visualization */}
-                <div className="flex flex-col items-center">
-                  {/* Top chairs */}
-                  <div className="flex gap-1 mb-1">
-                    <Chair 
-                      filled={table.status === "occupied" || table.status === "pending"} 
-                      color={getStatusColor(table.status)} 
-                      size="sm"
-                    />
-                    <Chair 
-                      filled={table.status === "occupied"} 
-                      color={getStatusColor(table.status)} 
-                      size="sm"
-                    />
-                  </div>
-                  
-                  {/* Table */}
-                  <motion.div 
-                    className="w-full h-8 rounded flex items-center justify-center text-xs font-medium"
-                    style={{ 
-                      backgroundColor: `color-mix(in srgb, ${getStatusColor(table.status)} 20%, transparent)`,
-                      border: `1.5px solid ${getStatusColor(table.status)}`
-                    }}
-                    animate={table.status === "pending" ? { 
-                      borderColor: [getStatusColor(table.status), "hsl(var(--primary))", getStatusColor(table.status)]
-                    } : {}}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <span className="text-foreground">Bàn {table.tableNumber}</span>
-                  </motion.div>
-
-                  {/* Bottom chairs */}
-                  <div className="flex gap-1 mt-1">
-                    <Chair 
-                      filled={table.status === "occupied"} 
-                      color={getStatusColor(table.status)} 
-                      rotate 
-                      size="sm"
-                    />
-                    <Chair 
-                      filled={table.status === "occupied" || table.status === "pending"} 
-                      color={getStatusColor(table.status)} 
-                      rotate 
-                      size="sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Room info */}
-                {table.productName && (
-                  <motion.div 
-                    className="mt-2 text-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <p className="text-[10px] text-foreground font-medium truncate">
-                      {table.productName}
-                    </p>
-                    {table.amount && (
-                      <p className="text-[10px] text-primary font-semibold">
-                        {formatCurrency(table.amount)}
-                      </p>
-                    )}
-                  </motion.div>
-                )}
-
-                {table.status === "available" && (
-                  <p className="text-[10px] text-center mt-1 text-muted-foreground">
-                    Nhấn để tạo
-                  </p>
-                )}
-                {table.status === "pending" && (
-                  <motion.p 
-                    className="text-[10px] text-center mt-1 text-chart-1"
-                    animate={{ opacity: [1, 0.6, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    Nhấn để tham gia
-                  </motion.p>
-                )}
-              </motion.div>
+                table={table}
+                index={index}
+                isStaff={!!isStaff}
+                onTableClick={handleTableClick}
+                getStatusColor={getStatusColor}
+                getStatusBgClass={getStatusBgClass}
+                canEnterTable={canEnterTable}
+                formatCurrency={formatCurrency}
+              />
             ))}
           </AnimatePresence>
         </div>
@@ -328,50 +389,4 @@ const DashboardRoomMap = () => {
   );
 };
 
-// Chair component - smaller version
-const Chair = ({ 
-  filled, 
-  color, 
-  rotate = false,
-  size = "md" 
-}: { 
-  filled: boolean; 
-  color: string; 
-  rotate?: boolean;
-  size?: "sm" | "md";
-}) => {
-  const dimensions = size === "sm" ? { width: 16, height: 14 } : { width: 24, height: 20 };
-  
-  return (
-    <svg 
-      width={dimensions.width} 
-      height={dimensions.height} 
-      viewBox="0 0 24 20" 
-      className={`${rotate ? "rotate-180" : ""}`}
-    >
-      {/* Chair back */}
-      <path
-        d="M4 2C4 1 5 0 6 0H18C19 0 20 1 20 2V8C20 9 19 10 18 10H6C5 10 4 9 4 8V2Z"
-        fill={filled ? color : "transparent"}
-        stroke={color}
-        strokeWidth="1.5"
-      />
-      {/* Chair seat */}
-      <rect
-        x="3"
-        y="10"
-        width="18"
-        height="6"
-        rx="1"
-        fill={filled ? color : "transparent"}
-        stroke={color}
-        strokeWidth="1.5"
-      />
-      {/* Chair legs */}
-      <line x1="5" y1="16" x2="5" y2="20" stroke={color} strokeWidth="1.5" />
-      <line x1="19" y1="16" x2="19" y2="20" stroke={color} strokeWidth="1.5" />
-    </svg>
-  );
-};
-
-export default DashboardRoomMap;
+export default memo(DashboardRoomMap);

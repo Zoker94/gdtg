@@ -101,12 +101,15 @@ export const useTransactions = () => {
         .from("transactions")
         .select("*")
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(50); // Limit for performance
 
       if (error) throw error;
       return data as Transaction[];
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
   });
 };
 
@@ -232,8 +235,8 @@ export const useTransaction = (transactionId: string | undefined) => {
       return data as Transaction | null;
     },
     enabled: !!transactionId && !!user?.id,
-    refetchInterval: 5000, // Fallback: refetch every 5 seconds
-    staleTime: 0, // Always consider data stale for immediate updates
+    refetchInterval: 10000, // Reduced: refetch every 10 seconds (was 5)
+    staleTime: 5000, // 5 seconds stale time
   });
 };
 
@@ -401,7 +404,7 @@ export const useConfirmTransaction = () => {
   });
 };
 
-// Admin hook for all transactions
+// Admin hook for all transactions with limit for performance
 export const useAllTransactions = () => {
   return useQuery({
     queryKey: ["all-transactions"],
@@ -409,10 +412,13 @@ export const useAllTransactions = () => {
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200); // Limit for performance - paginate in UI
 
       if (error) throw error;
       return data as Transaction[];
     },
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
   });
 };
