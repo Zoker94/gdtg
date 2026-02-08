@@ -572,6 +572,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          ip_address: unknown
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          ip_address: unknown
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+        }
+        Relationships: []
+      }
       risk_alerts: {
         Row: {
           alert_type: string
@@ -919,6 +940,15 @@ export type Database = {
         Returns: undefined
       }
       approve_kyc: { Args: { p_submission_id: string }; Returns: undefined }
+      check_rate_limit: {
+        Args: {
+          p_action_type: string
+          p_ip: unknown
+          p_max_requests?: number
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
       confirm_deposit: { Args: { deposit_id: string }; Returns: undefined }
       confirm_deposit_sepay: {
         Args: {
@@ -946,6 +976,10 @@ export type Database = {
         Returns: undefined
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_rate_limit_action: {
+        Args: { p_action_type: string; p_ip: unknown }
+        Returns: undefined
+      }
       process_buyer_deposit: {
         Args: { p_amount: number; p_buyer_id: string; p_transaction_id: string }
         Returns: undefined
