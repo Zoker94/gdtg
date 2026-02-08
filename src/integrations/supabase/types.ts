@@ -499,6 +499,7 @@ export type Database = {
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           phone: string | null
           phone_number: string | null
+          registration_ip: unknown
           reputation_score: number
           suspicious_at: string | null
           suspicious_reason: string | null
@@ -528,6 +529,7 @@ export type Database = {
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           phone?: string | null
           phone_number?: string | null
+          registration_ip?: unknown
           reputation_score?: number
           suspicious_at?: string | null
           suspicious_reason?: string | null
@@ -557,6 +559,7 @@ export type Database = {
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           phone?: string | null
           phone_number?: string | null
+          registration_ip?: unknown
           reputation_score?: number
           suspicious_at?: string | null
           suspicious_reason?: string | null
@@ -930,6 +933,7 @@ export type Database = {
         Args: { withdrawal_id: string }
         Returns: undefined
       }
+      count_accounts_by_ip: { Args: { p_ip: unknown }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -945,6 +949,10 @@ export type Database = {
       process_buyer_deposit: {
         Args: { p_amount: number; p_buyer_id: string; p_transaction_id: string }
         Returns: undefined
+      }
+      register_user_ip: {
+        Args: { p_ip: unknown; p_user_id: string }
+        Returns: Json
       }
       reject_kyc: {
         Args: { p_reason: string; p_submission_id: string }
