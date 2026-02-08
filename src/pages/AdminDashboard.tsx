@@ -631,8 +631,13 @@ const AdminDashboard = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginateData(filteredUsers || [], userPage).map((u) => (
-                        <TableRow key={u.id}>
+                      {paginateData(filteredUsers || [], userPage).map((u) => {
+                        const isDuplicateIp = u.registration_ip && ipCounts[String(u.registration_ip)] > 1;
+                        return (
+                        <TableRow 
+                          key={u.id}
+                          className={isDuplicateIp ? "bg-amber-500/10 hover:bg-amber-500/20" : ""}
+                        >
                           <TableCell className="text-xs">
                             <div>
                               <p className="font-medium">{u.full_name || "Chưa đặt tên"}</p>
@@ -732,7 +737,8 @@ const AdminDashboard = () => {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   <SimplePagination
