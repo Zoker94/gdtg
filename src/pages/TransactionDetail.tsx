@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -61,6 +62,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 const TransactionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { data: transaction, isLoading } = useTransaction(id);
   const { data: profile } = useProfile();
@@ -246,24 +248,26 @@ const TransactionDetail = () => {
     
     setIsDepositing(true);
     try {
-      // Deduct the full amount buyer needs to pay (including their fee share)
-      const { error: balanceError } = await supabase
-        .from("profiles")
-        .update({ balance: profile.balance - buyerPayment.total })
-        .eq("user_id", user.id);
+      // Use RPC function to securely deduct balance and update status
+      const { error } = await supabase.rpc("process_buyer_deposit", {
+        p_transaction_id: transaction.id,
+        p_buyer_id: user.id,
+        p_amount: buyerPayment.total,
+      });
       
-      if (balanceError) throw balanceError;
+      if (error) throw error;
       
-      // Update transaction status
-      handleStatusUpdate("deposited");
+      // Invalidate profile query to refresh balance
+      queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+      
       toast({
         title: "Đặt cọc thành công",
         description: `${formatCurrency(buyerPayment.total)} đã được treo giữ trong hệ thống`,
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Lỗi đặt cọc",
-        description: "Vui lòng thử lại sau",
+        description: error.message || "Vui lòng thử lại sau",
         variant: "destructive",
       });
     } finally {
