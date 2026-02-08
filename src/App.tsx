@@ -66,8 +66,17 @@ const queryClient = new QueryClient({
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const [timedOut, setTimedOut] = useState(false);
+
+  // Timeout after 5 seconds to prevent infinite loading
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => setTimedOut(true), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
   
-  if (loading) {
+  if (loading && !timedOut) {
     return <LoadingScreen message="Đang xác thực..." />;
   }
   
@@ -77,8 +86,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const MaintenanceWrapper = ({ children }: { children: React.ReactNode }) => {
   const { shouldShowMaintenance, isLoading } = useMaintenanceMode();
+  const [timedOut, setTimedOut] = useState(false);
+
+  // Timeout after 3 seconds to prevent infinite loading
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => setTimedOut(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
   
-  if (isLoading) {
+  // If loading took too long, just show content (assume no maintenance)
+  if (isLoading && !timedOut) {
     return <LoadingScreen message="Đang kiểm tra trạng thái hệ thống..." />;
   }
   
