@@ -46,6 +46,10 @@ export const profileFrames: ProfileFrame[] = [
   { id: "ice", name: "❄️ Băng giá", preview: "border-sky-300", borderClass: "border-4 border-sky-300 ring-2 ring-sky-200/50", glowClass: "shadow-[0_0_15px_rgba(125,211,252,0.5)]" },
   { id: "rose", name: "🌹 Hoa hồng", preview: "border-rose-400", borderClass: "border-4 border-rose-400 ring-2 ring-rose-300/50", glowClass: "shadow-[0_0_15px_rgba(251,113,133,0.4)]" },
   { id: "ice_tiger", name: "🐯 Hổ Băng", preview: "border-cyan-400", borderClass: "border-0", glowClass: "shadow-[0_0_25px_rgba(56,189,248,0.6)]", imageFrame: "ice-tiger" },
+  { id: "star_cloud", name: "⭐ Sao & Mây", preview: "border-sky-400", borderClass: "border-0", glowClass: "shadow-[0_0_20px_rgba(56,189,248,0.4)]", imageFrame: "star-cloud" },
+  { id: "panda", name: "🐼 Gấu Trúc", preview: "border-green-500", borderClass: "border-0", glowClass: "shadow-[0_0_20px_rgba(34,197,94,0.4)]", imageFrame: "panda" },
+  { id: "christmas", name: "🎄 Giáng Sinh", preview: "border-red-500", borderClass: "border-0", glowClass: "shadow-[0_0_20px_rgba(239,68,68,0.4)]", imageFrame: "christmas" },
+  { id: "mystic_lotus", name: "🪷 Sen Huyền Bí", preview: "border-purple-500", borderClass: "border-0", glowClass: "shadow-[0_0_25px_rgba(168,85,247,0.5)]", imageFrame: "mystic-lotus" },
 ];
 
 export const profileEffects: ProfileEffect[] = [
