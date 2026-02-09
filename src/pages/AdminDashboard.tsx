@@ -601,7 +601,7 @@ const AdminDashboard = () => {
                     <Input 
                       placeholder="Lọc theo IP..." 
                       value={ipFilterQuery} 
-                      onChange={(e) => setIpFilterQuery(e.target.value)} 
+                      onChange={(e) => { setIpFilterQuery(e.target.value); setUserPage(1); }} 
                       className="h-8 w-36 text-sm font-mono"
                     />
                     {ipFilterQuery && (
@@ -659,7 +659,7 @@ const AdminDashboard = () => {
                           <TableCell className="text-xs">
                             {u.registration_ip ? (
                               <button
-                                onClick={() => setIpFilterQuery(String(u.registration_ip))}
+                                onClick={() => { setIpFilterQuery(String(u.registration_ip)); setUserPage(1); }}
                                 className={`font-mono cursor-pointer hover:underline ${
                                   ipCounts[String(u.registration_ip)] > 1 
                                     ? "text-amber-500 font-semibold" 
