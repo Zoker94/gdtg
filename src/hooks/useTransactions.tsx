@@ -1,8 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
+
+const PAGE_SIZE = 20;
 
 export type TransactionStatus = "pending" | "deposited" | "shipping" | "completed" | "disputed" | "cancelled" | "refunded";
 export type FeeBearer = "buyer" | "seller" | "split";
@@ -71,7 +73,6 @@ export const useTransactions = () => {
           table: "transactions",
         },
         (payload) => {
-          // Check if this transaction involves the current user
           const newData = payload.new as Transaction;
           const oldData = payload.old as Transaction;
           
@@ -92,25 +93,40 @@ export const useTransactions = () => {
     };
   }, [user?.id, queryClient]);
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["transactions", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!user?.id) return { data: [], nextPage: null };
+
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
 
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
         .order("created_at", { ascending: false })
-        .limit(50); // Limit for performance
+        .range(from, to);
 
       if (error) throw error;
-      return data as Transaction[];
+      
+      return {
+        data: data as Transaction[],
+        nextPage: data.length === PAGE_SIZE ? pageParam + 1 : null,
+      };
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextPage,
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    gcTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 10,
   });
+};
+
+// Helper to flatten infinite query pages
+export const flattenTransactions = (data: { pages: { data: Transaction[] }[] } | undefined): Transaction[] => {
+  if (!data) return [];
+  return data.pages.flatMap((page) => page.data);
 };
 
 export const useTransaction = (transactionId: string | undefined) => {

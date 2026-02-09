@@ -1,4 +1,5 @@
 import { memo, useMemo, lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { TransactionCard } from "@/components/TransactionCard";
 import { TransactionCardSkeleton } from "@/components/skeletons/TransactionCardSkeleton";
 import { DepositListSkeleton } from "@/components/skeletons/DepositListSkeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { useTransactions } from "@/hooks/useTransactions";
+import { useTransactions, flattenTransactions } from "@/hooks/useTransactions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Wallet, Package, CreditCard, ArrowDownToLine, ChevronRight } from "lucide-react";
@@ -113,7 +114,8 @@ DepositItem.displayName = "DepositItem";
 const DashboardContent = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: transactions, isLoading: transactionsLoading } = useTransactions();
+  const { data: transactionsData, isLoading: transactionsLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useTransactions();
+  const transactions = flattenTransactions(transactionsData);
 
   const { data: deposits, isLoading: depositsLoading } = useQuery({
     queryKey: ["user-deposits", user?.id],
@@ -136,12 +138,12 @@ const DashboardContent = () => {
 
   // Memoized filtered transactions
   const { activeTransactions, completedTransactions } = useMemo(() => {
-    const active = transactions?.filter(
+    const active = transactions.filter(
       (t) => !["completed", "cancelled", "refunded"].includes(t.status)
-    ) || [];
-    const completed = transactions?.filter(
+    );
+    const completed = transactions.filter(
       (t) => ["completed", "cancelled", "refunded"].includes(t.status)
-    ) || [];
+    );
     return { activeTransactions: active, completedTransactions: completed };
   }, [transactions]);
 
@@ -195,11 +197,32 @@ const DashboardContent = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {activeTransactions.map((transaction) => (
-              <TransactionCard key={transaction.id} transaction={transaction} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {activeTransactions.map((transaction) => (
+                <TransactionCard key={transaction.id} transaction={transaction} />
+              ))}
+            </div>
+            {hasNextPage && (
+              <div className="flex justify-center mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang tải...
+                    </>
+                  ) : (
+                    "Tải thêm giao dịch"
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </motion.section>
 
