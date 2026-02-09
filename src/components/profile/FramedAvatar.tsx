@@ -1,9 +1,17 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ProfileFrame } from "@/data/profileThemes";
 import iceTigerFrame from "@/assets/frame-ice-tiger.png";
+import starCloudFrame from "@/assets/frame-star-cloud.png";
+import pandaFrame from "@/assets/frame-panda.png";
+import christmasFrame from "@/assets/frame-christmas.png";
+import mysticLotusFrame from "@/assets/frame-mystic-lotus.png";
 
 const frameImages: Record<string, string> = {
   "ice-tiger": iceTigerFrame,
+  "star-cloud": starCloudFrame,
+  "panda": pandaFrame,
+  "christmas": christmasFrame,
+  "mystic-lotus": mysticLotusFrame,
 };
 
 interface FramedAvatarProps {
