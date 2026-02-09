@@ -449,3 +449,148 @@
   box-shadow: var(--shadow-card);
   border: none;
 }
+
+/* ===== Tết Ornate Card for Super Admin ===== */
+.tet-ornate-card {
+  background: linear-gradient(145deg, hsl(0 50% 18% / 0.95), hsl(0 60% 12% / 0.95));
+  border: 3px solid;
+  border-image: linear-gradient(135deg, hsl(40 85% 55%), hsl(45 90% 45%), hsl(40 85% 55%)) 1;
+  border-radius: 0;
+  padding: 1.5rem;
+  position: relative;
+  overflow: visible;
+  box-shadow:
+    0 0 0 1px hsl(40 85% 50% / 0.3),
+    0 4px 20px hsl(0 60% 10% / 0.5),
+    inset 0 1px 0 hsl(40 85% 55% / 0.2),
+    inset 0 -1px 0 hsl(0 60% 8% / 0.5);
+  color: hsl(40 60% 90%);
+}
+
+.tet-ornate-card::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid hsl(40 85% 50% / 0.25);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Gold pillar borders */
+.tet-ornate-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  right: -1px;
+  border-left: 4px solid hsl(40 80% 50% / 0.6);
+  border-right: 4px solid hsl(40 80% 50% / 0.6);
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(90deg, hsl(40 85% 55% / 0.05) 0%, transparent 15%, transparent 85%, hsl(40 85% 55% / 0.05) 100%);
+}
+
+/* Corner ornaments */
+.tet-ornate-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  z-index: 5;
+}
+
+.tet-ornate-corner::before {
+  content: "❖";
+  font-size: 16px;
+  color: hsl(40 90% 55%);
+  filter: drop-shadow(0 0 4px hsl(40 90% 50% / 0.6));
+  display: block;
+  text-align: center;
+  line-height: 24px;
+}
+
+.tet-ornate-corner-tl { top: -8px; left: -8px; }
+.tet-ornate-corner-tr { top: -8px; right: -8px; }
+.tet-ornate-corner-bl { bottom: -8px; left: -8px; }
+.tet-ornate-corner-br { bottom: -8px; right: -8px; }
+
+/* Top ornament crown */
+.tet-ornate-top-ornament {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: linear-gradient(135deg, hsl(40 85% 50%), hsl(35 90% 40%));
+  padding: 2px 16px;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 -2px 8px hsl(40 90% 50% / 0.4);
+  border: 1px solid hsl(40 85% 55% / 0.6);
+  border-bottom: none;
+}
+
+.tet-ornate-top-ornament span {
+  font-size: 14px;
+  filter: drop-shadow(0 0 3px hsl(120 60% 40% / 0.8));
+}
+
+/* Lantern decorations */
+.tet-ornate-lantern {
+  position: absolute;
+  top: -6px;
+  font-size: 20px;
+  z-index: 5;
+  filter: drop-shadow(0 2px 6px hsl(30 90% 40% / 0.6));
+  animation: lantern-sway 3s ease-in-out infinite;
+}
+
+.tet-ornate-lantern-left { left: 20px; animation-delay: 0s; }
+.tet-ornate-lantern-right { right: 20px; animation-delay: 1.5s; }
+
+@keyframes lantern-sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+/* Override text colors inside ornate card */
+.tet-ornate-card h1, .tet-ornate-card h2, .tet-ornate-card h3,
+.tet-ornate-card .text-xl, .tet-ornate-card .text-2xl, .tet-ornate-card .text-3xl {
+  color: hsl(40 90% 75%);
+  text-shadow: 0 1px 4px hsl(0 60% 10% / 0.5);
+}
+
+.tet-ornate-card .text-muted-foreground {
+  color: hsl(40 30% 70%) !important;
+}
+
+.tet-ornate-card .text-primary {
+  color: hsl(40 90% 65%) !important;
+}
+
+/* Hover effect */
+.tet-ornate-card:hover {
+  box-shadow:
+    0 0 0 1px hsl(40 85% 50% / 0.4),
+    0 6px 30px hsl(0 60% 10% / 0.6),
+    0 0 20px hsl(40 85% 50% / 0.15),
+    inset 0 1px 0 hsl(40 85% 55% / 0.3);
+  transition: box-shadow 0.3s ease;
+}
+
+/* Inner cards inside ornate card - glass style */
+.tet-ornate-card .tet-inner-card {
+  background: hsl(0 40% 20% / 0.6);
+  border: 1px solid hsl(40 85% 50% / 0.2);
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+}
+
+/* Badge overrides */
+.tet-ornate-card .bg-green-500 {
+  background: linear-gradient(135deg, hsl(120 60% 35%), hsl(140 70% 40%)) !important;
+}
+
+/* Button overrides */
+.tet-ornate-card button {
+  border-color: hsl(40 85% 50% / 0.3);
+}
