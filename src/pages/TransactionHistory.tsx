@@ -1,20 +1,23 @@
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TransactionCard } from "@/components/TransactionCard";
-import { useTransactions } from "@/hooks/useTransactions";
-import { ArrowLeft, Package } from "lucide-react";
+import { useTransactions, flattenTransactions } from "@/hooks/useTransactions";
+import { ArrowLeft, Package, Loader2 } from "lucide-react";
 import DashboardHeader from "@/components/DashboardHeader";
 import Footer from "@/components/Footer";
 
 const TransactionHistory = () => {
   const navigate = useNavigate();
-  const { data: transactions, isLoading } = useTransactions();
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useTransactions();
+  const transactions = flattenTransactions(data);
 
-  const completedTransactions = transactions?.filter(
-    (t) => ["completed", "cancelled", "refunded"].includes(t.status)
+  const completedTransactions = useMemo(() => 
+    transactions.filter((t) => ["completed", "cancelled", "refunded"].includes(t.status)),
+    [transactions]
   );
 
   return (
@@ -35,7 +38,7 @@ const TransactionHistory = () => {
               <Skeleton key={i} className="h-32" />
             ))}
           </div>
-        ) : completedTransactions?.length === 0 ? (
+        ) : completedTransactions.length === 0 ? (
           <Card className="border-border">
             <CardContent className="py-12 text-center">
               <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -50,15 +53,36 @@ const TransactionHistory = () => {
             </CardContent>
           </Card>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
-          >
-            {completedTransactions?.map((transaction) => (
-              <TransactionCard key={transaction.id} transaction={transaction} />
-            ))}
-          </motion.div>
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+            >
+              {completedTransactions.map((transaction) => (
+                <TransactionCard key={transaction.id} transaction={transaction} />
+              ))}
+            </motion.div>
+
+            {hasNextPage && (
+              <div className="flex justify-center mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang tải...
+                    </>
+                  ) : (
+                    "Tải thêm"
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </main>
       <Footer />
