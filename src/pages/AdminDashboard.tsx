@@ -117,6 +117,7 @@ import SuperAdminWidget from "@/components/admin/SuperAdminWidget";
 import { AIAssistantWidget } from "@/components/admin/AIAssistantWidget";
 import SimplePagination, { paginateData, getTotalPages } from "@/components/ui/simple-pagination";
 import PopupAnnouncementWidget from "@/components/admin/PopupAnnouncementWidget";
+import BannedIPsWidget from "@/components/admin/BannedIPsWidget";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -136,6 +137,7 @@ const menuItems = [
   { title: "Rút tiền", value: "withdrawals", icon: ArrowDownToLine },
   { title: "Thông báo", value: "announcements", icon: Megaphone },
   { title: "Giao diện", value: "appearance", icon: Paintbrush },
+  { title: "Ban IP", value: "banned-ips", icon: ShieldAlert },
   { title: "Lịch sử", value: "history", icon: History },
   { title: "Cài đặt", value: "settings", icon: Settings },
 ];
@@ -905,6 +907,9 @@ const AdminDashboard = () => {
 
       case "appearance":
         return <ThemeSelectorWidget />;
+
+      case "banned-ips":
+        return <BannedIPsWidget />;
 
 
       case "settings":

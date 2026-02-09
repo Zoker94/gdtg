@@ -98,6 +98,36 @@ export type Database = {
         }
         Relationships: []
       }
+      banned_ips: {
+        Row: {
+          banned_by: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          ip_address: unknown
+          is_active: boolean
+          reason: string | null
+        }
+        Insert: {
+          banned_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          ip_address: unknown
+          is_active?: boolean
+          reason?: string | null
+        }
+        Update: {
+          banned_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean
+          reason?: string | null
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -976,6 +1006,7 @@ export type Database = {
         Args: { reason?: string; withdrawal_id: string }
         Returns: undefined
       }
+      is_ip_banned: { Args: { p_ip: unknown }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       log_rate_limit_action: {
         Args: { p_action_type: string; p_ip: unknown }
