@@ -17,6 +17,7 @@ import { bgImages } from "@/components/profile/bgImages";
 import { ProfileEffects } from "@/components/profile/ProfileEffects";
 import ProfileThemeShop from "@/components/profile/ProfileThemeShop";
 import FramedAvatar from "@/components/profile/FramedAvatar";
+import TetHeroCard from "@/components/profile/TetHeroCard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import TelegramVerification from "@/components/TelegramVerification";
@@ -251,10 +252,61 @@ const MyProfile = () => {
       <main className="container mx-auto px-4 py-6 max-w-2xl">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           {/* Avatar & Name Section */}
+          {isSuperAdmin ? (
+            <TetHeroCard>
+              <Card className="border-none bg-transparent shadow-none overflow-hidden">
+                <div className="h-24 bg-gradient-to-r from-primary/10 to-transparent" />
+                <CardContent className="relative pt-0 pb-6">
+                  <div className="relative -mt-12 mb-4 flex justify-center">
+                    <div className="relative">
+                      {(() => {
+                        const frame = getFrameById(profileTheme?.frame_id || "default");
+                        return (
+                          <FramedAvatar
+                            frame={frame}
+                            avatarUrl={profile.avatar_url}
+                            fallbackText={profile.full_name?.charAt(0)?.toUpperCase() || "U"}
+                          />
+                        );
+                      })()}
+                      <button
+                        onClick={handleAvatarClick}
+                        disabled={isUploadingAvatar}
+                        className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+                      >
+                        {isUploadingAvatar ? <span className="animate-spin">⏳</span> : <Camera className="w-4 h-4" />}
+                      </button>
+                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    {isEditingName ? (
+                      <div className="flex items-center justify-center gap-2 max-w-xs mx-auto">
+                        <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nhập tên của bạn" className="text-center" autoFocus />
+                        <Button size="icon" variant="ghost" onClick={handleSaveName} disabled={updateProfile.isPending}>
+                          <Check className="w-4 h-4 text-green-500" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => setIsEditingName(false)}>
+                          <X className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2">
+                        <h1 className="text-xl font-bold">{profile.full_name || "Người dùng"}</h1>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleStartEditName}>
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    )}
+                    <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TetHeroCard>
+          ) : (
            <Card className="border-border overflow-hidden bg-card/80">
             <div className="h-24 bg-gradient-to-r from-primary/10 to-transparent" />
             <CardContent className="relative pt-0 pb-6">
-              {/* Avatar */}
               <div className="relative -mt-12 mb-4 flex justify-center">
               <div className="relative">
                   {(() => {
@@ -272,33 +324,15 @@ const MyProfile = () => {
                     disabled={isUploadingAvatar}
                     className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
                   >
-                    {isUploadingAvatar ? (
-                      <span className="animate-spin">⏳</span>
-                    ) : (
-                      <Camera className="w-4 h-4" />
-                    )}
+                    {isUploadingAvatar ? <span className="animate-spin">⏳</span> : <Camera className="w-4 h-4" />}
                   </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                 </div>
               </div>
-
-              {/* Name */}
               <div className="text-center">
                 {isEditingName ? (
                   <div className="flex items-center justify-center gap-2 max-w-xs mx-auto">
-                    <Input
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      placeholder="Nhập tên của bạn"
-                      className="text-center"
-                      autoFocus
-                    />
+                    <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nhập tên của bạn" className="text-center" autoFocus />
                     <Button size="icon" variant="ghost" onClick={handleSaveName} disabled={updateProfile.isPending}>
                       <Check className="w-4 h-4 text-green-500" />
                     </Button>
@@ -318,6 +352,7 @@ const MyProfile = () => {
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* Balance Card */}
           <CardWrapper>
