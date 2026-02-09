@@ -453,6 +453,7 @@ const MyProfile = () => {
           </CardWrapper>
 
           {/* Social Links Card */}
+          <CardWrapper>
           <SocialLinksCard
             facebookUrl={profile.facebook_url}
             zaloContact={profile.zalo_contact}
@@ -460,12 +461,16 @@ const MyProfile = () => {
             bio={profile.bio}
             isOwnProfile={true}
           />
+          </CardWrapper>
 
           {/* Telegram Verification */}
+          <CardWrapper>
           <TelegramVerification
             isVerified={profile.is_verified || false}
             phoneNumber={profile.phone_number}
           />
+          </CardWrapper>
+
           <CardWrapper>
           <Card className={`border-border ${isSuperAdmin ? 'bg-transparent border-none shadow-none' : ''}`}>
             <CardHeader className="pb-2">
@@ -506,7 +511,13 @@ const MyProfile = () => {
             </CardContent>
           </Card>
           </CardWrapper>
-          {roleInfo?.isSuperAdmin && <ProfileThemeShop />}
+
+          {/* Profile Theme Shop - Super Admin only */}
+          {isSuperAdmin && (
+            <CardWrapper>
+              <ProfileThemeShop />
+            </CardWrapper>
+          )}
 
           {/* Sign Out */}
           <Button variant="outline" className="w-full gap-2" onClick={handleSignOut}>
