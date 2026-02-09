@@ -36,6 +36,18 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Check if IP is banned
+    if (clientIp !== "unknown") {
+      const { data: isBanned } = await supabaseAdmin.rpc("is_ip_banned", { p_ip: clientIp });
+      if (isBanned === true) {
+        console.log(`[register-with-ip] Banned IP blocked: ${clientIp}`);
+        return new Response(
+          JSON.stringify({ error: "IP_BANNED", message: "Địa chỉ IP của bạn đã bị chặn truy cập." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // For registration, check rate limit and IP limit first
     if (action === "signup") {
       if (!email || !password || !fullName) {

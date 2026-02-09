@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.security-auto-freeze]
 verify_jwt = false
+
+[functions.check-banned-ip]
+verify_jwt = false

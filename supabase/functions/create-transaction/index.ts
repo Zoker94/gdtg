@@ -40,6 +40,18 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Check if IP is banned
+    if (clientIp !== "unknown") {
+      const { data: isBanned } = await supabaseAdmin.rpc("is_ip_banned", { p_ip: clientIp });
+      if (isBanned === true) {
+        console.log(`[create-transaction] Banned IP blocked: ${clientIp}`);
+        return new Response(
+          JSON.stringify({ error: "IP_BANNED", message: "Địa chỉ IP của bạn đã bị chặn." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Create user client for authenticated operations
     const supabaseUser = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
