@@ -783,8 +783,15 @@
 }
 
 /* Inner card bg */
+.tet-hero-card .tet-inner-card {
+  background: hsl(0 40% 20% / 0.6);
+  border: 1px solid hsl(40 85% 50% / 0.2);
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+}
+
 .tet-hero-card .bg-card\/80,
-.tet-hero-card [class*="bg-card"] {
+.tet-hero-card > .relative > [class*="bg-card"] {
   background: transparent !important;
 }
 
