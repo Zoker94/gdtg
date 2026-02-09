@@ -48,14 +48,14 @@ export const ProfileEffects = ({ effectId }: { effectId: string }) => {
         {particles.map((p) => (
           <motion.span
             key={p.id}
-            className="absolute select-none"
+            className="fixed select-none"
             style={{ left: `${p.x}%`, fontSize: p.size }}
-            initial={{ y: "-10%", opacity: 0 }}
+            initial={{ top: "-5vh", opacity: 0 }}
             animate={{
-              y: ["0%", "100%"],
-              x: [
+              top: ["0vh", "100vh"],
+              left: [
                 `${p.x}%`,
-                `${p.x + (Math.random() - 0.5) * 20}%`,
+                `${p.x + (Math.random() - 0.5) * 15}%`,
                 `${p.x}%`,
               ],
               opacity: [0, 1, 1, 0],
