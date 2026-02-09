@@ -38,6 +38,7 @@ export const profileGradients: ProfileGradient[] = [
   { id: "vice_city", name: "🌴 Vice City", preview: "from-orange-500 to-purple-700", css: "", bgImage: "vice-city" },
   { id: "retro_room", name: "🎮 Retro Room", preview: "from-indigo-800 to-purple-900", css: "", bgImage: "retro-room" },
   { id: "anime_city", name: "🏙️ Anime City", preview: "from-sky-400 to-orange-300", css: "", bgImage: "anime-city" },
+  { id: "lunar_new_year", name: "🧧 Tết Nguyên Đán", preview: "from-red-700 to-yellow-500", css: "", bgImage: "lunar-new-year" },
 ];
 
 export const profileFrames: ProfileFrame[] = [
