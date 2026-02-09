@@ -35,7 +35,8 @@ const FramedAvatar = ({ frame, avatarUrl, fallbackText = "U", size = "md" }: Fra
         <img
           src={frameSrc}
           alt="Avatar frame"
-          className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
+          className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none mix-blend-screen"
+          style={{ filter: "brightness(1.2)" }}
         />
       </div>
     );
