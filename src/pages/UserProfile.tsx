@@ -33,6 +33,7 @@ import Footer from "@/components/Footer";
 import SocialLinksCard from "@/components/profile/SocialLinksCard";
 import UserRatingsSection from "@/components/rating/UserRatingsSection";
 import TetOrnateCard from "@/components/profile/TetOrnateCard";
+import TetHeroCard from "@/components/profile/TetHeroCard";
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -207,7 +208,7 @@ const UserProfile = () => {
           )}
 
           {isViewedUserSuperAdmin ? (
-            <TetOrnateCard className="mb-4">
+            <TetHeroCard className="mb-4">
               <Card className="border-none bg-transparent shadow-none overflow-hidden">
                 <div className="h-16 bg-gradient-to-r from-primary/10 to-transparent" />
                 <CardHeader className="pb-4 -mt-8">
@@ -314,7 +315,7 @@ const UserProfile = () => {
                   )}
                 </CardContent>
               </Card>
-            </TetOrnateCard>
+            </TetHeroCard>
           ) : (
             <Card className="border-border mb-4 overflow-hidden bg-card/80">
               <div className="h-16 bg-gradient-to-r from-primary/10 to-transparent" />
@@ -425,16 +426,38 @@ const UserProfile = () => {
           )}
 
           {/* Social Links Card - View Only */}
-          <SocialLinksCard
-            facebookUrl={profile.facebook_url}
-            zaloContact={profile.zalo_contact}
-            phone={profile.phone}
-            bio={profile.bio}
-            isOwnProfile={false}
-          />
+          {isViewedUserSuperAdmin ? (
+            <TetOrnateCard className="mb-4">
+              <div className="tet-inner-card">
+                <SocialLinksCard
+                  facebookUrl={profile.facebook_url}
+                  zaloContact={profile.zalo_contact}
+                  phone={profile.phone}
+                  bio={profile.bio}
+                  isOwnProfile={false}
+                />
+              </div>
+            </TetOrnateCard>
+          ) : (
+            <SocialLinksCard
+              facebookUrl={profile.facebook_url}
+              zaloContact={profile.zalo_contact}
+              phone={profile.phone}
+              bio={profile.bio}
+              isOwnProfile={false}
+            />
+          )}
 
           {/* User Ratings Section */}
-          {userId && <UserRatingsSection userId={userId} />}
+          {isViewedUserSuperAdmin ? (
+            <TetOrnateCard className="mb-4">
+              <div className="tet-inner-card">
+                {userId && <UserRatingsSection userId={userId} />}
+              </div>
+            </TetOrnateCard>
+          ) : (
+            userId && <UserRatingsSection userId={userId} />
+          )}
         </motion.div>
       </main>
 
