@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfileTheme } from "@/hooks/useProfileTheme";
 import { useUserAverageRating } from "@/hooks/useUserRatings";
 import { getGradientById, getFrameById } from "@/data/profileThemes";
+import { bgImages } from "@/components/profile/bgImages";
 import { ProfileEffects } from "@/components/profile/ProfileEffects";
 import FramedAvatar from "@/components/profile/FramedAvatar";
 import {
@@ -139,8 +140,13 @@ const UserProfile = () => {
 
   // isOwnProfile is now defined earlier for the query
 
+  const activeGradient = getGradientById(profileTheme?.gradient_id || "default");
+
   return (
-    <div className={`min-h-screen relative ${getGradientById(profileTheme?.gradient_id || "default").css}`}>
+    <div className={`min-h-screen relative ${activeGradient.bgImage ? '' : activeGradient.css}`}>
+      {activeGradient.bgImage && (
+        <img src={bgImages[activeGradient.bgImage]} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      )}
       <ProfileEffects effectId={profileTheme?.effect_id || "default"} />
       <div className="min-h-screen bg-background/80 backdrop-blur-sm">
       {/* Header */}

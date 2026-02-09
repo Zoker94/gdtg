@@ -13,6 +13,7 @@ import { useProfileRealtime } from "@/hooks/useProfileRealtime";
 import { useProfileTheme } from "@/hooks/useProfileTheme";
 import { useMyKycSubmission } from "@/hooks/useKYC";
 import { getGradientById, getFrameById } from "@/data/profileThemes";
+import { bgImages } from "@/components/profile/bgImages";
 import { ProfileEffects } from "@/components/profile/ProfileEffects";
 import ProfileThemeShop from "@/components/profile/ProfileThemeShop";
 import FramedAvatar from "@/components/profile/FramedAvatar";
@@ -223,8 +224,13 @@ const MyProfile = () => {
     );
   }
 
+  const activeGradient = getGradientById(profileTheme?.gradient_id || "default");
+
   return (
-    <div className={`min-h-screen relative ${getGradientById(profileTheme?.gradient_id || "default").css}`}>
+    <div className={`min-h-screen relative ${activeGradient.bgImage ? '' : activeGradient.css}`}>
+      {activeGradient.bgImage && (
+        <img src={bgImages[activeGradient.bgImage]} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      )}
       <ProfileEffects effectId={profileTheme?.effect_id || "default"} />
       <div className="min-h-screen bg-background/80 backdrop-blur-sm">
       {/* Header */}
