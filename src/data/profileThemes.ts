@@ -11,6 +11,7 @@ export interface ProfileFrame {
   preview: string;
   borderClass: string;
   glowClass?: string;
+  imageFrame?: string; // path to an overlay image frame
 }
 
 export interface ProfileEffect {
@@ -44,6 +45,7 @@ export const profileFrames: ProfileFrame[] = [
   { id: "rainbow", name: "🌈 Cầu vồng", preview: "border-purple-500", borderClass: "border-4 border-transparent bg-clip-border", glowClass: "shadow-[0_0_15px_rgba(168,85,247,0.4)] ring-2 ring-purple-400/30" },
   { id: "ice", name: "❄️ Băng giá", preview: "border-sky-300", borderClass: "border-4 border-sky-300 ring-2 ring-sky-200/50", glowClass: "shadow-[0_0_15px_rgba(125,211,252,0.5)]" },
   { id: "rose", name: "🌹 Hoa hồng", preview: "border-rose-400", borderClass: "border-4 border-rose-400 ring-2 ring-rose-300/50", glowClass: "shadow-[0_0_15px_rgba(251,113,133,0.4)]" },
+  { id: "ice_tiger", name: "🐯 Hổ Băng", preview: "border-cyan-400", borderClass: "border-0", glowClass: "shadow-[0_0_25px_rgba(56,189,248,0.6)]", imageFrame: "ice-tiger" },
 ];
 
 export const profileEffects: ProfileEffect[] = [
