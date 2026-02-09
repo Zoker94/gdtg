@@ -139,7 +139,9 @@ const UserProfile = () => {
   // isOwnProfile is now defined earlier for the query
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen relative ${getGradientById(profileTheme?.gradient_id || "default").css}`}>
+      <ProfileEffects effectId={profileTheme?.effect_id || "default"} />
+      <div className="min-h-screen bg-background/80 backdrop-blur-sm">
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -179,12 +181,9 @@ const UserProfile = () => {
             </div>
           )}
 
-          <Card className="border-border mb-4 overflow-hidden">
-            {/* Themed gradient header */}
-            <div className={`h-20 relative ${getGradientById(profileTheme?.gradient_id || "default").css}`}>
-              <ProfileEffects effectId={profileTheme?.effect_id || "default"} />
-            </div>
-            <CardHeader className="pb-4 -mt-10">
+          <Card className="border-border mb-4 overflow-hidden bg-card/80">
+            <div className="h-16 bg-gradient-to-r from-primary/10 to-transparent" />
+            <CardHeader className="pb-4 -mt-8">
               <div className="flex items-center gap-4">
                 {(() => {
                   const frame = getFrameById(profileTheme?.frame_id || "default");
@@ -337,6 +336,7 @@ const UserProfile = () => {
         otherUserAvatar={profile.avatar_url}
       />
       <Footer />
+      </div>
     </div>
   );
 };

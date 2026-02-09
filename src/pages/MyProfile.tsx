@@ -223,7 +223,9 @@ const MyProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen relative ${getGradientById(profileTheme?.gradient_id || "default").css}`}>
+      <ProfileEffects effectId={profileTheme?.effect_id || "default"} />
+      <div className="min-h-screen bg-background/80 backdrop-blur-sm">
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -240,10 +242,8 @@ const MyProfile = () => {
       <main className="container mx-auto px-4 py-6 max-w-2xl">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           {/* Avatar & Name Section */}
-          <Card className="border-border overflow-hidden">
-            <div className={`h-24 relative ${getGradientById(profileTheme?.gradient_id || "default").css}`}>
-              <ProfileEffects effectId={profileTheme?.effect_id || "default"} />
-            </div>
+           <Card className="border-border overflow-hidden bg-card/80">
+            <div className="h-24 bg-gradient-to-r from-primary/10 to-transparent" />
             <CardContent className="relative pt-0 pb-6">
               {/* Avatar */}
               <div className="relative -mt-12 mb-4 flex justify-center">
@@ -502,6 +502,7 @@ const MyProfile = () => {
         </motion.div>
       </main>
       <Footer />
+      </div>
     </div>
   );
 };
