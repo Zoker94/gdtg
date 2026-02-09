@@ -123,7 +123,7 @@ const SocialLinksCard = ({
                     <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                       <Facebook className="w-4 h-4 text-blue-600" />
                     </div>
-                    <span className="text-sm flex-1 truncate">{facebookUrl}</span>
+                    <span className="text-sm flex-1 truncate">Facebook</span>
                     <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </a>
                 )}
