@@ -585,6 +585,15 @@
   backdrop-filter: blur(4px);
 }
 
+/* Make nested Card components transparent inside tet-inner-card */
+.tet-inner-card > [class*="border-border"],
+.tet-inner-card > [class*="bg-card"],
+.tet-ornate-card .tet-inner-card .rounded-lg.border {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
 /* Badge overrides */
 .tet-ornate-card .bg-green-500 {
   background: linear-gradient(135deg, hsl(120 60% 35%), hsl(140 70% 40%)) !important;
