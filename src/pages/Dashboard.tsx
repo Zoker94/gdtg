@@ -31,11 +31,11 @@ const Dashboard = () => {
           <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
             <TabsTrigger value="sanh" className="flex items-center gap-2">
               <Home className="w-4 h-4" />
-              Sảnh
+              🏠 Sảnh
             </TabsTrigger>
             <TabsTrigger value="marketplace" className="flex items-center gap-2">
               <ShoppingBag className="w-4 h-4" />
-              Khu mua bán
+              🛒 Khu mua bán
             </TabsTrigger>
           </TabsList>
 
