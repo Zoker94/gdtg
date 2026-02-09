@@ -48,7 +48,7 @@ ThunderstormEffect.displayName = "ThunderstormEffect";
 
 // ─── Sun Effect ───
 const SunEffect = memo(() => (
-  <div className="fixed pointer-events-none z-[55]" style={{ top: "20px", right: "40px" }}>
+  <div className="fixed pointer-events-none z-[5]" style={{ top: "20px", right: "40px" }}>
     <div
       className="w-16 h-16 rounded-full"
       style={{
@@ -76,7 +76,7 @@ const CloudEffect = memo(({ count = 4 }: { count?: number }) => {
   );
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[54] overflow-hidden">
+    <div className="fixed inset-0 pointer-events-none z-[5] overflow-hidden">
       {clouds.map((cloud) => (
         <div
           key={cloud.id}
@@ -123,7 +123,7 @@ const MoonStarsEffect = memo(() => {
   );
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[54]">
+    <div className="fixed inset-0 pointer-events-none z-[5]">
       {/* Moon */}
       <div
         className="absolute"
