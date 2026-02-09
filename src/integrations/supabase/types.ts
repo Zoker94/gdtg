@@ -509,6 +509,36 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_themes: {
+        Row: {
+          created_at: string
+          effect_id: string | null
+          frame_id: string | null
+          gradient_id: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          effect_id?: string | null
+          frame_id?: string | null
+          gradient_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          effect_id?: string | null
+          frame_id?: string | null
+          gradient_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -8,9 +8,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
+import { useProfile, useUpdateProfile, useUserRole } from "@/hooks/useProfile";
 import { useProfileRealtime } from "@/hooks/useProfileRealtime";
+import { useProfileTheme } from "@/hooks/useProfileTheme";
 import { useMyKycSubmission } from "@/hooks/useKYC";
+import { getGradientById, getFrameById } from "@/data/profileThemes";
+import { ProfileEffects } from "@/components/profile/ProfileEffects";
+import ProfileThemeShop from "@/components/profile/ProfileThemeShop";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import TelegramVerification from "@/components/TelegramVerification";
@@ -42,7 +46,9 @@ const MyProfile = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: profile, isLoading } = useProfile();
+  const { data: roleInfo } = useUserRole();
   const { data: kycSubmission } = useMyKycSubmission();
+  const { data: profileTheme } = useProfileTheme(user?.id);
   const updateProfile = useUpdateProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -235,17 +241,24 @@ const MyProfile = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           {/* Avatar & Name Section */}
           <Card className="border-border overflow-hidden">
-            <div className="h-24 bg-gradient-to-r from-primary/20 to-primary/5" />
+            <div className={`h-24 relative ${getGradientById(profileTheme?.gradient_id || "default").css}`}>
+              <ProfileEffects effectId={profileTheme?.effect_id || "default"} />
+            </div>
             <CardContent className="relative pt-0 pb-6">
               {/* Avatar */}
               <div className="relative -mt-12 mb-4 flex justify-center">
                 <div className="relative">
-                  <Avatar className="w-24 h-24 border-4 border-background shadow-lg">
-                    <AvatarImage src={profile.avatar_url || undefined} />
-                    <AvatarFallback className="text-2xl bg-primary/10">
-                      {profile.full_name?.charAt(0)?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
+                  {(() => {
+                    const frame = getFrameById(profileTheme?.frame_id || "default");
+                    return (
+                      <Avatar className={`w-24 h-24 shadow-lg ${frame.borderClass} ${frame.glowClass || ""}`}>
+                        <AvatarImage src={profile.avatar_url || undefined} />
+                        <AvatarFallback className="text-2xl bg-primary/10">
+                          {profile.full_name?.charAt(0)?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                    );
+                  })()}
                   <button
                     onClick={handleAvatarClick}
                     disabled={isUploadingAvatar}
@@ -477,6 +490,9 @@ const MyProfile = () => {
               </p>
             </CardContent>
           </Card>
+
+          {/* Profile Theme Shop - Super Admin only */}
+          {roleInfo?.isSuperAdmin && <ProfileThemeShop />}
 
           {/* Sign Out */}
           <Button variant="outline" className="w-full gap-2" onClick={handleSignOut}>

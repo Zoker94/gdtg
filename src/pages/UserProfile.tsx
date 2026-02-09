@@ -9,7 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileTheme } from "@/hooks/useProfileTheme";
 import { useUserAverageRating } from "@/hooks/useUserRatings";
+import { getGradientById, getFrameById } from "@/data/profileThemes";
+import { ProfileEffects } from "@/components/profile/ProfileEffects";
 import {
   ArrowLeft,
   Shield,
@@ -33,6 +36,8 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showMessageDialog, setShowMessageDialog] = useState(false);
+
+  const { data: profileTheme } = useProfileTheme(userId);
 
   const isOwnProfile = user?.id === userId;
 
@@ -174,16 +179,24 @@ const UserProfile = () => {
             </div>
           )}
 
-          {/* Profile Card */}
-          <Card className="border-border mb-4">
-            <CardHeader className="pb-4">
+          <Card className="border-border mb-4 overflow-hidden">
+            {/* Themed gradient header */}
+            <div className={`h-20 relative ${getGradientById(profileTheme?.gradient_id || "default").css}`}>
+              <ProfileEffects effectId={profileTheme?.effect_id || "default"} />
+            </div>
+            <CardHeader className="pb-4 -mt-10">
               <div className="flex items-center gap-4">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src={profile.avatar_url || undefined} />
-                  <AvatarFallback className="text-2xl bg-primary/10">
-                    {profile.full_name?.charAt(0)?.toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
+                {(() => {
+                  const frame = getFrameById(profileTheme?.frame_id || "default");
+                  return (
+                    <Avatar className={`w-20 h-20 ${frame.borderClass} ${frame.glowClass || ""}`}>
+                      <AvatarImage src={profile.avatar_url || undefined} />
+                      <AvatarFallback className="text-2xl bg-primary/10">
+                        {profile.full_name?.charAt(0)?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  );
+                })()}
                 <div className="flex-1">
                   <CardTitle className="text-xl flex items-center gap-2 flex-wrap">
                     {profile.full_name || "Người dùng"}
