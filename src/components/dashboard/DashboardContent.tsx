@@ -42,15 +42,15 @@ const ActionButtons = memo(({ navigate }: { navigate: (path: string) => void }) 
   <div className="flex flex-wrap gap-2 mb-6">
     <Button onClick={() => navigate("/create-transaction")} className="tet-btn-primary">
       <Plus className="w-4 h-4 mr-2" />
-      Tạo giao dịch
+      ➕ Tạo giao dịch
     </Button>
     <Button variant="outline" onClick={() => navigate("/deposit")} className="tet-btn-outline">
       <Wallet className="w-4 h-4 mr-2" />
-      Nạp tiền
+      💰 Nạp tiền
     </Button>
     <Button variant="outline" onClick={() => navigate("/withdraw")} className="tet-btn-outline">
       <ArrowDownToLine className="w-4 h-4 mr-2" />
-      Rút tiền
+      💸 Rút tiền
     </Button>
   </div>
 ));
@@ -173,7 +173,7 @@ const DashboardContent = () => {
         className="mb-6"
       >
         <h2 className="text-lg font-semibold mb-3">
-          Giao dịch đang thực hiện ({activeTransactions.length})
+          🔄 Giao dịch đang thực hiện ({activeTransactions.length})
         </h2>
         {transactionsLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -235,7 +235,7 @@ const DashboardContent = () => {
       >
         <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
           <CreditCard className="w-5 h-5" />
-          Lịch sử nạp tiền
+          💳 Lịch sử nạp tiền
         </h2>
         {depositsLoading ? (
           <DepositListSkeleton />
@@ -297,7 +297,7 @@ const DashboardContent = () => {
         >
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold">
-              Lịch sử giao dịch ({completedTransactions.length})
+              📋 Lịch sử giao dịch ({completedTransactions.length})
             </h2>
             {completedTransactions.length > 3 && (
               <Button
