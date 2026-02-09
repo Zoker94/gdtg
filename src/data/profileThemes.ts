@@ -3,6 +3,7 @@ export interface ProfileGradient {
   name: string;
   preview: string;
   css: string;
+  bgImage?: string; // import path key for image backgrounds
 }
 
 export interface ProfileFrame {
@@ -34,6 +35,9 @@ export const profileGradients: ProfileGradient[] = [
   { id: "rainbow", name: "🌈 Cầu vồng", preview: "from-red-500 via-yellow-400 via-green-500 via-blue-500 to-purple-500", css: "bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500" },
   { id: "gold_luxury", name: "👑 Vàng sang trọng", preview: "from-yellow-600 via-amber-500 to-yellow-300", css: "bg-gradient-to-r from-yellow-600 via-amber-500 to-yellow-300" },
   { id: "neon_cyber", name: "💜 Neon Cyber", preview: "from-fuchsia-600 via-violet-600 to-cyan-400", css: "bg-gradient-to-r from-fuchsia-600 via-violet-600 to-cyan-400" },
+  { id: "vice_city", name: "🌴 Vice City", preview: "from-orange-500 to-purple-700", css: "", bgImage: "vice-city" },
+  { id: "retro_room", name: "🎮 Retro Room", preview: "from-indigo-800 to-purple-900", css: "", bgImage: "retro-room" },
+  { id: "anime_city", name: "🏙️ Anime City", preview: "from-sky-400 to-orange-300", css: "", bgImage: "anime-city" },
 ];
 
 export const profileFrames: ProfileFrame[] = [

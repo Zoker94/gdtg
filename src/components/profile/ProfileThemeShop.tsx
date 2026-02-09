@@ -10,6 +10,7 @@ import {
   profileFrames,
   profileEffects,
 } from "@/data/profileThemes";
+import { bgImages } from "@/components/profile/bgImages";
 import FramedAvatar from "@/components/profile/FramedAvatar";
 import { Paintbrush, Crown, Sparkles, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -71,7 +72,11 @@ const ProfileThemeShop = () => {
                     activeGradient === g.id ? "ring-2 ring-primary ring-offset-2" : "hover:ring-1 hover:ring-primary/50"
                   }`}
                 >
-                  <div className={`absolute inset-0 ${g.css}`} />
+                  {g.bgImage ? (
+                    <img src={bgImages[g.bgImage]} alt={g.name} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className={`absolute inset-0 ${g.css}`} />
+                  )}
                   <div className="absolute inset-0 flex items-end p-2 bg-gradient-to-t from-black/50 to-transparent">
                     <span className="text-white text-xs font-medium">{g.name}</span>
                   </div>
