@@ -145,10 +145,10 @@ const UserProfile = () => {
   return (
     <div className={`min-h-screen relative ${activeGradient.bgImage ? '' : activeGradient.css}`}>
       {activeGradient.bgImage && (
-        <div className="absolute inset-0 z-0" style={{ backgroundImage: `url(${bgImages[activeGradient.bgImage]})`, backgroundRepeat: 'repeat', backgroundSize: 'auto' }} />
+        <div className="fixed inset-0 z-0" style={{ backgroundImage: `url(${bgImages[activeGradient.bgImage]})`, backgroundRepeat: 'repeat', backgroundSize: 'cover', backgroundPosition: 'center top' }} />
       )}
       <ProfileEffects effectId={profileTheme?.effect_id || "default"} />
-      <div className={`min-h-screen relative ${activeGradient.bgImage ? 'bg-background/40' : 'bg-background/80 backdrop-blur-sm'}`}>
+      <div className={`min-h-screen relative ${activeGradient.bgImage ? 'bg-background/30' : 'bg-background/80 backdrop-blur-sm'}`}>
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
