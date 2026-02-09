@@ -32,6 +32,7 @@ import PrivateMessageDialog from "@/components/messaging/PrivateMessageDialog";
 import Footer from "@/components/Footer";
 import SocialLinksCard from "@/components/profile/SocialLinksCard";
 import UserRatingsSection from "@/components/rating/UserRatingsSection";
+import TetOrnateCard from "@/components/profile/TetOrnateCard";
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -40,6 +41,22 @@ const UserProfile = () => {
   const [showMessageDialog, setShowMessageDialog] = useState(false);
 
   const { data: profileTheme } = useProfileTheme(userId);
+
+  // Check if viewed user is Super Admin
+  const { data: viewedUserRoles } = useQuery({
+    queryKey: ["viewed-user-role", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      if (error) return [];
+      return data?.map((r) => r.role) || [];
+    },
+    enabled: !!userId,
+  });
+  const isViewedUserSuperAdmin = viewedUserRoles?.includes("super_admin") || false;
 
   const isOwnProfile = user?.id === userId;
 
@@ -140,8 +157,8 @@ const UserProfile = () => {
 
   // isOwnProfile is now defined earlier for the query
 
-  const activeGradient = isOwnProfile ? getGradientById(profileTheme?.gradient_id || "default") : getGradientById("default");
-  const showTheme = isOwnProfile;
+  const activeGradient = getGradientById(profileTheme?.gradient_id || "default");
+  const showTheme = isOwnProfile || isViewedUserSuperAdmin;
 
   return (
     <div className={`min-h-screen relative ${showTheme && activeGradient.bgImage ? '' : activeGradient.css}`}>
@@ -189,137 +206,223 @@ const UserProfile = () => {
             </div>
           )}
 
-          <Card className="border-border mb-4 overflow-hidden bg-card/80">
-            <div className="h-16 bg-gradient-to-r from-primary/10 to-transparent" />
-            <CardHeader className="pb-4 -mt-8">
-              <div className="flex items-center gap-4">
-                {(() => {
-                  const frame = getFrameById(profileTheme?.frame_id || "default");
-                  return (
-                    <FramedAvatar
-                      frame={frame}
-                      avatarUrl={profile.avatar_url}
-                      fallbackText={profile.full_name?.charAt(0)?.toUpperCase() || "U"}
-                      size="sm"
-                    />
-                  );
-                })()}
-                <div className="flex-1">
-                  <CardTitle className="text-xl flex items-center gap-2 flex-wrap">
-                    {profile.full_name || "Người dùng"}
-                    {isOwnProfile && (
-                      <Badge variant="outline" className="text-xs">Bạn</Badge>
-                    )}
-                    {profile.is_banned && (
-                      <Badge variant="destructive" className="text-xs">Bị ban</Badge>
-                    )}
-                    {profile.warning_message && !profile.is_banned && (
-                      <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">Cảnh báo</Badge>
-                    )}
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    ID: {userId?.slice(0, 8)}...
-                  </p>
-                  
-                  {/* Message Button */}
-                  {!isOwnProfile && (
-                    <Button 
-                      onClick={() => setShowMessageDialog(true)}
-                      className="mt-3 glow-primary"
-                      size="sm"
-                    >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Nhắn tin
-                    </Button>
+          {isViewedUserSuperAdmin ? (
+            <TetOrnateCard className="mb-4">
+              <Card className="border-none bg-transparent shadow-none overflow-hidden">
+                <div className="h-16 bg-gradient-to-r from-primary/10 to-transparent" />
+                <CardHeader className="pb-4 -mt-8">
+                  <div className="flex items-center gap-4">
+                    {(() => {
+                      const frame = getFrameById(profileTheme?.frame_id || "default");
+                      return (
+                        <FramedAvatar
+                          frame={frame}
+                          avatarUrl={profile.avatar_url}
+                          fallbackText={profile.full_name?.charAt(0)?.toUpperCase() || "U"}
+                          size="sm"
+                        />
+                      );
+                    })()}
+                    <div className="flex-1">
+                      <CardTitle className="text-xl flex items-center gap-2 flex-wrap">
+                        {profile.full_name || "Người dùng"}
+                        {isOwnProfile && <Badge variant="outline" className="text-xs">Bạn</Badge>}
+                        {profile.is_banned && <Badge variant="destructive" className="text-xs">Bị ban</Badge>}
+                        {profile.warning_message && !profile.is_banned && (
+                          <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">Cảnh báo</Badge>
+                        )}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">ID: {userId?.slice(0, 8)}...</p>
+                      {!isOwnProfile && (
+                        <Button onClick={() => setShowMessageDialog(true)} className="mt-3 glow-primary" size="sm">
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Nhắn tin
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-4 tet-inner-card text-center">
+                      <TrendingUp className={`w-6 h-6 mx-auto mb-2 ${getReputationColor(profile.reputation_score)}`} />
+                      <p className="text-2xl font-bold">{profile.reputation_score}</p>
+                      <p className="text-xs text-muted-foreground">Điểm uy tín</p>
+                      <Badge variant="outline" className={`mt-1 text-xs ${getReputationColor(profile.reputation_score)}`}>
+                        {getReputationLabel(profile.reputation_score)}
+                      </Badge>
+                    </div>
+                    <div className="p-4 tet-inner-card text-center">
+                      <Package className="w-6 h-6 mx-auto mb-2 text-primary" />
+                      <p className="text-2xl font-bold">{profile.total_transactions}</p>
+                      <p className="text-xs text-muted-foreground">Giao dịch</p>
+                    </div>
+                    <div className="p-4 tet-inner-card text-center">
+                      <Star className="w-6 h-6 mx-auto mb-2 text-yellow-400 fill-yellow-400" />
+                      <p className="text-2xl font-bold">{avgRating || "-"}</p>
+                      <p className="text-xs text-muted-foreground">{ratingCount > 0 ? `${ratingCount} đánh giá` : "Chưa có"}</p>
+                    </div>
+                    <div className="p-4 tet-inner-card text-center">
+                      <Calendar className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm font-medium">{format(new Date(profile.created_at), "MM/yyyy", { locale: vi })}</p>
+                      <p className="text-xs text-muted-foreground">Tham gia</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 tet-inner-card rounded-lg">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-primary" />
+                      Đánh giá độ tin cậy
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Điểm uy tín</span>
+                        <span className={`font-semibold ${getReputationColor(profile.reputation_score)}`}>
+                          {profile.reputation_score}/100
+                        </span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all ${
+                            profile.reputation_score >= 70 ? "bg-green-500" : 
+                            profile.reputation_score >= 50 ? "bg-yellow-500" : "bg-red-500"
+                          }`}
+                          style={{ width: `${profile.reputation_score}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {profile.reputation_score >= 70 
+                          ? "✓ Người dùng đáng tin cậy với lịch sử giao dịch tốt"
+                          : profile.reputation_score >= 50
+                          ? "⚠ Hãy cẩn thận và kiểm tra kỹ trước khi giao dịch"
+                          : "⚠ Cảnh báo: Người dùng có điểm uy tín thấp"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {profile.reputation_score < 50 && (
+                    <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <div className="flex items-center gap-2 text-destructive mb-2">
+                        <AlertTriangle className="w-5 h-5" />
+                        <span className="font-semibold">Cảnh báo</span>
+                      </div>
+                      <p className="text-sm">
+                        Người dùng này có điểm uy tín thấp. Hãy cân nhắc kỹ trước khi giao dịch 
+                        và sử dụng tính năng escrow để bảo vệ tài sản của bạn.
+                      </p>
+                    </div>
                   )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-4 bg-muted rounded-lg text-center">
-                  <TrendingUp className={`w-6 h-6 mx-auto mb-2 ${getReputationColor(profile.reputation_score)}`} />
-                  <p className="text-2xl font-bold">{profile.reputation_score}</p>
-                  <p className="text-xs text-muted-foreground">Điểm uy tín</p>
-                  <Badge 
-                    variant="outline" 
-                    className={`mt-1 text-xs ${getReputationColor(profile.reputation_score)}`}
-                  >
-                    {getReputationLabel(profile.reputation_score)}
-                  </Badge>
-                </div>
-
-                <div className="p-4 bg-muted rounded-lg text-center">
-                  <Package className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  <p className="text-2xl font-bold">{profile.total_transactions}</p>
-                  <p className="text-xs text-muted-foreground">Giao dịch</p>
-                </div>
-
-                <div className="p-4 bg-muted rounded-lg text-center">
-                  <Star className="w-6 h-6 mx-auto mb-2 text-yellow-400 fill-yellow-400" />
-                  <p className="text-2xl font-bold">{avgRating || "-"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {ratingCount > 0 ? `${ratingCount} đánh giá` : "Chưa có"}
-                  </p>
-                </div>
-
-                <div className="p-4 bg-muted rounded-lg text-center">
-                  <Calendar className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm font-medium">
-                    {format(new Date(profile.created_at), "MM/yyyy", { locale: vi })}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Tham gia</p>
-                </div>
-              </div>
-
-              {/* Reputation Details */}
-              <div className="p-4 border border-border rounded-lg">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-primary" />
-                  Đánh giá độ tin cậy
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Điểm uy tín</span>
-                    <span className={`font-semibold ${getReputationColor(profile.reputation_score)}`}>
-                      {profile.reputation_score}/100
-                    </span>
+                </CardContent>
+              </Card>
+            </TetOrnateCard>
+          ) : (
+            <Card className="border-border mb-4 overflow-hidden bg-card/80">
+              <div className="h-16 bg-gradient-to-r from-primary/10 to-transparent" />
+              <CardHeader className="pb-4 -mt-8">
+                <div className="flex items-center gap-4">
+                  {(() => {
+                    const frame = getFrameById(profileTheme?.frame_id || "default");
+                    return (
+                      <FramedAvatar
+                        frame={frame}
+                        avatarUrl={profile.avatar_url}
+                        fallbackText={profile.full_name?.charAt(0)?.toUpperCase() || "U"}
+                        size="sm"
+                      />
+                    );
+                  })()}
+                  <div className="flex-1">
+                    <CardTitle className="text-xl flex items-center gap-2 flex-wrap">
+                      {profile.full_name || "Người dùng"}
+                      {isOwnProfile && <Badge variant="outline" className="text-xs">Bạn</Badge>}
+                      {profile.is_banned && <Badge variant="destructive" className="text-xs">Bị ban</Badge>}
+                      {profile.warning_message && !profile.is_banned && (
+                        <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">Cảnh báo</Badge>
+                      )}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">ID: {userId?.slice(0, 8)}...</p>
+                    {!isOwnProfile && (
+                      <Button onClick={() => setShowMessageDialog(true)} className="mt-3 glow-primary" size="sm">
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Nhắn tin
+                      </Button>
+                    )}
                   </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all ${
-                        profile.reputation_score >= 70 ? "bg-green-500" : 
-                        profile.reputation_score >= 50 ? "bg-yellow-500" : "bg-red-500"
-                      }`}
-                      style={{ width: `${profile.reputation_score}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {profile.reputation_score >= 70 
-                      ? "✓ Người dùng đáng tin cậy với lịch sử giao dịch tốt"
-                      : profile.reputation_score >= 50
-                      ? "⚠ Hãy cẩn thận và kiểm tra kỹ trước khi giao dịch"
-                      : "⚠ Cảnh báo: Người dùng có điểm uy tín thấp"}
-                  </p>
                 </div>
-              </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-4 bg-muted rounded-lg text-center">
+                    <TrendingUp className={`w-6 h-6 mx-auto mb-2 ${getReputationColor(profile.reputation_score)}`} />
+                    <p className="text-2xl font-bold">{profile.reputation_score}</p>
+                    <p className="text-xs text-muted-foreground">Điểm uy tín</p>
+                    <Badge variant="outline" className={`mt-1 text-xs ${getReputationColor(profile.reputation_score)}`}>
+                      {getReputationLabel(profile.reputation_score)}
+                    </Badge>
+                  </div>
+                  <div className="p-4 bg-muted rounded-lg text-center">
+                    <Package className="w-6 h-6 mx-auto mb-2 text-primary" />
+                    <p className="text-2xl font-bold">{profile.total_transactions}</p>
+                    <p className="text-xs text-muted-foreground">Giao dịch</p>
+                  </div>
+                  <div className="p-4 bg-muted rounded-lg text-center">
+                    <Star className="w-6 h-6 mx-auto mb-2 text-yellow-400 fill-yellow-400" />
+                    <p className="text-2xl font-bold">{avgRating || "-"}</p>
+                    <p className="text-xs text-muted-foreground">{ratingCount > 0 ? `${ratingCount} đánh giá` : "Chưa có"}</p>
+                  </div>
+                  <div className="p-4 bg-muted rounded-lg text-center">
+                    <Calendar className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm font-medium">{format(new Date(profile.created_at), "MM/yyyy", { locale: vi })}</p>
+                    <p className="text-xs text-muted-foreground">Tham gia</p>
+                  </div>
+                </div>
 
-              {/* Warning for low reputation */}
-              {profile.reputation_score < 50 && (
-                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                  <div className="flex items-center gap-2 text-destructive mb-2">
-                    <AlertTriangle className="w-5 h-5" />
-                    <span className="font-semibold">Cảnh báo</span>
+                <div className="p-4 border border-border rounded-lg">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary" />
+                    Đánh giá độ tin cậy
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Điểm uy tín</span>
+                      <span className={`font-semibold ${getReputationColor(profile.reputation_score)}`}>
+                        {profile.reputation_score}/100
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all ${
+                          profile.reputation_score >= 70 ? "bg-green-500" : 
+                          profile.reputation_score >= 50 ? "bg-yellow-500" : "bg-red-500"
+                        }`}
+                        style={{ width: `${profile.reputation_score}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {profile.reputation_score >= 70 
+                        ? "✓ Người dùng đáng tin cậy với lịch sử giao dịch tốt"
+                        : profile.reputation_score >= 50
+                        ? "⚠ Hãy cẩn thận và kiểm tra kỹ trước khi giao dịch"
+                        : "⚠ Cảnh báo: Người dùng có điểm uy tín thấp"}
+                    </p>
                   </div>
-                  <p className="text-sm">
-                    Người dùng này có điểm uy tín thấp. Hãy cân nhắc kỹ trước khi giao dịch 
-                    và sử dụng tính năng escrow để bảo vệ tài sản của bạn.
-                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                {profile.reputation_score < 50 && (
+                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <div className="flex items-center gap-2 text-destructive mb-2">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="font-semibold">Cảnh báo</span>
+                    </div>
+                    <p className="text-sm">
+                      Người dùng này có điểm uy tín thấp. Hãy cân nhắc kỹ trước khi giao dịch 
+                      và sử dụng tính năng escrow để bảo vệ tài sản của bạn.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Social Links Card - View Only */}
           <SocialLinksCard
