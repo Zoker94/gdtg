@@ -43,6 +43,7 @@ const IPBlocked = lazy(() => import("./pages/IPBlocked"));
 // Lazy load heavy components
 const PopupAnnouncement = lazy(() => import("./components/PopupAnnouncement"));
 const ConnectionStatus = lazy(() => import("./components/ConnectionStatus"));
+const WeatherEffects = lazy(() => import("./components/WeatherEffects"));
 
 // Configure QueryClient with optimized settings for performance
 const queryClient = new QueryClient({
@@ -212,6 +213,9 @@ const App = () => {
               <TooltipProvider>
                 <Suspense fallback={null}>
                   <ConnectionStatus />
+                </Suspense>
+                <Suspense fallback={null}>
+                  <WeatherEffects />
                 </Suspense>
                 <Toaster />
                 <Sonner />

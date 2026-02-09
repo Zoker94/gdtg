@@ -1,0 +1,84 @@
+/* Weather effect animations */
+
+@keyframes weather-rain {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes weather-lightning {
+  0%, 89%, 91%, 93%, 95%, 100% {
+    background: transparent;
+  }
+  90% {
+    background: hsl(0 0% 100% / 0.15);
+  }
+  92% {
+    background: hsl(0 0% 100% / 0.08);
+  }
+  94% {
+    background: hsl(0 0% 100% / 0.12);
+  }
+}
+
+@keyframes weather-sun-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes weather-cloud {
+  0% {
+    transform: translateX(-150px);
+  }
+  100% {
+    transform: translateX(calc(100vw + 150px));
+  }
+}
+
+@keyframes weather-fog {
+  0% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes weather-twinkle {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes weather-snow {
+  0% {
+    transform: translateY(-10px) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(20px);
+    opacity: 0;
+  }
+}
