@@ -140,15 +140,16 @@ const UserProfile = () => {
 
   // isOwnProfile is now defined earlier for the query
 
-  const activeGradient = getGradientById(profileTheme?.gradient_id || "default");
+  const activeGradient = isOwnProfile ? getGradientById(profileTheme?.gradient_id || "default") : getGradientById("default");
+  const showTheme = isOwnProfile;
 
   return (
-    <div className={`min-h-screen relative ${activeGradient.bgImage ? '' : activeGradient.css}`}>
-      {activeGradient.bgImage && (
+    <div className={`min-h-screen relative ${showTheme && activeGradient.bgImage ? '' : activeGradient.css}`}>
+      {showTheme && activeGradient.bgImage && (
         <div className="fixed inset-0 z-0" style={{ backgroundImage: `url(${bgImages[activeGradient.bgImage]})`, backgroundRepeat: 'repeat', backgroundSize: 'cover', backgroundPosition: 'center top' }} />
       )}
-      <ProfileEffects effectId={profileTheme?.effect_id || "default"} />
-      <div className={`min-h-screen relative ${activeGradient.bgImage ? 'bg-background/30' : 'bg-background/80 backdrop-blur-sm'}`}>
+      {showTheme && <ProfileEffects effectId={profileTheme?.effect_id || "default"} />}
+      <div className={`min-h-screen relative ${showTheme && activeGradient.bgImage ? 'bg-background/30' : 'bg-background/80 backdrop-blur-sm'}`}>
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
