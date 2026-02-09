@@ -585,10 +585,12 @@
   backdrop-filter: blur(4px);
 }
 
-/* Make nested Card components transparent inside tet-inner-card */
+/* Make nested Card components transparent inside tet-ornate-card and tet-inner-card */
 .tet-inner-card > [class*="border-border"],
 .tet-inner-card > [class*="bg-card"],
-.tet-ornate-card .tet-inner-card .rounded-lg.border {
+.tet-ornate-card .tet-inner-card .rounded-lg.border,
+.tet-ornate-card > .relative > .rounded-lg.border,
+.tet-ornate-card > .relative > [class*="border-border"] {
   background: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
