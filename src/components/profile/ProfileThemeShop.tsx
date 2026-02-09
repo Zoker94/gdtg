@@ -10,6 +10,7 @@ import {
   profileFrames,
   profileEffects,
 } from "@/data/profileThemes";
+import FramedAvatar from "@/components/profile/FramedAvatar";
 import { Paintbrush, Crown, Sparkles, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -95,7 +96,7 @@ const ProfileThemeShop = () => {
                     activeFrame === f.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
                   }`}
                 >
-                  <div className={`w-16 h-16 rounded-full bg-muted ${f.borderClass} ${f.glowClass || ""}`} />
+                  <FramedAvatar frame={f} size="sm" fallbackText="👤" />
                   <span className="text-xs font-medium">{f.name}</span>
                   {activeFrame === f.id && <Badge variant="default" className="text-[10px] px-1.5 py-0">Đang dùng</Badge>}
                 </button>

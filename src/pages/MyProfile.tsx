@@ -15,6 +15,7 @@ import { useMyKycSubmission } from "@/hooks/useKYC";
 import { getGradientById, getFrameById } from "@/data/profileThemes";
 import { ProfileEffects } from "@/components/profile/ProfileEffects";
 import ProfileThemeShop from "@/components/profile/ProfileThemeShop";
+import FramedAvatar from "@/components/profile/FramedAvatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import TelegramVerification from "@/components/TelegramVerification";
@@ -247,16 +248,15 @@ const MyProfile = () => {
             <CardContent className="relative pt-0 pb-6">
               {/* Avatar */}
               <div className="relative -mt-12 mb-4 flex justify-center">
-                <div className="relative">
+              <div className="relative">
                   {(() => {
                     const frame = getFrameById(profileTheme?.frame_id || "default");
                     return (
-                      <Avatar className={`w-24 h-24 shadow-lg ${frame.borderClass} ${frame.glowClass || ""}`}>
-                        <AvatarImage src={profile.avatar_url || undefined} />
-                        <AvatarFallback className="text-2xl bg-primary/10">
-                          {profile.full_name?.charAt(0)?.toUpperCase() || "U"}
-                        </AvatarFallback>
-                      </Avatar>
+                      <FramedAvatar
+                        frame={frame}
+                        avatarUrl={profile.avatar_url}
+                        fallbackText={profile.full_name?.charAt(0)?.toUpperCase() || "U"}
+                      />
                     );
                   })()}
                   <button

@@ -43,7 +43,7 @@ export const ProfileEffects = ({ effectId }: { effectId: string }) => {
   if (!effectId || effectId === "default") return null;
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-20">
       <AnimatePresence>
         {particles.map((p) => (
           <motion.span

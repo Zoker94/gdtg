@@ -13,6 +13,7 @@ import { useProfileTheme } from "@/hooks/useProfileTheme";
 import { useUserAverageRating } from "@/hooks/useUserRatings";
 import { getGradientById, getFrameById } from "@/data/profileThemes";
 import { ProfileEffects } from "@/components/profile/ProfileEffects";
+import FramedAvatar from "@/components/profile/FramedAvatar";
 import {
   ArrowLeft,
   Shield,
@@ -188,12 +189,12 @@ const UserProfile = () => {
                 {(() => {
                   const frame = getFrameById(profileTheme?.frame_id || "default");
                   return (
-                    <Avatar className={`w-20 h-20 ${frame.borderClass} ${frame.glowClass || ""}`}>
-                      <AvatarImage src={profile.avatar_url || undefined} />
-                      <AvatarFallback className="text-2xl bg-primary/10">
-                        {profile.full_name?.charAt(0)?.toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
+                    <FramedAvatar
+                      frame={frame}
+                      avatarUrl={profile.avatar_url}
+                      fallbackText={profile.full_name?.charAt(0)?.toUpperCase() || "U"}
+                      size="sm"
+                    />
                   );
                 })()}
                 <div className="flex-1">
