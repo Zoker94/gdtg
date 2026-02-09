@@ -43,6 +43,7 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import Footer from "@/components/Footer";
 import SocialLinksCard from "@/components/profile/SocialLinksCard";
+import TetOrnateCard from "@/components/profile/TetOrnateCard";
 
 const MyProfile = () => {
   const navigate = useNavigate();
@@ -225,7 +226,8 @@ const MyProfile = () => {
   }
 
   const activeGradient = getGradientById(profileTheme?.gradient_id || "default");
-
+  const isSuperAdmin = roleInfo?.isSuperAdmin;
+  const CardWrapper = isSuperAdmin ? TetOrnateCard : ({ children, className, ...props }: any) => <div className={className} {...props}>{children}</div>;
   return (
     <div className={`min-h-screen relative ${activeGradient.bgImage ? '' : activeGradient.css}`}>
       {activeGradient.bgImage && (
@@ -318,7 +320,8 @@ const MyProfile = () => {
           </Card>
 
           {/* Balance Card */}
-          <Card className="border-border bg-gradient-to-br from-primary/10 to-primary/5">
+          <CardWrapper>
+          <Card className={`border-border ${isSuperAdmin ? 'bg-transparent border-none shadow-none' : 'bg-gradient-to-br from-primary/10 to-primary/5'}`}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Wallet className="w-4 h-4" />
@@ -326,7 +329,7 @@ const MyProfile = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-primary mb-4">
+              <p className={`text-3xl font-bold mb-4 ${isSuperAdmin ? '' : 'text-primary'}`}>
                 {formatCurrency(profile.balance)}
               </p>
               <div className="flex gap-2 mb-2">
@@ -342,16 +345,18 @@ const MyProfile = () => {
               <Button 
                 onClick={() => navigate("/wallet-history")} 
                 variant="ghost" 
-                className="w-full text-muted-foreground hover:text-foreground"
+                className="w-full hover:text-foreground"
               >
                 Xem lịch sử nạp/rút tiền →
               </Button>
             </CardContent>
           </Card>
+          </CardWrapper>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="border-border">
+          <CardWrapper>
+          <div className={`grid grid-cols-3 gap-3 ${isSuperAdmin ? '' : ''}`}>
+            <Card className={`border-border ${isSuperAdmin ? 'tet-inner-card border-none' : ''}`}>
               <CardContent className="py-4 text-center">
                 <TrendingUp className={`w-6 h-6 mx-auto mb-2 ${getReputationColor(profile.reputation_score)}`} />
                 <p className="text-2xl font-bold">{profile.reputation_score}</p>
@@ -365,7 +370,7 @@ const MyProfile = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-border">
+            <Card className={`border-border ${isSuperAdmin ? 'tet-inner-card border-none' : ''}`}>
               <CardContent className="py-4 text-center">
                 <Package className="w-6 h-6 mx-auto mb-2 text-primary" />
                 <p className="text-2xl font-bold">{profile.total_transactions}</p>
@@ -373,7 +378,7 @@ const MyProfile = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-border">
+            <Card className={`border-border ${isSuperAdmin ? 'tet-inner-card border-none' : ''}`}>
               <CardContent className="py-4 text-center">
                 <Calendar className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm font-medium">
@@ -383,9 +388,11 @@ const MyProfile = () => {
               </CardContent>
             </Card>
           </div>
+          </CardWrapper>
 
           {/* KYC Status Card */}
-          <Card className="border-border">
+          <CardWrapper>
+          <Card className={`border-border ${isSuperAdmin ? 'bg-transparent border-none shadow-none' : ''}`}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <IdCard className="w-4 h-4 text-primary" />
@@ -443,6 +450,7 @@ const MyProfile = () => {
               )}
             </CardContent>
           </Card>
+          </CardWrapper>
 
           {/* Social Links Card */}
           <SocialLinksCard
@@ -458,7 +466,8 @@ const MyProfile = () => {
             isVerified={profile.is_verified || false}
             phoneNumber={profile.phone_number}
           />
-          <Card className="border-border">
+          <CardWrapper>
+          <Card className={`border-border ${isSuperAdmin ? 'bg-transparent border-none shadow-none' : ''}`}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Shield className="w-4 h-4 text-primary" />
@@ -496,8 +505,7 @@ const MyProfile = () => {
               </p>
             </CardContent>
           </Card>
-
-          {/* Profile Theme Shop - Super Admin only */}
+          </CardWrapper>
           {roleInfo?.isSuperAdmin && <ProfileThemeShop />}
 
           {/* Sign Out */}
