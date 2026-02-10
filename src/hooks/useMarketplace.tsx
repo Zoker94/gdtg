@@ -55,7 +55,7 @@ export const useMarketplacePosts = () => {
       // Fetch profiles for all posts
       const userIds = [...new Set(posts.map((p) => p.user_id))];
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url, reputation_score")
         .in("user_id", userIds);
 
@@ -76,7 +76,7 @@ export const useMarketplacePosts = () => {
       // Fetch profiles for commenters
       const commenterIds = [...new Set(comments?.map((c) => c.user_id) || [])];
       const { data: commenterProfiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, full_name, avatar_url")
         .in("user_id", commenterIds);
 
