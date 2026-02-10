@@ -803,3 +803,97 @@
 .tet-hero-card button {
   border-color: hsl(40 85% 50% / 0.3);
 }
+
+/* ===== Super Admin Sparkle & Shimmer Effects ===== */
+@keyframes tet-sparkle-float {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateY(-8px) scale(1.2); }
+  100% { opacity: 0.3; transform: translateY(4px) scale(0.8); }
+}
+
+@keyframes tet-shimmer-sweep {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  100% { transform: translateX(200%) rotate(25deg); }
+}
+
+@keyframes tet-glow-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+/* Hero card shimmer overlay */
+.tet-hero-shimmer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.tet-hero-shimmer::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(40 90% 60% / 0.08) 40%,
+    hsl(40 90% 70% / 0.15) 50%,
+    hsl(40 90% 60% / 0.08) 60%,
+    transparent 100%
+  );
+  animation: tet-shimmer-sweep 6s ease-in-out infinite;
+}
+
+/* Ornate card shimmer */
+.tet-ornate-shimmer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.tet-ornate-shimmer::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(40 85% 55% / 0.06) 40%,
+    hsl(40 85% 65% / 0.12) 50%,
+    hsl(40 85% 55% / 0.06) 60%,
+    transparent 100%
+  );
+  animation: tet-shimmer-sweep 8s ease-in-out 2s infinite;
+}
+
+/* Ambient gold glow on sides */
+.tet-hero-glow-left,
+.tet-hero-glow-right {
+  position: absolute;
+  top: 10%;
+  bottom: 10%;
+  width: 30px;
+  pointer-events: none;
+  z-index: 2;
+  animation: tet-glow-pulse 3s ease-in-out infinite;
+}
+
+.tet-hero-glow-left {
+  left: -6px;
+  background: radial-gradient(ellipse at left, hsl(40 90% 55% / 0.25), transparent 80%);
+}
+
+.tet-hero-glow-right {
+  right: -6px;
+  background: radial-gradient(ellipse at right, hsl(40 90% 55% / 0.25), transparent 80%);
+  animation-delay: 1.5s;
+}
