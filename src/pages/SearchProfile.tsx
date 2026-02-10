@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
@@ -25,18 +24,28 @@ const SearchProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedTerm, setDebouncedTerm] = useState("");
+
+  // Auto-search with debounce
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setDebouncedTerm("");
+      return;
+    }
+    const timer = setTimeout(() => setDebouncedTerm(searchQuery.trim()), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const { data: profiles, isLoading } = useQuery({
-    queryKey: ["search-profiles", searchTerm],
+    queryKey: ["search-profiles", debouncedTerm],
     queryFn: async () => {
-      if (!searchTerm || searchTerm.length < 2) return [];
+      if (!debouncedTerm || debouncedTerm.length < 2) return [];
 
-      // Use profiles_public view to search - this only exposes public data
+      // Search by name
       const { data, error } = await supabase
         .from("profiles_public")
         .select("*")
-        .ilike("full_name", `%${searchTerm}%`)
+        .ilike("full_name", `%${debouncedTerm}%`)
         .order("reputation_score", { ascending: false })
         .limit(20);
 
@@ -44,31 +53,26 @@ const SearchProfile = () => {
         console.error("Search error:", error);
         throw error;
       }
-      
-      // If search term looks like it could be a user ID (8+ chars), also search by user_id
-      if (searchTerm.length >= 8) {
+
+      // Also search by user_id prefix if term is 8+ chars
+      if (debouncedTerm.length >= 8) {
         const { data: idMatch } = await supabase
           .from("profiles_public")
           .select("*")
-          .filter("user_id", "ilike", `${searchTerm}%`)
+          .filter("user_id", "ilike", `${debouncedTerm}%`)
           .limit(5);
-        
+
         if (idMatch && idMatch.length > 0) {
-          // Merge and dedupe results
-          const existingIds = new Set(data?.map(p => p.id) || []);
-          const uniqueIdMatches = idMatch.filter(p => !existingIds.has(p.id));
+          const existingIds = new Set(data?.map((p) => p.id) || []);
+          const uniqueIdMatches = idMatch.filter((p) => !existingIds.has(p.id));
           return [...(data || []), ...uniqueIdMatches];
         }
       }
-      
+
       return data || [];
     },
-    enabled: !!user && searchTerm.length >= 2,
+    enabled: !!user && debouncedTerm.length >= 2,
   });
-
-  const handleSearch = () => {
-    setSearchTerm(searchQuery);
-  };
 
   const getReputationColor = (score: number) => {
     if (score >= 90) return "text-green-500";
@@ -93,7 +97,6 @@ const SearchProfile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
@@ -118,26 +121,22 @@ const SearchProfile = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Nhập tên hoặc ID người dùng..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    className="pl-9"
-                  />
-                </div>
-                <Button onClick={handleSearch}>Tìm kiếm</Button>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Nhập tên hoặc ID người dùng..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                  autoFocus
+                />
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Nhập ít nhất 2 ký tự để tìm kiếm
+                Tự động tìm kiếm khi nhập từ 2 ký tự
               </p>
             </CardContent>
           </Card>
 
-          {/* Search Results */}
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -150,7 +149,7 @@ const SearchProfile = () => {
                 <Card
                   key={profile.id}
                   className="border-border cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => navigate(`/user/${profile.user_id}`)}
+                  onClick={() => profile.user_id && navigate(`/user/${profile.user_id}`)}
                 >
                   <CardContent className="py-4">
                     <div className="flex items-center gap-4">
@@ -165,19 +164,19 @@ const SearchProfile = () => {
                           {profile.full_name || "Người dùng"}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          ID: {profile.user_id.slice(0, 8)}...
+                          ID: {profile.user_id?.slice(0, 8) ?? "N/A"}...
                         </p>
                       </div>
                       <div className="flex items-center gap-3 text-sm">
                         <div className="flex items-center gap-1">
-                          <TrendingUp className={`w-4 h-4 ${getReputationColor(profile.reputation_score)}`} />
-                          <span className={getReputationColor(profile.reputation_score)}>
-                            {profile.reputation_score}
+                          <TrendingUp className={`w-4 h-4 ${getReputationColor(profile.reputation_score ?? 50)}`} />
+                          <span className={getReputationColor(profile.reputation_score ?? 50)}>
+                            {profile.reputation_score ?? 50}
                           </span>
                         </div>
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <Package className="w-4 h-4" />
-                          <span>{profile.total_transactions}</span>
+                          <span>{profile.total_transactions ?? 0}</span>
                         </div>
                       </div>
                     </div>
@@ -185,7 +184,7 @@ const SearchProfile = () => {
                 </Card>
               ))}
             </div>
-          ) : searchTerm.length >= 2 ? (
+          ) : debouncedTerm.length >= 2 ? (
             <Card className="border-border">
               <CardContent className="py-8 text-center">
                 <User className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
