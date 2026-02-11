@@ -39,6 +39,16 @@ async function getSecretFromDB(supabase: ReturnType<typeof createClient>, key: s
   return data.secret_value;
 }
 
+// Get notify bot token - separate from verification bot
+async function getNotifyBotToken(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+  // First try dedicated notify bot token
+  const notifyToken = await getSecretFromDB(supabase, "TELEGRAM_NOTIFY_BOT_TOKEN");
+  if (notifyToken) return notifyToken;
+  
+  // Fallback to main bot token if notify token not set
+  return await getSecretFromDB(supabase, "TELEGRAM_BOT_TOKEN");
+}
+
 function getEmoji(type: string): string {
   switch (type) {
     case "kyc": return "🪪";
@@ -92,8 +102,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get bot token
-    const botToken = await getSecretFromDB(supabase, "TELEGRAM_BOT_TOKEN");
+    // Get notify bot token (separate from verification bot)
+    const botToken = await getNotifyBotToken(supabase);
     if (!botToken) {
       return new Response(JSON.stringify({ error: "Bot token not configured" }), {
         status: 500,

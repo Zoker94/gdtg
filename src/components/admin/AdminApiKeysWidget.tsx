@@ -97,7 +97,8 @@ const AdminApiKeysWidget = () => {
 
   const getLabel = (key: string) => {
     switch (key) {
-      case "TELEGRAM_BOT_TOKEN": return "Telegram Bot Token";
+      case "TELEGRAM_BOT_TOKEN": return "Telegram Bot Token (Xác thực SĐT)";
+      case "TELEGRAM_NOTIFY_BOT_TOKEN": return "Telegram Bot Token (Thông báo Admin)";
       case "SEPAY_MERCHANT_ID": return "SePay Merchant ID";
       case "SEPAY_SECRET_KEY": return "SePay Secret Key";
       default: return key;
