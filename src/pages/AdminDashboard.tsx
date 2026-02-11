@@ -118,6 +118,7 @@ import { AIAssistantWidget } from "@/components/admin/AIAssistantWidget";
 import SimplePagination, { paginateData, getTotalPages } from "@/components/ui/simple-pagination";
 import PopupAnnouncementWidget from "@/components/admin/PopupAnnouncementWidget";
 import BannedIPsWidget from "@/components/admin/BannedIPsWidget";
+import TelegramNotifyWidget from "@/components/admin/TelegramNotifyWidget";
 
 const statusConfig: Record<TransactionStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Chờ thanh toán", variant: "secondary" },
@@ -922,6 +923,7 @@ const AdminDashboard = () => {
               <PlatformSettingsWidget />
               <AdminApiKeysWidget />
             </div>
+            <TelegramNotifyWidget />
             <AdminBankSettingsWidget />
             <RoleManagementWidget />
             <ModeratorManagementWidget />

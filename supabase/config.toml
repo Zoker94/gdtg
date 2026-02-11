@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.check-banned-ip]
 verify_jwt = false
+
+[functions.telegram-notify-admin]
+verify_jwt = false

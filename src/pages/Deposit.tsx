@@ -14,6 +14,7 @@ import Footer from "@/components/Footer";
 import confetti from "canvas-confetti";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
+import { notifyAdminTelegram } from "@/lib/telegramNotify";
 
 const predefinedAmounts = [10000, 50000, 100000, 200000, 500000, 1000000, 2000000];
 const DAILY_DEPOSIT_LIMIT = 50000000; // 50 million VND
@@ -215,6 +216,13 @@ const Deposit = () => {
     setDepositId(data.id);
     setStep("payment");
     setLoading(false);
+
+    const formattedAmount = new Intl.NumberFormat("vi-VN").format(numAmount) + "đ";
+    notifyAdminTelegram(
+      "deposit",
+      "Yêu cầu nạp tiền mới",
+      `💰 Số tiền: ${formattedAmount}\n👤 User: ${profile?.full_name || user.id}`
+    );
   };
 
   // Shorten the deposit ID for transfer content (first 8 chars)

@@ -41,6 +41,7 @@ import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { useWithdrawalRealtime } from "@/hooks/useWithdrawalRealtime";
 import LinkedBankAccountsCard from "@/components/LinkedBankAccountsCard";
 import Footer from "@/components/Footer";
+import { notifyAdminTelegram } from "@/lib/telegramNotify";
 
 const Withdraw = () => {
   const navigate = useNavigate();
@@ -109,6 +110,12 @@ const Withdraw = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-withdrawals"] });
       toast({ title: "Đã tạo yêu cầu rút tiền!", description: "Vui lòng chờ admin xác nhận." });
+      const amt = new Intl.NumberFormat("vi-VN").format(parseFloat(amount)) + "đ";
+      notifyAdminTelegram(
+        "withdrawal",
+        "Yêu cầu rút tiền mới",
+        `💳 Số tiền: ${amt}\n🏦 Ngân hàng: ${selectedBank?.bank_name}\n👤 Chủ TK: ${selectedBank?.bank_account_name}\n🔢 STK: ${selectedBank?.bank_account_number}`
+      );
       setAmount("");
       setSelectedBankId("");
     },
