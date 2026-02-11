@@ -11,6 +11,8 @@ export interface PlatformSettings {
   admin_contact_link: string;
   withdrawal_cooldown_minutes: number;
   tet_falling_petals_enabled: boolean;
+  admin_telegram_chat_id: string;
+  telegram_notifications_enabled: boolean;
 }
 
 export const usePlatformSettings = () => {
@@ -33,6 +35,8 @@ export const usePlatformSettings = () => {
         admin_contact_link: "",
         withdrawal_cooldown_minutes: 15,
         tet_falling_petals_enabled: true,
+        admin_telegram_chat_id: "",
+        telegram_notifications_enabled: false,
       };
 
       data?.forEach((row) => {
@@ -54,6 +58,10 @@ export const usePlatformSettings = () => {
           settings.withdrawal_cooldown_minutes = Number(row.setting_value);
         } else if (row.setting_key === "tet_falling_petals_enabled") {
           settings.tet_falling_petals_enabled = row.setting_value === "true";
+        } else if (row.setting_key === "admin_telegram_chat_id") {
+          settings.admin_telegram_chat_id = row.setting_value;
+        } else if (row.setting_key === "telegram_notifications_enabled") {
+          settings.telegram_notifications_enabled = row.setting_value === "true";
         }
       });
 

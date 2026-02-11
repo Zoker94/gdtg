@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
+import { notifyAdminTelegram } from "@/lib/telegramNotify";
 
 export type KycStatus = "none" | "pending" | "approved" | "rejected";
 
@@ -70,10 +71,15 @@ export const useSubmitKyc = () => {
         .update({ kyc_status: "pending" })
         .eq("user_id", user.id);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["my-kyc-submission"] });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       toast({ title: "Gửi KYC thành công", description: "Vui lòng chờ duyệt" });
+      notifyAdminTelegram(
+        "kyc",
+        "Yêu cầu KYC mới",
+        `👤 Tên: ${variables.full_name}\n🆔 CCCD: ${variables.id_number}`
+      );
     },
     onError: (error) => {
       toast({

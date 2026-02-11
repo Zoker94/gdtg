@@ -2,6 +2,7 @@ import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tansta
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
+import { notifyAdminTelegram } from "@/lib/telegramNotify";
 import { useEffect, useCallback } from "react";
 
 const PAGE_SIZE = 20;
@@ -363,6 +364,16 @@ export const useUpdateTransactionStatus = () => {
       toast({
         title: "Cập nhật thành công",
       });
+      
+      // Notify admin on dispute
+      if (data.status === "disputed") {
+        const amt = new Intl.NumberFormat("vi-VN").format(data.amount) + "đ";
+        notifyAdminTelegram(
+          "dispute",
+          "Khiếu nại giao dịch",
+          `🔖 Mã GD: ${data.transaction_code}\n📦 Sản phẩm: ${data.product_name}\n💰 Số tiền: ${amt}\n📝 Lý do: ${data.dispute_reason || "Không rõ"}`
+        );
+      }
     },
     onError: (error) => {
       toast({
